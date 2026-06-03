@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.auth.dependencies import get_current_user
+from app.auth.permissions import require_role
 from app.database.models import User
 from app.schemas.chatbot_schema import ChatRequest, ChatResponse
 from app.services.rag_service import RAGService
@@ -11,7 +11,7 @@ router = APIRouter(prefix="/chat", tags=["Chatbot"])
 @router.post("/", response_model=ChatResponse)
 async def chat(
     request: ChatRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role("student", "faculty")),
 ):
     if not request.question.strip():
         raise HTTPException(

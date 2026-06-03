@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.dependencies import get_current_user
+from app.auth.permissions import require_role
 from app.database.db import get_db
 from app.database.models import User
 from app.schemas.document_schema import (
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/documents", tags=["Documents"])
 async def upload_document(
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role("student", "faculty")),
 ):
     doc_service = DocumentService(db)
     try:
@@ -45,7 +45,7 @@ async def list_documents(
     skip: int = 0,
     limit: int = 20,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role("student", "faculty")),
 ):
     doc_service = DocumentService(db)
     documents, total = await doc_service.get_user_documents(
@@ -61,7 +61,7 @@ async def list_documents(
 async def get_document(
     document_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role("student", "faculty")),
 ):
     doc_service = DocumentService(db)
     document = await doc_service.get_document(document_id, current_user)
@@ -74,7 +74,7 @@ async def get_document(
 async def delete_document(
     document_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role("student", "faculty")),
 ):
     doc_service = DocumentService(db)
     deleted = await doc_service.delete_document(document_id, current_user)

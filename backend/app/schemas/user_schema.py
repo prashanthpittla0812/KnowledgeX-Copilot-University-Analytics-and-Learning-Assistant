@@ -1,13 +1,6 @@
 from datetime import datetime
-from typing import Optional
 
-from pydantic import BaseModel, EmailStr
-
-
-class UserUpdateRequest(BaseModel):
-    name: Optional[str] = None
-    email: Optional[EmailStr] = None
-    role: Optional[str] = None
+from pydantic import BaseModel
 
 
 class UserDetailResponse(BaseModel):
@@ -15,6 +8,7 @@ class UserDetailResponse(BaseModel):
     name: str
     email: str
     role: str
+    is_active: bool
     created_at: datetime
 
     model_config = {"from_attributes": True}

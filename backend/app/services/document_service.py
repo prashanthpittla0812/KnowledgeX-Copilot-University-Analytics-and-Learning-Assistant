@@ -1,11 +1,11 @@
-import shutil
 from pathlib import Path
 
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config.settings import settings
 from app.database.models import Document, User
-from app.utils.constants import ALLOWED_FILE_EXTENSIONS, MAX_FILE_SIZE_MB, UPLOAD_DIR
+from app.utils.constants import ALLOWED_FILE_EXTENSIONS
 from app.utils.logger import get_logger
 
 logger = get_logger()
@@ -22,10 +22,10 @@ class DocumentService:
         if ext not in ALLOWED_FILE_EXTENSIONS:
             raise ValueError(f"File type {ext} not allowed. Use: {ALLOWED_FILE_EXTENSIONS}")
 
-        if len(file_content) > MAX_FILE_SIZE_MB * 1024 * 1024:
-            raise ValueError(f"File size exceeds {MAX_FILE_SIZE_MB} MB limit")
+        if len(file_content) > settings.MAX_UPLOAD_SIZE_BYTES:
+            raise ValueError(f"File size exceeds {settings.MAX_UPLOAD_SIZE_MB} MB limit")
 
-        user_dir = UPLOAD_DIR / str(user.id)
+        user_dir = settings.UPLOAD_PATH / str(user.id)
         user_dir.mkdir(parents=True, exist_ok=True)
 
         file_path = user_dir / file_name

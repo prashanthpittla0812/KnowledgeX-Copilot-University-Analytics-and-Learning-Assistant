@@ -13,10 +13,10 @@ from app.routes import (
     document_routes,
     quiz_routes,
     recommendation_routes,
+    role_routes,
     studyplan_routes,
-    user_routes,
 )
-from app.utils.constants import APP_DESCRIPTION, APP_NAME, APP_VERSION, UPLOAD_DIR
+from app.utils.constants import APP_DESCRIPTION, APP_NAME, APP_VERSION
 from app.utils.logger import get_logger, setup_logger
 
 logger = get_logger()
@@ -26,7 +26,7 @@ logger = get_logger()
 async def lifespan(app: FastAPI):
     setup_logger()
     logger.info(f"Starting {APP_NAME} v{APP_VERSION}")
-    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    settings.UPLOAD_PATH.mkdir(parents=True, exist_ok=True)
     try:
         await init_db()
         logger.info("Database connected successfully")
@@ -58,16 +58,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
+app.mount("/uploads", StaticFiles(directory=str(settings.UPLOAD_PATH)), name="uploads")
 
 app.include_router(auth_routes.router, prefix="/api/v1")
-app.include_router(user_routes.router, prefix="/api/v1")
 app.include_router(chatbot_routes.router, prefix="/api/v1")
 app.include_router(document_routes.router, prefix="/api/v1")
 app.include_router(quiz_routes.router, prefix="/api/v1")
 app.include_router(studyplan_routes.router, prefix="/api/v1")
 app.include_router(recommendation_routes.router, prefix="/api/v1")
 app.include_router(dashboard_routes.router, prefix="/api/v1")
+app.include_router(role_routes.student_router, prefix="/api/v1")
+app.include_router(role_routes.faculty_router, prefix="/api/v1")
+app.include_router(role_routes.admin_router, prefix="/api/v1")
 
 
 @app.get("/", tags=["Health"])

@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from jose import JWTError, jwt
+from jose import ExpiredSignatureError, JWTError, jwt
 
 from app.config.settings import settings
 
@@ -11,7 +11,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
         expires_delta
         or timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
     )
-    to_encode.update({"exp": expire})
+    to_encode.update({"exp": expire, "iat": datetime.now(timezone.utc)})
     return jwt.encode(
         to_encode,
         settings.JWT_SECRET_KEY,
@@ -19,7 +19,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     )
 
 
-def decode_access_token(token: str) -> dict | None:
+def decode_access_token(token: str) -> dict:
     try:
         payload = jwt.decode(
             token,
@@ -27,5 +27,7 @@ def decode_access_token(token: str) -> dict | None:
             algorithms=[settings.JWT_ALGORITHM],
         )
         return payload
+    except ExpiredSignatureError:
+        raise ValueError("Token has expired")
     except JWTError:
-        return None
+        raise ValueError("Invalid token")

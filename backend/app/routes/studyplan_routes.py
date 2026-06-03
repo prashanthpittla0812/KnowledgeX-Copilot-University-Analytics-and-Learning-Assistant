@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.dependencies import get_current_user
+from app.auth.permissions import get_current_student
 from app.database.db import get_db
 from app.database.models import User
 from app.schemas.studyplan_schema import (
@@ -18,7 +18,7 @@ router = APIRouter(prefix="/studyplan", tags=["Study Plan"])
 async def generate_study_plan(
     request: StudyPlanRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_student),
 ):
     studyplan_service = StudyPlanService(db)
     try:
@@ -41,7 +41,7 @@ async def generate_study_plan(
 @router.get("/history", response_model=list[StudyPlanHistoryItem])
 async def get_study_plan_history(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_student),
 ):
     studyplan_service = StudyPlanService(db)
     plans = await studyplan_service.get_user_plans(user=current_user)

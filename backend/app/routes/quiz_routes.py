@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.dependencies import get_current_user, require_role
+from app.auth.permissions import get_current_student
 from app.database.db import get_db
 from app.database.models import User
 from app.schemas.quiz_schema import (
@@ -20,7 +20,7 @@ router = APIRouter(prefix="/quiz", tags=["Quiz"])
 async def generate_quiz(
     request: QuizGenerateRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_student),
 ):
     quiz_service = QuizService(db)
     try:
@@ -43,7 +43,7 @@ async def generate_quiz(
 async def submit_quiz(
     request: QuizSubmitRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_student),
 ):
     quiz_service = QuizService(db)
     try:
@@ -67,7 +67,7 @@ async def submit_quiz(
 @router.get("/history", response_model=list[QuizHistoryItem])
 async def get_quiz_history(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_student),
 ):
     quiz_service = QuizService(db)
     quizzes = await quiz_service.get_quiz_history(user=current_user)

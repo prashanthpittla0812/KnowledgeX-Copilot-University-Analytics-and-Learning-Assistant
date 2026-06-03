@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.dependencies import get_current_user, require_role
+from app.auth.permissions import get_current_student
 from app.database.db import get_db
 from app.database.models import User
 from app.schemas.recommendation_schema import RecommendationHistoryItem, RecommendationResponse
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/recommendations", tags=["Recommendations"])
 async def get_recommendations(
     student_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("student", "faculty", "admin")),
+    current_user: User = Depends(get_current_student),
 ):
     rec_service = RecommendationService(db)
     try:
@@ -33,7 +33,7 @@ async def get_recommendations(
 async def get_recommendation_history(
     student_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("student", "faculty")),
+    current_user: User = Depends(get_current_student),
 ):
     rec_service = RecommendationService(db)
     recs = await rec_service.get_recommendations(student_id=student_id)
