@@ -8,9 +8,9 @@ Question: {question}
 
 Instructions:
 - Answer the question directly, creatively, and educationally.
-- DO NOT say things like "Based on the provided context", "The context does not contain", "Unfortunately, the PDF doesn't mention", or make any reference to the existence of a "context" or "PDF".
 - Seamlessly combine information from the reference snippets (if helpful) and your own general knowledge.
-- If the reference snippets do not contain the answer, answer the question completely on your own without apologizing or mentioning that the reference snippets are missing the information.
+- If the reference snippets do not contain the answer, answer the question completely on your own.
+- Only mention the "uploaded document" or "PDF" if the user explicitly asks about it in their prompt. Otherwise, do not mention the existence of a "context".
 - Use clear formatting, bullet points, and examples where appropriate to explain concepts.
 
 Answer:"""

@@ -18,15 +18,21 @@ export default function StudentDashboard() {
   const pdfInputRef = useRef(null);
   const [userName, setUserName] = useState("Akshaya");
   const [studentId, setStudentId] = useState(null);
-  const [activeItem, setActiveItem] = useState("Chatbot");
-  const [collapsed, setCollapsed] = useState(false);
+  const [activeItem, setActiveItem] = useState("Home");
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [chatHistoryCollapsed, setChatHistoryCollapsed] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [attachedFile, setAttachedFile] = useState(null);
   
   // Chatbot State
   const [previousChats, setPreviousChats] = useState(() => {
-    const stored = localStorage.getItem("studentChats");
+    let userId = "default";
+    const storedUser = localStorage.getItem("currentUser");
+    if (storedUser) {
+      try { userId = JSON.parse(storedUser).id; } catch (e) {}
+    }
+    const stored = localStorage.getItem(`studentChats_${userId}`);
     return stored ? JSON.parse(stored) : [
       { id: 1, title: "Math revision plan", messages: [{ text: "Help me revise calculus before quiz.", sender: "user" }] },
       { id: 2, title: "Physics doubts", messages: [{ text: "Explain Newton's laws with examples.", sender: "user" }] },
@@ -100,54 +106,60 @@ export default function StudentDashboard() {
     setPreviousChats(updatedChats);
     setSelectedChatId(newChat.id);
     setChatInput("");
-    localStorage.setItem("studentChats", JSON.stringify(updatedChats));
+    localStorage.setItem(`studentChats_${studentId || "default"}`, JSON.stringify(updatedChats));
   };
 
   const handleSendChat = async () => {
     const message = chatInput.trim();
-    if (!message || isLoading) return;
-    const updatedChats = previousChats.map((chat) => {
-      if (chat.id !== selectedChatId) return chat;
-      const messages = chat.messages || [];
-      return { ...chat, title: messages.length === 0 ? (message.length > 34 ? message.slice(0, 34) + "..." : message) : chat.title, messages: [...messages, { text: message, sender: "user" }] };
-    });
-    setPreviousChats(updatedChats);
-    setChatInput("");
+    if ((!message && !attachedFile) || isLoading) return;
+    
+    let currentChats = [...previousChats];
     setIsLoading(true);
+    
     try {
-      const response = await chatbotApi.askQuestion(message);
-      const finalChats = updatedChats.map((chat) => {
-        if (chat.id !== selectedChatId) return chat;
-        return { ...chat, messages: [...(chat.messages || []), { text: response.answer || response.data?.answer || "Sorry, I could not process that.", sender: "bot" }] };
-      });
-      setPreviousChats(finalChats);
-      localStorage.setItem("studentChats", JSON.stringify(finalChats));
+      if (attachedFile) {
+        await documentApi.uploadPdf(attachedFile);
+        currentChats = currentChats.map((chat) => {
+          if (chat.id !== selectedChatId) return chat;
+          return { ...chat, messages: [...(chat.messages||[]), { text: `📄 Uploaded PDF: ${attachedFile.name}`, sender: "system" }] };
+        });
+        setAttachedFile(null);
+      }
+      
+      if (message) {
+        currentChats = currentChats.map((chat) => {
+          if (chat.id !== selectedChatId) return chat;
+          const messages = chat.messages || [];
+          return { ...chat, title: messages.length === 0 ? (message.length > 34 ? message.slice(0, 34) + "..." : message) : chat.title, messages: [...messages, { text: message, sender: "user" }] };
+        });
+      }
+      
+      setPreviousChats(currentChats);
+      setChatInput("");
+      
+      if (message) {
+        const response = await chatbotApi.askQuestion(message);
+        currentChats = currentChats.map((chat) => {
+          if (chat.id !== selectedChatId) return chat;
+          return { ...chat, messages: [...(chat.messages || []), { text: response.answer || response.data?.answer || "Sorry, I could not process that.", sender: "bot" }] };
+        });
+        setPreviousChats(currentChats);
+      }
+      
+      localStorage.setItem(`studentChats_${studentId || "default"}`, JSON.stringify(currentChats));
     } catch (error) {
-      alert("Failed to get response.");
+      alert("Failed to process request.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleAttachPdf = async (event) => {
+  const handleAttachPdf = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
     if (file.type !== "application/pdf") { alert("Select a PDF"); return; }
-    setIsLoading(true);
-    try {
-      await documentApi.uploadPdf(file);
-      const updatedChats = previousChats.map((chat) => {
-        if (chat.id !== selectedChatId) return chat;
-        return { ...chat, messages: [...(chat.messages||[]), { text: `📄 Uploaded PDF: ${file.name}`, sender: "system" }] };
-      });
-      setPreviousChats(updatedChats);
-      alert("PDF uploaded successfully!");
-    } catch (error) {
-      alert("Failed to upload PDF");
-    } finally {
-      setIsLoading(false);
-      event.target.value = "";
-    }
+    setAttachedFile(file);
+    event.target.value = "";
   };
 
   const handleGenerateQuiz = async () => {
@@ -236,108 +248,163 @@ export default function StudentDashboard() {
   const selectedMessages = selectedChat?.messages || [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-orange-50 to-orange-200 text-gray-900 font-sans">
-      <div className="flex min-h-screen w-full flex-col gap-4 p-4 lg:flex-row lg:gap-6 lg:p-6">
-        <aside className={`flex flex-col justify-between overflow-y-auto rounded-3xl border border-orange-100 bg-white/90 p-4 shadow-2xl shadow-orange-300/30 backdrop-blur transition-all lg:h-[calc(100vh-3rem)] lg:shrink-0 ${collapsed ? "lg:w-20" : "lg:w-72"}`}>
-          <div>
-          <div className="mb-6 flex items-center justify-between px-2">
-            {!collapsed ? (<div><p className="text-sm uppercase tracking-[0.2em] text-orange-500 font-bold">Student</p><h2 className="mt-2 text-2xl font-black text-gray-900 tracking-tight">Dashboard</h2></div>) : (<div className="text-orange-500 font-bold text-2xl">S</div>)}
-            <button onClick={() => setCollapsed(!collapsed)} className="text-gray-400 hover:text-orange-500 transition-colors p-2 rounded-full hover:bg-orange-50">{collapsed ? ">" : "<"}</button>
-          </div>
-          <nav className="grid gap-2 px-2 sm:grid-cols-2 lg:block lg:space-y-2">
-            {menuItems.map((item) => (
-              <button key={item} onClick={() => handleMenuClick(item)} className={`flex h-12 w-full items-center rounded-2xl px-4 py-2 text-left font-medium transition-all duration-300 ${activeItem === item ? "bg-gradient-to-r from-orange-500 to-orange-400 text-white shadow-lg shadow-orange-500/30" : "text-gray-600 hover:bg-orange-100 hover:text-orange-600"}`}>
-                <span className="w-8 text-center mr-2 text-lg">{item[0]}</span>
-                <span className={collapsed ? "lg:hidden" : ""}>{item}</span>
+    <div className="h-screen overflow-hidden bg-[#F8FAFC] text-gray-900 font-sans flex flex-col">
+      {/* Header */}
+      <header className="sticky top-0 z-50 flex items-center justify-between bg-white/80 backdrop-blur-xl px-6 py-2.5 shadow-sm border-b border-gray-100">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.25em] text-orange-500 font-bold mb-0">Student</p>
+          <h2 className="text-xl font-black text-gray-900 tracking-tight leading-tight">Dashboard</h2>
+        </div>
+        
+        <div className="relative">
+          <button 
+            onClick={() => setIsProfileOpen(!isProfileOpen)} 
+            className="flex items-center gap-3 rounded-full border border-gray-200 bg-white p-1 pr-4 shadow-sm hover:bg-gray-50 transition-all hover:shadow-md"
+          >
+            <div className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-orange-400 to-orange-500 text-white text-sm font-bold shadow-inner">
+              {userName.charAt(0).toUpperCase()}
+            </div>
+            <span className="font-bold text-gray-800 text-sm tracking-wide">{userName}</span>
+            <span className="text-gray-400 text-[9px]">▼</span>
+          </button>
+          
+          {isProfileOpen && (
+            <div className="absolute right-0 mt-2 w-48 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl shadow-gray-200/50">
+              <div className="border-b border-gray-100 px-4 py-3 bg-gray-50">
+                <p className="text-sm font-semibold text-gray-900">Student Profile</p>
+                <p className="text-xs text-gray-500 truncate">{userName}</p>
+              </div>
+              <button 
+                onClick={handleLogout} 
+                className="w-full px-4 py-3 text-left text-sm font-bold text-red-500 hover:bg-red-50 transition-colors"
+              >
+                Logout
               </button>
-            ))}
-          </nav>
-          </div>
-          <button onClick={handleLogout} className="mt-8 shrink-0 w-full rounded-2xl border-2 border-orange-200 bg-white px-4 py-3 text-sm font-bold text-orange-500 transition-all hover:bg-orange-500 hover:text-white shadow-md hover:shadow-xl hover:shadow-orange-500/20">Logout</button>
-        </aside>
+            </div>
+          )}
+        </div>
+      </header>
 
-        <main className={`flex-1 rounded-3xl border border-orange-100 bg-white/90 p-6 shadow-2xl shadow-orange-300/30 backdrop-blur lg:p-8 flex flex-col lg:h-[calc(100vh-3rem)] ${activeItem === 'Chatbot' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
-          <div className="shrink-0 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between mb-8 border-b border-gray-100 pb-6">
-            <div>
-              <p className="text-sm font-semibold text-orange-500 tracking-widest uppercase mb-1">Welcome back</p>
-              <h1 className="text-4xl font-black text-gray-900 tracking-tight">{userName}</h1>
+      {/* Main Content Area */}
+      <main className={`flex-1 min-h-0 flex flex-col ${activeItem === 'Chatbot' ? 'p-3 lg:p-4 overflow-hidden' : 'p-6 lg:px-10 lg:py-6 overflow-y-auto'}`}>
+        {/* Render Home Grid or Subview */}
+        {activeItem === "Home" ? (
+          <div className="mx-auto w-full max-w-[1400px] flex-1 flex flex-col justify-center animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="mb-6 pl-2">
+              <h1 className="text-3xl lg:text-4xl font-black text-gray-900 tracking-tight mb-2">Welcome back, {userName}</h1>
+              <p className="text-sm lg:text-base text-gray-500 font-medium">What would you like to achieve today?</p>
             </div>
-            <div className="bg-orange-50 px-5 py-2.5 rounded-2xl border border-orange-100 shadow-inner">
-              <span className="text-orange-600 font-bold mr-2">{activeItem}</span><span className="text-gray-500 font-medium">Active View</span>
+            
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {menuItems.map((item) => (
+                <button 
+                  key={item} 
+                  onClick={() => handleMenuClick(item)} 
+                  className="group relative flex h-36 lg:h-40 flex-col items-center justify-center gap-3 overflow-hidden rounded-[1.5rem] border border-orange-100/50 bg-white p-4 text-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-orange-200/40 hover:border-orange-200"
+                >
+                  <div className="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-orange-50 opacity-40 blur-2xl transition-all group-hover:bg-orange-100 group-hover:scale-150 duration-700"></div>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-400 to-orange-500 text-2xl text-white shadow-md shadow-orange-500/30 transition-transform duration-500 group-hover:scale-110">
+                    {item[0]}
+                  </div>
+                  <span className="font-extrabold text-gray-800 text-sm lg:text-base group-hover:text-orange-600 z-10 tracking-wide">{item}</span>
+                </button>
+              ))}
             </div>
           </div>
+        ) : (
+          <div className={`mx-auto w-full flex flex-col ${activeItem === 'Chatbot' ? 'max-w-[1800px] flex-1 min-h-0 overflow-hidden' : 'max-w-[1400px] min-h-[calc(100vh-10rem)] p-5 lg:p-7 bg-white rounded-[2.5rem] border border-gray-100 shadow-2xl shadow-gray-200/50'}`}>
+            {/* Subview Header with Back Button */}
+            <div className={`shrink-0 flex items-center justify-between ${activeItem === 'Chatbot' ? 'mb-4 px-2' : 'border-b border-gray-100 mb-10 pb-8'}`}>
+              <button 
+                onClick={() => setActiveItem("Home")} 
+                className="flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-orange-600 transition-all bg-white hover:bg-orange-50 px-5 py-2 rounded-full border border-gray-200 hover:border-orange-200 shadow-sm hover:shadow-md"
+              >
+                <span className="text-base leading-none">←</span> Back to Dashboard
+              </button>
+              <div className="bg-gradient-to-r from-orange-500 to-orange-400 px-5 py-2 rounded-full text-white shadow-md shadow-orange-500/30">
+                <span className="font-black tracking-wide text-xs uppercase">{activeItem}</span>
+              </div>
+            </div>
 
           {activeItem === "Chatbot" && (
-            <div className={`flex-1 min-h-0 grid gap-6 ${chatHistoryCollapsed ? "xl:grid-cols-[80px_1fr]" : "xl:grid-cols-[300px_1fr]"}`}>
-              <section className="min-h-0 rounded-3xl border border-orange-100 bg-gradient-to-b from-orange-50 to-white p-5 shadow-inner transition-all flex flex-col">
-                <div className="mb-6 flex items-center justify-between">
-                  {!chatHistoryCollapsed && <h2 className="text-lg font-bold text-gray-800">Chat History</h2>}
-                  <button onClick={() => setChatHistoryCollapsed(!chatHistoryCollapsed)} className="grid h-10 w-10 place-items-center rounded-full border border-orange-200 bg-white text-orange-500 hover:bg-orange-500 hover:text-white transition-colors shadow-sm">{chatHistoryCollapsed ? ">" : "<"}</button>
+            <div className={`flex-1 min-h-0 grid gap-8 ${chatHistoryCollapsed ? "xl:grid-cols-[82px_1fr]" : "xl:grid-cols-[450px_1fr]"}`}>
+              <section className="min-h-0 rounded-[2rem] border border-gray-100 bg-white p-5 lg:p-6 shadow-xl shadow-gray-200/40 transition-all flex flex-col">
+                <div className="mb-5 flex items-center justify-between">
+                  {!chatHistoryCollapsed && <h2 className="text-base font-black text-gray-800 tracking-tight pl-1">Chat History</h2>}
+                  <button onClick={() => setChatHistoryCollapsed(!chatHistoryCollapsed)} className="grid h-10 w-10 place-items-center rounded-full border border-orange-200 bg-white text-orange-500 hover:bg-orange-500 hover:text-white transition-all shadow-sm font-bold text-base">{chatHistoryCollapsed ? ">" : "<"}</button>
                 </div>
                 {!chatHistoryCollapsed && (
                   <>
-                    <button onClick={handleNewChat} className="mb-6 w-full rounded-2xl bg-orange-500 px-4 py-3 text-sm font-bold text-white transition-all hover:bg-orange-600 hover:shadow-lg hover:shadow-orange-500/30 active:scale-95">+ New Conversation</button>
-                    <div className="space-y-3 overflow-y-auto flex-1 pr-2">
+                    <button onClick={handleNewChat} className="mb-5 w-full rounded-2xl bg-orange-500 px-5 py-3 text-xs font-black tracking-wide text-white transition-all hover:bg-orange-600 hover:shadow-xl hover:shadow-orange-500/30 active:scale-95 shadow-lg">+ NEW CONVERSATION</button>
+                    <div className="space-y-2 overflow-y-auto flex-1 pr-3 custom-scrollbar">
                       {previousChats.map((chat) => (
-                        <button key={chat.id} onClick={() => setSelectedChatId(chat.id)} className={`w-full rounded-2xl px-4 py-3 text-left transition-all ${selectedChatId === chat.id ? "bg-gradient-to-r from-orange-500 to-orange-400 text-white shadow-md shadow-orange-500/20" : "bg-white text-gray-700 hover:bg-orange-100 border border-gray-100"}`}>
-                          <span className="block truncate font-bold text-sm">{chat.title}</span>
-                          <span className={`mt-1.5 block truncate text-xs font-medium ${selectedChatId === chat.id ? "text-orange-100" : "text-gray-400"}`}>{chat.messages?.at(-1)?.text || "Empty chat"}</span>
+                        <button key={chat.id} onClick={() => setSelectedChatId(chat.id)} className={`w-full rounded-xl px-3 py-1.5 text-left transition-all duration-300 ${selectedChatId === chat.id ? "bg-gradient-to-r from-orange-500 to-orange-400 text-white shadow-md shadow-orange-500/20 scale-[1.01]" : "bg-white text-gray-700 hover:bg-orange-50 border border-gray-100 hover:border-orange-100 hover:shadow-sm"}`}>
+                          <span className="block truncate font-extrabold text-xs">{chat.title}</span>
+                          <span className={`block truncate text-[10px] font-medium leading-tight ${selectedChatId === chat.id ? "text-orange-100" : "text-gray-400"}`}>{chat.messages?.at(-1)?.text || "Empty chat"}</span>
                         </button>
                       ))}
                     </div>
                   </>
                 )}
               </section>
-              <section className="min-h-0 flex flex-col justify-between rounded-3xl border border-orange-100 bg-white p-6 shadow-xl shadow-orange-100/50">
-                <div className="flex-1 overflow-y-auto mb-6 pr-4 space-y-6">
+              <section className="min-h-0 flex flex-col justify-between rounded-[2rem] border border-gray-100 bg-white p-5 lg:p-6 shadow-xl shadow-gray-200/40">
+                <div className="flex-1 min-h-0 overflow-y-auto mb-5 pr-3 lg:pr-5 space-y-4 custom-scrollbar">
                   {selectedChat ? (
                     <>
-                      <div className="sticky top-0 bg-white/90 backdrop-blur pb-4 border-b border-gray-50 z-10">
-                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-500 mb-1">Current Thread</p>
-                        <h2 className="text-2xl font-black text-gray-900">{selectedChat.title}</h2>
+                      <div className="sticky top-0 bg-white/95 backdrop-blur-md pb-4 mb-2 border-b border-gray-50 z-10">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-orange-500 mb-1.5">Current Thread</p>
+                        <h2 className="text-xl font-black text-gray-900 tracking-tight">{selectedChat.title}</h2>
                       </div>
                       {selectedMessages.length > 0 ? (
                         selectedMessages.map((msg, idx) => (
                           <div key={idx} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
-                            <div className={`max-w-[80%] rounded-3xl px-5 py-4 shadow-sm ${msg.sender === "user" ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-tr-sm" : "bg-gray-50 text-gray-800 border border-gray-100 rounded-tl-sm"}`}>
-                              <p className="text-sm leading-relaxed whitespace-pre-wrap font-medium">{msg.text}</p>
+                            <div className={`max-w-[68%] rounded-2xl px-5 py-3.5 shadow-sm ${msg.sender === "user" ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-tr-sm shadow-orange-500/20" : "bg-gray-50 text-gray-800 border border-gray-100 rounded-tl-sm"}`}>
+                              <p className="text-sm leading-6 whitespace-pre-wrap font-medium">{msg.text}</p>
                             </div>
                           </div>
                         ))
                       ) : (
                         <div className="flex h-full flex-col items-center justify-center text-center opacity-50">
-                          <div className="text-6xl mb-4">👋</div>
-                          <h2 className="text-2xl font-bold text-gray-900">Start a conversation!</h2>
+                          <div className="text-7xl mb-6">👋</div>
+                          <h2 className="text-xl font-black text-gray-900">Start a conversation!</h2>
                         </div>
                       )}
                       {isLoading && (
-                        <div className="flex justify-start">
-                          <div className="bg-gray-50 text-gray-500 rounded-3xl rounded-tl-sm px-6 py-4 border border-gray-100 flex gap-2 items-center shadow-sm">
+                        <div className="flex justify-start mt-4">
+                          <div className="bg-gray-50 text-gray-400 rounded-2xl rounded-tl-sm px-5 py-4 border border-gray-100 flex gap-2 items-center shadow-sm">
                             <div className="w-2 h-2 rounded-full bg-orange-400 animate-bounce"></div>
-                            <div className="w-2 h-2 rounded-full bg-orange-400 animate-bounce" style={{animationDelay: "0.1s"}}></div>
-                            <div className="w-2 h-2 rounded-full bg-orange-400 animate-bounce" style={{animationDelay: "0.2s"}}></div>
+                            <div className="w-2 h-2 rounded-full bg-orange-400 animate-bounce" style={{animationDelay: "0.15s"}}></div>
+                            <div className="w-2 h-2 rounded-full bg-orange-400 animate-bounce" style={{animationDelay: "0.3s"}}></div>
                           </div>
                         </div>
                       )}
                     </>
                   ) : (
                     <div className="flex h-full flex-col items-center justify-center text-center opacity-50">
-                      <div className="text-6xl mb-4">✨</div>
-                      <h2 className="text-2xl font-bold text-gray-900">What can KnowledgeX do for you?</h2>
+                      <div className="text-7xl mb-6">✨</div>
+                      <h2 className="text-xl font-black text-gray-900">What can KnowledgeX do for you?</h2>
                     </div>
                   )}
                 </div>
-                <div className="relative">
-                  <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-orange-200 to-orange-300 opacity-30 blur"></div>
-                  <div className="relative flex items-center gap-3 rounded-full border border-gray-200 bg-white px-3 py-2 shadow-lg">
-                    <button onClick={() => pdfInputRef.current?.click()} className="grid h-10 w-10 place-items-center rounded-full bg-gray-50 text-gray-500 hover:bg-orange-100 hover:text-orange-500 transition-colors">
-                      <span className="text-xl font-bold">+</span>
-                    </button>
-                    <input ref={pdfInputRef} type="file" accept=".pdf" onChange={handleAttachPdf} className="hidden" />
-                    <input value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSendChat()} className="min-w-0 flex-1 bg-transparent px-2 text-sm font-medium text-gray-900 placeholder-gray-400 outline-none" placeholder="Message KnowledgeX..." />
-                    <button onClick={handleSendChat} disabled={isLoading} className="grid h-10 px-6 place-items-center rounded-full bg-gradient-to-r from-gray-900 to-black text-sm font-bold text-white hover:opacity-90 disabled:opacity-50 transition-all">
-                      Send
-                    </button>
+                <div className="relative flex flex-col gap-3 mt-1 shrink-0">
+                  {attachedFile && (
+                    <div className="self-start bg-orange-50 border border-orange-200 text-orange-800 text-xs font-bold px-4 py-2 rounded-full shadow-sm flex items-center gap-2">
+                      📄 {attachedFile.name}
+                      <button onClick={() => setAttachedFile(null)} className="text-orange-400 hover:text-orange-700 ml-2 font-black transition-colors text-lg">✖</button>
+                    </div>
+                  )}
+                  <div className="relative group">
+                    <div className="absolute -inset-1.5 rounded-[2rem] bg-gradient-to-r from-orange-200 to-orange-300 opacity-20 blur-lg group-hover:opacity-35 transition-opacity duration-500"></div>
+                    <div className="relative flex items-center gap-3 rounded-[2rem] border border-gray-200 bg-white p-2.5 shadow-xl shadow-gray-200/50">
+                      <button onClick={() => pdfInputRef.current?.click()} className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gray-50 text-gray-500 hover:bg-orange-100 hover:text-orange-600 transition-colors shadow-sm">
+                        <span className="text-xl font-bold">+</span>
+                      </button>
+                      <input ref={pdfInputRef} type="file" accept=".pdf" onChange={handleAttachPdf} className="hidden" />
+                      <input value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSendChat()} className="min-w-0 flex-1 bg-transparent px-3 text-sm font-medium text-gray-900 placeholder-gray-400 outline-none" placeholder="Message KnowledgeX..." />
+                      <button onClick={handleSendChat} disabled={isLoading} className="flex h-11 px-6 items-center justify-center rounded-full bg-gradient-to-r from-gray-900 to-black text-sm font-black tracking-wide text-white hover:opacity-90 disabled:opacity-50 transition-all shadow-lg shrink-0">
+                        Send
+                      </button>
+                    </div>
                   </div>
                 </div>
               </section>
@@ -586,9 +653,9 @@ export default function StudentDashboard() {
               )}
             </div>
           )}
-
-        </main>
-      </div>
+          </div>
+        )}
+      </main>
     </div>
   );
 }
