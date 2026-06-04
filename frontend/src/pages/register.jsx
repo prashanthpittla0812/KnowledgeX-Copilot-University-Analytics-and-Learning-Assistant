@@ -1,30 +1,35 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { authApi } from "../api";
 
 export default function Register() {
   const navigate = useNavigate();
   const [name, setName] = useState("");
-  const [id, setId] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleRegister = () => {
-    if (!name.trim() || !id.trim() || !password) {
-      alert("Please enter name, student id and password");
+  const handleRegister = async () => {
+    if (!name.trim() || !email.trim() || !password) {
+      alert("Please enter name, email and password");
       return;
     }
 
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
-    if (users.find((u) => u.id === id.trim() && u.role === "student")) {
-      alert("Student ID already registered");
-      return;
+    try {
+      await authApi.register({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+        role: "student",
+      });
+      alert("Account created successfully. Please log in.");
+      navigate("/");
+    } catch (error) {
+      const message =
+        error?.response?.data?.detail ||
+        error?.message ||
+        "Failed to create account. Please try again.";
+      alert(message);
     }
-
-    const user = { name: name.trim(), id: id.trim(), email: email.trim(), password, role: "student" };
-    users.push(user);
-    localStorage.setItem("users", JSON.stringify(users));
-    localStorage.setItem("currentUser", JSON.stringify({ name: user.name, role: user.role, id: user.id }));
-    navigate("/student-dashboard");
   };
 
   return (
@@ -42,17 +47,10 @@ export default function Register() {
           />
 
           <input
-            value={id}
-            onChange={(e) => setId(e.target.value)}
-            className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none focus:border-orange-500"
-            placeholder="Student ID"
-          />
-
-          <input
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none focus:border-orange-500"
-            placeholder="Email (optional)"
+            placeholder="Email"
           />
 
           <input

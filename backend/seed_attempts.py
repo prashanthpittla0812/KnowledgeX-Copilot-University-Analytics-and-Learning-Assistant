@@ -1,0 +1,80 @@
+from __future__ import annotations
+
+from seed_utils import first_existing, get_session, insert_dynamic, reflect_table, row_by_column
+
+
+ATTEMPTS = [
+    ("student1@knowledgex.com", 80),
+    ("student2@knowledgex.com", 60),
+    ("student3@knowledgex.com", 40),
+]
+
+TOPIC_PERFORMANCE = [
+    ("Machine Learning", 80),
+    ("Deep Learning", 40),
+    ("Optimization", 35),
+]
+
+
+def main() -> None:
+    session = get_session()
+    try:
+        users_table = reflect_table(session.bind, ["users", "user"])
+        quizzes_table = reflect_table(session.bind, ["quizzes", "quiz"])
+        attempts_table = reflect_table(session.bind, ["quiz_attempts", "attempts", "student_quiz_attempts"])
+
+        email_col = first_existing(users_table, ["email", "email_id"])
+        quiz_title_col = first_existing(quizzes_table, ["title", "name", "quiz_title"])
+        attempt_student_col = first_existing(attempts_table, ["student_id", "user_id"])
+        attempt_quiz_col = first_existing(attempts_table, ["quiz_id"])
+        score_col = first_existing(attempts_table, ["score", "percentage", "marks"])
+        status_col = first_existing(attempts_table, ["status", "attempt_status"])
+
+        if not email_col or not attempt_student_col or not attempt_quiz_col or not score_col:
+            raise RuntimeError("Attempt seeding requires users.email, attempts.student_id, attempts.quiz_id, and attempts.score columns.")
+
+        quiz = session.execute(quizzes_table.select().limit(1)).mappings().first()
+        if not quiz:
+            raise RuntimeError("No quizzes found. Run seed_quizzes.py first.")
+        quiz_id = quiz.get("id") or quiz.get("quiz_id")
+
+        for email, score in ATTEMPTS:
+            student = row_by_column(session, users_table, email_col, email)
+            if not student:
+                continue
+            student_id = student.get("id") or student.get("user_id")
+            values = {
+                attempt_student_col: student_id,
+                attempt_quiz_col: quiz_id,
+                score_col: score,
+            }
+            if status_col:
+                values[status_col] = "completed"
+            insert_dynamic(session, attempts_table, values)
+
+        try:
+            analytics_table = reflect_table(session.bind, ["topic_performance", "analytics", "learning_gaps"])
+            topic_col = first_existing(analytics_table, ["topic", "topic_name", "subject"])
+            performance_col = first_existing(analytics_table, ["performance", "score", "percentage", "accuracy"])
+            student_col = first_existing(analytics_table, ["student_id", "user_id"])
+            first_student = row_by_column(session, users_table, email_col, "student1@knowledgex.com")
+            student_id = first_student.get("id") if first_student else None
+
+            if topic_col and performance_col:
+                for topic, performance in TOPIC_PERFORMANCE:
+                    values = {topic_col: topic, performance_col: performance}
+                    if student_col and student_id:
+                        values[student_col] = student_id
+                    insert_dynamic(session, analytics_table, values)
+        except Exception as exc:
+            print(f"Skipped analytics seeding: {exc}")
+
+        session.commit()
+        print("Seeded sample quiz attempts and learning gap data.")
+    finally:
+        session.close()
+
+
+if __name__ == "__main__":
+    main()
+

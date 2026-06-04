@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { authApi } from "../api";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -13,25 +14,42 @@ export default function Home() {
     setRole(r);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     if (!role) {
       alert("Please select a role first (Student, Faculty or Admin)");
       return;
     }
-
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
-    // try to match by id or email
-    const user = users.find((u) => u.role === role && (u.id === identifier || u.email === identifier) && u.password === password);
-    if (!user) {
-      alert("Invalid credentials or user not registered for the selected role");
+    if (!identifier.trim() || !password) {
+      alert("Please enter your email and password.");
       return;
     }
 
-    localStorage.setItem("currentUser", JSON.stringify({ name: user.name, role: user.role, id: user.id }));
-    if (role === "student") navigate("/student-dashboard");
-    else if (role === "faculty") navigate("/faculty-dashboard");
-    else navigate("/");
+    try {
+      const { user } = await authApi.login({
+        email: identifier.trim(),
+        password,
+      });
+
+      if (!user) {
+        alert("Logged in successfully, but could not retrieve user details.");
+        return;
+      }
+      if (user.role !== role) {
+        alert("Selected role does not match your account role.");
+        return;
+      }
+
+      if (role === "student") navigate("/student-dashboard");
+      else if (role === "faculty") navigate("/faculty-dashboard");
+      else navigate("/");
+    } catch (error) {
+      const message =
+        error?.response?.data?.detail ||
+        error?.message ||
+        "Invalid credentials or user not registered for the selected role";
+      alert(message);
+    }
   };
 
   return (
@@ -67,11 +85,11 @@ export default function Home() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">{role ? (role === "student" ? "Email" : role === "faculty" ? " Email" : "Email") : "Identifier"}</label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">Email</label>
             <input
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
-              placeholder={role ? (role === "student" ? "e.g. S12345 or user@example.com" : role === "faculty" ? "e.g. E12345 or user@example.com" : "e.g. A12345 or user@example.com") : "Select a role first"}
+              placeholder="user@example.com"
               className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-orange-500"
             />
           </div>
