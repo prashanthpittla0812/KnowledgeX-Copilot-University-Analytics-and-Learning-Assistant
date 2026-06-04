@@ -4,7 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.prompts import LEARNING_GAPS_PROMPT_TEMPLATE
-from app.database.models import Document, Quiz, User
+from app.database.models import Document, FacultyDocument, Quiz, QuizAttempt, TeacherQuiz, User
 from app.services.rag_service import RAGService
 from app.utils.logger import get_logger
 
@@ -118,6 +118,30 @@ class AnalyticsService:
                 "Provide additional practice materials",
                 "Schedule one-on-one sessions for struggling students",
             ],
+        }
+
+    async def get_admin_system_stats(self) -> dict:
+        total_students = await self.db.scalar(
+            select(func.count()).select_from(User).where(User.role == "student")
+        )
+        total_faculty = await self.db.scalar(
+            select(func.count()).select_from(User).where(User.role == "faculty")
+        )
+        total_quizzes_generated = await self.db.scalar(
+            select(func.count()).select_from(TeacherQuiz)
+        )
+        total_quizzes_attempted = await self.db.scalar(
+            select(func.count()).select_from(QuizAttempt)
+        )
+        avg_perf = await self.db.scalar(
+            select(func.avg(QuizAttempt.percentage))
+        )
+        return {
+            "total_students": total_students or 0,
+            "total_faculty": total_faculty or 0,
+            "total_quizzes_generated": total_quizzes_generated or 0,
+            "total_quizzes_attempted": total_quizzes_attempted or 0,
+            "average_performance": round(avg_perf or 0, 2),
         }
 
     def _determine_health(self, quiz_topics: list) -> str:

@@ -21,6 +21,11 @@ class User(Base):
     quizzes = relationship("Quiz", back_populates="user", cascade="all, delete-orphan")
     study_plans = relationship("StudyPlan", back_populates="user", cascade="all, delete-orphan")
     recommendations = relationship("Recommendation", back_populates="user", cascade="all, delete-orphan")
+    faculty_documents = relationship("FacultyDocument", back_populates="teacher", cascade="all, delete-orphan")
+    created_quizzes = relationship("TeacherQuiz", back_populates="teacher", foreign_keys="TeacherQuiz.teacher_id", cascade="all, delete-orphan")
+    quiz_attempts = relationship("QuizAttempt", back_populates="student", cascade="all, delete-orphan")
+    topic_performances = relationship("TopicPerformance", back_populates="student", cascade="all, delete-orphan")
+    topic_summaries = relationship("StudentTopicSummary", back_populates="student", cascade="all, delete-orphan")
 
 
 class Document(Base):
@@ -70,19 +75,39 @@ class Recommendation(Base):
     user = relationship("User", back_populates="recommendations")
 
 
+class FacultyDocument(Base):
+    __tablename__ = "faculty_documents"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    teacher_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    file_name = Column(String(255), nullable=False)
+    file_path = Column(String(500), nullable=False)
+    topic = Column(String(255), nullable=False)
+    chunks_count = Column(Integer, default=0)
+    uploaded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    teacher = relationship("User", back_populates="faculty_documents")
+
+
 class TeacherQuiz(Base):
     __tablename__ = "teacher_quizzes"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     teacher_name = Column(String(255), nullable=False)
+    teacher_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    document_id = Column(Integer, ForeignKey("faculty_documents.id", ondelete="SET NULL"), nullable=True)
     topic_name = Column(String(255), nullable=False)
     question_type = Column(String(50), nullable=False)
     difficulty = Column(String(50), nullable=False)
     num_questions = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
+    teacher = relationship("User", back_populates="created_quizzes", foreign_keys=[teacher_id])
+    document = relationship("FacultyDocument")
     questions = relationship("TeacherQuizQuestion", back_populates="quiz", cascade="all, delete-orphan")
     results = relationship("TeacherQuizResult", back_populates="quiz", cascade="all, delete-orphan")
+    attempts = relationship("QuizAttempt", back_populates="quiz", cascade="all, delete-orphan")
+    learning_gap_reports = relationship("LearningGapReport", back_populates="quiz", cascade="all, delete-orphan")
 
 
 class TeacherQuizQuestion(Base):
@@ -90,9 +115,13 @@ class TeacherQuizQuestion(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     quiz_id = Column(Integer, ForeignKey("teacher_quizzes.id", ondelete="CASCADE"), nullable=False)
+    question_type = Column(String(50), nullable=True)
     question = Column(Text, nullable=False)
     options = Column(Text, nullable=True)
     answer = Column(String(500), nullable=False)
+    topic = Column(String(255), nullable=True)
+    subtopic = Column(String(255), nullable=True)
+    bloom_level = Column(String(50), nullable=True)
 
     quiz = relationship("TeacherQuiz", back_populates="questions")
 
@@ -152,3 +181,80 @@ class StudentQuizResult(Base):
     submitted_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     quiz = relationship("StudentQuiz", back_populates="results")
+
+
+class QuizAttempt(Base):
+    __tablename__ = "quiz_attempts"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    quiz_id = Column(Integer, ForeignKey("teacher_quizzes.id", ondelete="CASCADE"), nullable=False)
+    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    score = Column(Float, nullable=False)
+    percentage = Column(Float, nullable=False)
+    total_questions = Column(Integer, nullable=False)
+    correct_answers = Column(Integer, nullable=False)
+    wrong_answers = Column(Integer, nullable=False)
+    submitted_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    quiz = relationship("TeacherQuiz", back_populates="attempts")
+    student = relationship("User", back_populates="quiz_attempts")
+    answers = relationship("StudentAnswer", back_populates="attempt", cascade="all, delete-orphan")
+    topic_performances = relationship("TopicPerformance", back_populates="attempt", cascade="all, delete-orphan")
+
+
+class StudentAnswer(Base):
+    __tablename__ = "student_answers"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    attempt_id = Column(Integer, ForeignKey("quiz_attempts.id", ondelete="CASCADE"), nullable=False)
+    question_id = Column(Integer, ForeignKey("teacher_quiz_questions.id", ondelete="CASCADE"), nullable=False)
+    selected_answer = Column(String(500), nullable=False)
+    is_correct = Column(Boolean, nullable=False)
+
+    attempt = relationship("QuizAttempt", back_populates="answers")
+    question = relationship("TeacherQuizQuestion")
+
+
+class TopicPerformance(Base):
+    __tablename__ = "topic_performances"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    attempt_id = Column(Integer, ForeignKey("quiz_attempts.id", ondelete="CASCADE"), nullable=False)
+    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    topic = Column(String(255), nullable=False)
+    subtopic = Column(String(255), nullable=True)
+    correct = Column(Integer, default=0)
+    total = Column(Integer, default=0)
+    accuracy = Column(Float, default=0.0)
+
+    attempt = relationship("QuizAttempt", back_populates="topic_performances")
+    student = relationship("User", back_populates="topic_performances")
+
+
+class StudentTopicSummary(Base):
+    __tablename__ = "student_topic_summaries"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    topic = Column(String(255), nullable=False)
+    subtopic = Column(String(255), nullable=True)
+    total_attempts = Column(Integer, default=0)
+    total_correct = Column(Integer, default=0)
+    total_questions = Column(Integer, default=0)
+    average_accuracy = Column(Float, default=0.0)
+    last_updated = Column(DateTime, default=datetime.utcnow)
+
+    student = relationship("User", back_populates="topic_summaries")
+
+
+class LearningGapReport(Base):
+    __tablename__ = "learning_gap_reports"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    teacher_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    quiz_id = Column(Integer, ForeignKey("teacher_quizzes.id", ondelete="CASCADE"), nullable=False)
+    report_data = Column(Text, nullable=False)
+    ai_recommendations = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    quiz = relationship("TeacherQuiz", back_populates="learning_gap_reports")

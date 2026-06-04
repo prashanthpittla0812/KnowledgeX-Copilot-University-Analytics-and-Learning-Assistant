@@ -257,4 +257,4 @@ async def admin_system_stats(
     db: AsyncSession = Depends(get_db),
 ):
     analytics = AnalyticsService(db)
-    return await analytics.get_dashboard_stats()
+    return await analytics.get_admin_system_stats()
