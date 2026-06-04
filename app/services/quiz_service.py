@@ -1,94 +1,150 @@
 import json
 import re
 
+from sqlalchemy import text
+
 from langchain_ollama import OllamaLLM
 
 from app.config.prompts import get_prompt
 from app.services.rag_service import retrieve_context
-
+from app.database.db import SessionLocal
 
 class QuizService:
-
     def __init__(self):
-
         self.llm = OllamaLLM(
             model="llama3"
         )
 
     def generate_quiz(
-            self,
-            topic_name,
-            question_type,
-            difficulty,
-            num_questions
+        self,
+        topic_name,
+        question_type,
+        difficulty,
+        num_questions
     ):
 
-        try:
-
-            print("\n===================================")
-            print("STEP 1 : RETRIEVING CONTEXT")
-            print("===================================")
-
-            context = retrieve_context(
-                topic_name,
-                topic_name
+        context = retrieve_context(
+            topic_name,
+            topic_name
             )
 
-            print("\n========== CONTEXT ==========")
+        if not context:
+            return {
+                "status": "error",
+                "message": f"No content found for topic: {topic_name}"
+            }
 
-            if context:
-                print(context[:1000])
-            else:
-                print("No context found")
-
-            prompt = get_prompt(
+        prompt = get_prompt(
                 context=context,
                 question_type=question_type,
                 difficulty=difficulty,
                 num_questions=num_questions
-            )
+        )
 
-            print("\n========== PROMPT ==========")
-            print(prompt[:1000])
+        response = self.llm.invoke(prompt)
 
-            response = self.llm.invoke(prompt)
+        print("\nRAW RESPONSE:")
+        print(response)
 
-            print("\n========== RAW RESPONSE ==========")
-            print(response)
+        json_match = re.search(
+            r"\[.*\]",
+            response,
+            re.DOTALL
+        )
 
-            # Extract JSON from model response
-            json_match = re.search(
-                r"\[.*\]",
-                response,
-                re.DOTALL
-            )
-
-            if json_match:
-
-                json_text = json_match.group(0)
-
-                questions = json.loads(json_text)
-
-                return {
-                    "status": "success",
-                    "topic_name": topic_name,
-                    "question_type": question_type,
-                    "difficulty": difficulty,
-                    "questions": questions
-                }
-
+        if not json_match:
             return {
                 "status": "error",
-                "message": "No JSON found in response",
+                "message": "Model did not return valid JSON",
                 "raw_response": response
             }
 
-        except Exception as e:
+        questions = json.loads(
+            json_match.group(0)
+        )
 
-            return {
-                "status": "error",
-                "message": str(e)
+        db = SessionLocal()
+
+        db.execute(
+            text(
+                """
+                INSERT INTO quizzes
+                (
+                    topic_name,
+                    question_type,
+                    difficulty,
+                    num_questions
+                )
+                VALUES
+                (
+                    :topic_name,
+                    :question_type,
+                    :difficulty,
+                    :num_questions
+                )
+                """
+            ),
+            {
+                "topic_name": topic_name,
+                "question_type": question_type,
+                "difficulty": difficulty,
+                "num_questions": num_questions
             }
+        )
 
+        db.commit()
+
+        quiz_id = db.execute(
+            text(
+                """
+                SELECT MAX(id)
+                FROM quizzes
+                """
+            )
+        ).scalar()
+
+        for q in questions:
+
+            db.execute(
+                text(
+                    """
+                    INSERT INTO quiz_questions
+                    (
+                        quiz_id,
+                        question_type,
+                        question,
+                        options,
+                        answer
+                    )
+                    VALUES
+                    (
+                        :quiz_id,
+                        :question_type,
+                        :question,
+                        :options,
+                        :answer
+                    )
+                    """
+                ),
+                {
+                    "quiz_id": quiz_id,
+                    "question_type": question_type,
+                    "question": q.get("question", ""),
+                    "options": json.dumps(
+                        q.get("options", [])
+                    ),
+                    "answer": q.get("answer", "")
+                }
+            )
+
+        db.commit()
+
+        db.close()
+
+        return {
+            "status": "success",
+            "quiz_id": quiz_id,
+            "questions": questions
+        }
 
 quiz_service = QuizService()
