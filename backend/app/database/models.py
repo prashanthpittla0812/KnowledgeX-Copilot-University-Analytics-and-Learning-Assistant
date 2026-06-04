@@ -110,3 +110,45 @@ class TeacherQuizResult(Base):
     submitted_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     quiz = relationship("TeacherQuiz", back_populates="results")
+
+
+class StudentQuiz(Base):
+    __tablename__ = "student_quizzes"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    topic_name = Column(String(255), nullable=False)
+    question_type = Column(String(50), nullable=False)
+    difficulty = Column(String(50), nullable=False)
+    num_questions = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    questions = relationship("StudentQuizQuestion", back_populates="quiz", cascade="all, delete-orphan")
+    results = relationship("StudentQuizResult", back_populates="quiz", cascade="all, delete-orphan")
+
+
+class StudentQuizQuestion(Base):
+    __tablename__ = "student_quiz_questions"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    quiz_id = Column(Integer, ForeignKey("student_quizzes.id", ondelete="CASCADE"), nullable=False)
+    question_type = Column(String(50), nullable=False)
+    question = Column(Text, nullable=False)
+    options = Column(Text, nullable=True)
+    answer = Column(String(500), nullable=False)
+
+    quiz = relationship("StudentQuiz", back_populates="questions")
+
+
+class StudentQuizResult(Base):
+    __tablename__ = "student_quiz_results"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    quiz_id = Column(Integer, ForeignKey("student_quizzes.id", ondelete="CASCADE"), nullable=False)
+    student_name = Column(String(255), nullable=False)
+    total_questions = Column(Integer, nullable=False)
+    correct_answers = Column(Integer, nullable=False)
+    wrong_answers = Column(Integer, nullable=False)
+    score_percentage = Column(Float, nullable=False)
+    submitted_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    quiz = relationship("StudentQuiz", back_populates="results")

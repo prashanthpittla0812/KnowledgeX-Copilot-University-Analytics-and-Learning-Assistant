@@ -62,3 +62,36 @@ class StudentSubmitResponse(BaseModel):
     correct_answers: int
     wrong_answers: int
     score_percentage: float
+
+
+class StudentQuizGenRequest(BaseModel):
+    topic_name: str
+    question_type: str
+    difficulty: str
+    num_questions: int
+
+
+class StudentQuizGenResponse(BaseModel):
+    status: str
+    quiz_id: Optional[int] = None
+    questions: Optional[List[dict]] = None
+    message: Optional[str] = None
+
+
+class AnswerItem(BaseModel):
+    question_id: int
+    selected_answer: str
+
+
+class StudentQuizEvalRequest(BaseModel):
+    quiz_id: int
+    student_name: str
+    answers: List[AnswerItem]
+
+
+class StudentQuizEvalResponse(BaseModel):
+    quiz_id: int
+    student_name: str
+    correct_answers: int
+    wrong_answers: int
+    score_percentage: float
