@@ -94,6 +94,89 @@ Return ONLY valid JSON in this exact format:
   "overall_advice": "General advice for the student"
 }}"""
 
+TEACHER_MCQ_PROMPT_TEMPLATE = """You are an academic quiz generator.
+
+Generate exactly {num_questions} Multiple Choice Questions.
+
+Difficulty: {difficulty}
+
+Use ONLY the provided context.
+
+Return ONLY valid JSON.
+
+Do NOT:
+- Add explanations
+- Add markdown
+- Add ```json
+- Add text before JSON
+- Add text after JSON
+
+Format:
+[
+  {{
+    "question": "",
+    "options": [
+      "",
+      "",
+      "",
+      ""
+    ],
+    "answer": ""
+  }}
+]
+
+Context:
+{context}"""
+
+TEACHER_FILL_BLANKS_PROMPT_TEMPLATE = """Generate exactly {num_questions} Fill in the Blank questions.
+
+Difficulty: {difficulty}
+
+Use ONLY the provided context.
+
+Return ONLY valid JSON.
+
+Format:
+[
+  {{
+    "question": "",
+    "answer": ""
+  }}
+]
+
+Context:
+{context}"""
+
+TEACHER_THEORY_PROMPT_TEMPLATE = """Generate exactly {num_questions} Theory questions.
+
+Difficulty: {difficulty}
+
+Use ONLY the provided context.
+
+Return ONLY valid JSON.
+
+Format:
+[
+  {{
+    "question": ""
+  }}
+]
+
+Context:
+{context}"""
+
+TEACHER_MIXED_PROMPT_TEMPLATE = """Generate exactly {num_questions} mixed questions.
+
+Include:
+- MCQ
+- Fill Blank
+- Theory
+
+Return ONLY JSON.
+
+Context:
+{context}"""
+
 LEARNING_GAPS_PROMPT_TEMPLATE = """Analyze the following class performance data and identify learning gaps.
 
 Class Performance Data:

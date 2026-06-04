@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     CHROMA_PERSIST_DIRECTORY: str = "./chroma_db"
 
     # File Uploads
-    UPLOAD_DIRECTORY: str = "./app/uploads"
+    UPLOAD_DIRECTORY: str = "./uploads"
     MAX_UPLOAD_SIZE_MB: int = 50
 
     # Logging
