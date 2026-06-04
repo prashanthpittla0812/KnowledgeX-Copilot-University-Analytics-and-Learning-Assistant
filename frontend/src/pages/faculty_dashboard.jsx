@@ -58,7 +58,6 @@ export default function FacultyDashboard() {
       const messages = chat.messages || [{ text: chat.message }];
       return {
         ...chat,
-        title: messages.length === 0 ? (message.length > 34 ? `${message.slice(0, 34)}...` : message) : chat.title,
         messages: [...messages, { text: message }],
       };
     });
@@ -90,7 +89,6 @@ export default function FacultyDashboard() {
       const messages = chat.messages || [{ text: chat.message }];
       return {
         ...chat,
-        title: messages.length === 0 ? file.name : chat.title,
         messages: [...messages, pdfMessage],
       };
     });

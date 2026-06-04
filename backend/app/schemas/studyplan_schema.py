@@ -38,6 +38,7 @@ class StudyPlanResponse(BaseModel):
 
 class StudyPlanHistoryItem(BaseModel):
     id: int
+    plan_content: str
     created_at: datetime
 
     model_config = {"from_attributes": True}

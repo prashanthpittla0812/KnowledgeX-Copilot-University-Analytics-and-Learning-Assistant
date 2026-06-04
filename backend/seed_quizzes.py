@@ -40,14 +40,30 @@ QUIZZES = [
 def main() -> None:
     session = get_session()
     try:
-        quizzes_table = reflect_table(session.bind, ["quizzes", "quiz"])
-        questions_table = reflect_table(session.bind, ["questions", "quiz_questions", "question"])
+        questions_table = reflect_table(session.bind, ["teacher_quiz_questions", "student_quiz_questions", "questions", "quiz_questions", "question"])
+        from sqlalchemy import inspect as sa_inspect
+        _inspector = sa_inspect(session.bind)
+        _fk_refs = set()
+        for _fk in _inspector.get_foreign_keys(questions_table.name):
+            if _fk.get("referred_table"):
+                _fk_refs.add(_fk["referred_table"])
+        quizzes_table = None
+        for _candidate in ["teacher_quizzes", "quizzes", "student_quizzes", "quiz"]:
+            if _candidate in _fk_refs or _candidate in _inspector.get_table_names():
+                quizzes_table = reflect_table(session.bind, [_candidate])
+                break
+        if quizzes_table is None:
+            raise RuntimeError("Could not determine quiz table from foreign key references.")
 
-        quiz_title_col = first_existing(quizzes_table, ["title", "name", "quiz_title"])
+        quiz_title_col = first_existing(quizzes_table, ["title", "name", "quiz_title", "topic", "topic_name"])
         quiz_topic_col = first_existing(quizzes_table, ["topic", "topic_name", "subject"])
         quiz_difficulty_col = first_existing(quizzes_table, ["difficulty", "level"])
         published_col = first_existing(quizzes_table, ["is_published", "published"])
         faculty_col = first_existing(quizzes_table, ["faculty_id", "teacher_id", "created_by", "user_id"])
+        teacher_name_col = first_existing(quizzes_table, ["teacher_name", "faculty_name", "created_by_name"])
+        num_questions_col = first_existing(quizzes_table, ["num_questions", "question_count", "total_questions"])
+        question_type_col = first_existing(quizzes_table, ["question_type", "quiz_type"])
+        date_col = first_existing(quizzes_table, ["created_at", "upload_date", "uploaded_at"])
 
         question_quiz_id_col = first_existing(questions_table, ["quiz_id"])
         question_text_col = first_existing(questions_table, ["question_text", "question", "text"])
@@ -81,6 +97,15 @@ def main() -> None:
                     values[published_col] = True
                 if faculty_col and faculty_id:
                     values[faculty_col] = faculty_id
+                if teacher_name_col:
+                    values[teacher_name_col] = "Faculty One"
+                if num_questions_col:
+                    values[num_questions_col] = len(quiz["questions"])
+                if question_type_col:
+                    values[question_type_col] = "mcq"
+                if date_col:
+                    from datetime import datetime
+                    values[date_col] = datetime.utcnow()
                 quiz_id = insert_dynamic(session, quizzes_table, values)
 
             for text, answer in quiz["questions"]:
@@ -94,6 +119,8 @@ def main() -> None:
                     values[options_col] = f'["{answer}", "Incorrect option A", "Incorrect option B", "Incorrect option C"]'
                 if type_col:
                     values[type_col] = "mcq"
+                from datetime import datetime
+                values[question_text_col] = text  # ensure question text is set
                 insert_dynamic(session, questions_table, values)
 
         session.commit()

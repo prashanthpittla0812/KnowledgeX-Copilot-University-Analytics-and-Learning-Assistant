@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.permissions import get_current_admin, get_current_faculty, get_current_student
 from app.config.settings import settings
 from app.database.db import get_db
-from app.database.models import Document, Quiz, User
+from app.database.models import Document, Quiz, QuizAttempt, User
 from app.schemas.teacher_schema import (
     HomeResponse,
     QuizGenerateRequest,
@@ -43,12 +43,22 @@ async def student_dashboard(
         select(func.count()).select_from(Document).where(Document.user_id == current_user.id)
     )
     quiz_count = await db.scalar(
-        select(func.count()).select_from(Quiz).where(Quiz.user_id == current_user.id)
+        select(func.count()).select_from(Quiz).where(
+            Quiz.user_id == current_user.id,
+            Quiz.score.isnot(None),
+        )
+    )
+    attempt_count = await db.scalar(
+        select(func.count()).select_from(QuizAttempt).where(QuizAttempt.student_id == current_user.id)
     )
     quiz_scores = await db.execute(
         select(Quiz.score).where(Quiz.user_id == current_user.id, Quiz.score.isnot(None))
     )
-    scores = [row[0] for row in quiz_scores.all()]
+    attempt_scores = await db.execute(
+        select(QuizAttempt.percentage).where(QuizAttempt.student_id == current_user.id)
+    )
+    scores = [float(row[0]) for row in quiz_scores.all()]
+    scores.extend(float(row[0]) for row in attempt_scores.all())
     avg_score = round(sum(scores) / len(scores), 2) if scores else 0.0
 
     return {
@@ -56,7 +66,7 @@ async def student_dashboard(
         "email": current_user.email,
         "role": current_user.role,
         "documents_uploaded": doc_count or 0,
-        "quizzes_taken": quiz_count or 0,
+        "quizzes_taken": (quiz_count or 0) + (attempt_count or 0),
         "average_quiz_score": avg_score,
     }
 

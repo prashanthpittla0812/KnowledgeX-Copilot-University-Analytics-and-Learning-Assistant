@@ -41,12 +41,27 @@ class QuizService:
         return {"quiz_id": quiz.id, "topic": topic, "difficulty": difficulty, "quiz": quiz_data["quiz"]}
 
     def _parse_quiz_response(self, content: str) -> dict:
-        json_match = re.search(r"\{.*\}", content, re.DOTALL)
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError:
+            pass
+
+        json_match = re.search(r"```(?:json)?\s*(.*?)\s*```", content, re.DOTALL)
         if json_match:
             try:
-                return json.loads(json_match.group())
+                return json.loads(json_match.group(1))
             except json.JSONDecodeError:
-                logger.error("Failed to parse quiz JSON from LLM response")
+                pass
+
+        start = content.find('{')
+        end = content.rfind('}')
+        if start != -1 and end != -1 and end > start:
+            try:
+                return json.loads(content[start:end+1])
+            except json.JSONDecodeError:
+                pass
+
+        logger.error(f"Failed to parse quiz JSON from LLM response: {content[:200]}")
         raise ValueError("Failed to generate valid quiz format")
 
     async def submit_quiz_result(self, quiz_id: int, user: User, answers: list[str]) -> dict:

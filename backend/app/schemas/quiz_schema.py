@@ -18,6 +18,7 @@ class QuizQuestion(BaseModel):
 
 
 class QuizGenerateResponse(BaseModel):
+    quiz_id: int
     quiz: list[QuizQuestion]
     topic: str
     difficulty: str

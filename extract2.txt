@@ -1,0 +1,99 @@
+Created At: 2026-06-04T13:43:44Z
+Completed At: 2026-06-04T13:43:44Z
+File Path: `file:///c:/Users/Prashanth/Downloads/KnowledgeX%20Copilot%20%E2%80%93%20University%20Analytics%20and%20Learning%20Assistant/frontend/src/pages/student_dashboard.jsx`
+Total Lines: 1339
+Total Bytes: 67371
+Showing lines 1 to 800
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: import { useEffect, useRef, useState } from "react";
+2: import { useNavigate } from "react-router-dom";
+3: import { chatbotApi, documentApi, studentApi } from "../api";
+4: 
+5: const menuItems = [
+6:   "Attendance",
+7:   "Chatbot",
+8:   "Quizzes",
+9:   "Quizzes History",
+10:   "Studyplan",
+11:   "Recommendations",
+12:   "Quiz Results",
+13:   "Analytics",
+14: ];
+15: 
+16: export default function StudentDashboard() {
+17:   const navigate = useNavigate();
+18:   const pdfInputRef = useRef(null);
+19:   const [userName, setUserName] = useState("Akshaya");
+20:   const [activeItem, setActiveItem] = useState("Chatbot");
+21:   const [collapsed, setCollapsed] = useState(false);
+22:   const [chatHistoryCollapsed, setChatHistoryCollapsed] = useState(false);
+23:   const [chatInput, setChatInput] = useState("");
+24:   const [isLoading, setIsLoading] = useState(false);
+25:   const [previousChats, setPreviousChats] = useState(() => {
+26:     const stored = localStorage.getItem("studentChats");
+27:     return stored
+28:       ? JSON.parse(stored)
+29:       : [
+30:           { id: 1, title: "Math revision plan", messages: [{ text: "Help me revise calculus before quiz." }] },
+31:           { id: 2, title: "Physics doubts", messages: [{ text: "Explain Newton's laws with examples." }] },
+32:           { id: 3, title: "Study timetable", messages: [{ text: "Make a weekly study timetable." }] },
+33:         ];
+34:   });
+35:   const [selectedChatId, setSelectedChatId
+<truncated 35810 bytes>
+                        </div>
+772: 
+773:                               <div className="grid gap-2">
+774:                                 {q.options.map((option, optIndex) => {
+775:                                   const isSelected = studentAns === option;
+776:                                   const isCorrectOption = q.correct_answer === option;
+777:                                   
+778:                                   let btnStyle = "border-gray-200 bg-gray-50 text-gray-800";
+779:                                   if (isCorrectOption) {
+780:                                     btnStyle = "border-green-500 bg-green-50 text-green-900";
+781:                                   } else if (isSelected && !isCorrect) {
+782:                                     btnStyle = "border-red-500 bg-red-50 text-red-900";
+783:                                   }
+784: 
+785:                                   return (
+786:                                     <div key={optIndex} className={`rounded-lg px-3 py-2 text-xs sm:text-sm font-medium border ${btnStyle}`}>
+787:                                       {option}
+788:                                     </div>
+789:                                   );
+790:                                 })}
+791:                               </div>
+792: 
+793:                               <div className="mt-2 rounded-lg bg-orange-50/50 p-3 border border-orange-100">
+794:                                 <span className="block text-xs font-bold text-orange-600 uppercase mb-1">AI Explanation</span>
+795:                                 <p className="text-xs text-gray-700 leading-relaxed">{q.explanation}</p>
+796:                               </div>
+797:                             </div>
+798:                           );
+799:                         })}
+800:                       </div>
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+Created At: 2026-06-04T13:55:02Z
+Tool is running as a background task with task id: fe98f48e-2a19-4886-a2a0-e1ea56dc971d/task-145
+Task Description: python -c "import json; [print(json.loads(line)['content']) for line in open(r'C:\Users\Prashanth\.gemini\antigravity-ide\brain\fe98f48e-2a19-4886-a2a0-e1ea56dc971d\.system_generated\logs\transcript.jsonl') if 'Showing lines 1 to 800' in line]" > extract.txt
+Task logs are available at: file:///C:/Users/Prashanth/.gemini/antigravity-ide/brain/fe98f48e-2a19-4886-a2a0-e1ea56dc971d/.system_generated/tasks/task-145.logCreated At: 2026-06-04T13:55:21Z
+Tool is running as a background task with task id: fe98f48e-2a19-4886-a2a0-e1ea56dc971d/task-150
+Task Description: python -c "import json; [print(json.loads(line).get('content', '')) for line in open(r'C:\Users\Prashanth\.gemini\antigravity-ide\brain\fe98f48e-2a19-4886-a2a0-e1ea56dc971d\.system_generated\logs\transcript.jsonl', encoding='utf-8') if 'Showing lines 1 to 800' in line]" > extract_utf8.txt
+Task logs are available at: file:///C:/Users/Prashanth/.gemini/antigravity-ide/brain/fe98f48e-2a19-4886-a2a0-e1ea56dc971d/.system_generated/tasks/task-150.logThe following is a <SYSTEM_MESSAGE> not actually sent by the user. It is provided by the system as important information to pay attention to.
+
+<SYSTEM_MESSAGE>
+[Message] timestamp=2026-06-04T13:55:03Z sender=fe98f48e-2a19-4886-a2a0-e1ea56dc971d/task-145 priority=MESSAGE_PRIORITY_HIGH content=Task id "fe98f48e-2a19-4886-a2a0-e1ea56dc971d/task-145" finished with result:
+
+				The command failed with exit code: 1
+				Output:
+				Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import json; [print(json.loads(line)['content']) for line in open(r'C:\Users\Prashanth\.gemini\antigravity-ide\brain\fe98f48e-2a19-4886-a2a0-e1ea56dc971d\.system_generated\logs\transcript.jsonl') if 'Showing lines 1 to 800' in line]
+                                                                 ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3568.0_x64__qbz5n2kfra8p0\Lib\encodings\cp1252.py", line 23, in decode
+    return codecs.charmap_decode(input,self.errors,decoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeDecodeError: 'charmap' codec can't decode byte 0x90 in position 1742: character maps to <undefined>
+
+
+Log: file:///C:/Users/Prashanth/.gemini/antigravity-ide/brain/fe98f48e-2a19-4886-a2a0-e1ea56dc971d/.system_generated/tasks/task-145.log
+</SYSTEM_MESSAGE>

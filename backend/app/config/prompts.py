@@ -1,18 +1,20 @@
 RAG_QA_PROMPT_TEMPLATE = """You are KnowledgeX Copilot, an AI academic assistant.
-Use the following context to answer the student's question accurately and educationally.
+You have access to a repository of reference documents. Use the following snippets to help answer the question if they are relevant. If they are not relevant or do not contain the answer, ignore them and answer the question directly using your own extensive general knowledge.
 
-Context:
+Reference snippets (may or may not be relevant):
 {context}
 
 Question: {question}
 
 Instructions:
-- Answer in a clear, concise manner suitable for university students.
-- If the context doesn't contain relevant information, say so honestly.
-- Include examples or analogies where helpful.
-- Cite relevant parts of the context when possible.
+- Answer the question directly, creatively, and educationally.
+- DO NOT say things like "Based on the provided context", "The context does not contain", "Unfortunately, the PDF doesn't mention", or make any reference to the existence of a "context" or "PDF".
+- Seamlessly combine information from the reference snippets (if helpful) and your own general knowledge.
+- If the reference snippets do not contain the answer, answer the question completely on your own without apologizing or mentioning that the reference snippets are missing the information.
+- Use clear formatting, bullet points, and examples where appropriate to explain concepts.
 
 Answer:"""
+
 
 QUIZ_GENERATION_PROMPT_TEMPLATE = """You are an expert university professor creating a quiz.
 Generate {number_of_questions} multiple-choice questions on the topic "{topic}" at "{difficulty}" difficulty.
@@ -34,7 +36,9 @@ Requirements:
 - 4 options per question.
 - One clearly correct answer.
 - Educational explanations.
-- Difficulty: {difficulty}."""
+- Difficulty: {difficulty}.
+
+CRITICAL INSTRUCTION: Output ONLY raw JSON. Do NOT wrap the JSON in markdown blocks (e.g., ```json or ```). Do not include any conversational text before or after the JSON."""
 
 STUDYPLAN_GENERATION_PROMPT_TEMPLATE = """You are an expert academic advisor creating a personalized study plan.
 
@@ -64,7 +68,9 @@ Return ONLY valid JSON in this exact format:
   }}
 }}
 
-Ensure the plan is realistic, covers all subjects, and includes breaks."""
+Ensure the plan is realistic, covers all subjects, and includes breaks.
+
+CRITICAL INSTRUCTION: Output ONLY raw JSON. Do NOT wrap the JSON in markdown blocks (e.g., ```json or ```). Do not include any conversational text before or after the JSON."""
 
 RECOMMENDATION_PROMPT_TEMPLATE = """Based on the following student data, generate personalized academic recommendations.
 
@@ -92,7 +98,9 @@ Return ONLY valid JSON in this exact format:
     }}
   ],
   "overall_advice": "General advice for the student"
-}}"""
+}}
+
+CRITICAL INSTRUCTION: Output ONLY raw JSON. Do NOT wrap the JSON in markdown blocks (e.g., ```json or ```). Do not include any conversational text before or after the JSON."""
 
 TEACHER_MCQ_PROMPT_TEMPLATE = """You are an academic quiz generator.
 

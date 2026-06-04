@@ -21,6 +21,19 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      localStorage.removeItem(USER_STORAGE_KEY);
+      localStorage.removeItem("currentUser");
+      window.location.href = "/";
+    }
+    return Promise.reject(error);
+  }
+);
+
 export type LoginPayload = {
   email: string;
   password: string;
@@ -119,32 +132,60 @@ export const facultyApi = {
 };
 
 export const studentApi = {
-  getAvailableQuizzes() {
-    return api.get("/student/quizzes");
+  generateQuiz(payload: { topic: string; difficulty: string; number_of_questions: number }) {
+    return api.post("/quiz/generate", payload);
   },
 
-  submitQuiz(quizId: string | number, payload: QuizSubmitPayload) {
-    return api.post(`/student/quizzes/${quizId}/submit`, payload);
+  submitQuiz(payload: { quiz_id: number; answers: string[] }) {
+    return api.post("/quiz/submit", payload);
   },
 
   getQuizHistory() {
-    return api.get("/student/quiz-history");
+    return api.get("/quiz/history");
   },
 
-  getRecommendations() {
-    return api.get("/student/recommendations");
+  generateStudyPlan(payload: { subjects: string[]; exam_date: string; daily_hours: number }) {
+    return api.post("/studyplan/generate", payload);
   },
 
-  getStudyPlans() {
-    return api.get("/student/study-plans");
+  getStudyPlanHistory() {
+    return api.get("/studyplan/history");
   },
 
-  getWeakTopics() {
-    return api.get("/student/weak-topics");
+  getRecommendations(studentId: number) {
+    return api.get(`/recommendations/${studentId}`);
   },
 
-  getDashboard() {
-    return api.get("/student/dashboard");
+  getRecommendationHistory(studentId: number) {
+    return api.get(`/recommendations/${studentId}/history`);
+  },
+
+  getDashboard(refreshKey?: number) {
+    return api.get("/student/dashboard", {
+      params: refreshKey ? { refresh: refreshKey } : undefined,
+    });
+  },
+};
+
+export const chatbotApi = {
+  async askQuestion(question: string) {
+    const response = await api.post("/chat/", { question });
+    return response.data;
+  },
+};
+
+export const documentApi = {
+  async uploadPdf(file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await api.post("/documents/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  },
+
+  getDocuments() {
+    return api.get("/documents");
   },
 };
 

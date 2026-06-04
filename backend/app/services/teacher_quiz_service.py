@@ -95,16 +95,32 @@ class TeacherQuizService:
         response = await self.llm.ainvoke(prompt)
         content = response.content if hasattr(response, "content") else str(response)
 
-        json_match = re.search(r"\[.*\]", content, re.DOTALL)
-        if not json_match:
+        questions = None
+        try:
+            questions = json.loads(content)
+        except json.JSONDecodeError:
+            pass
+
+        if questions is None:
+            json_match = re.search(r"```(?:json)?\s*(.*?)\s*```", content, re.DOTALL)
+            if json_match:
+                try:
+                    questions = json.loads(json_match.group(1))
+                except json.JSONDecodeError:
+                    pass
+
+        if questions is None:
+            start = content.find('[')
+            end = content.rfind(']')
+            if start != -1 and end != -1 and end > start:
+                try:
+                    questions = json.loads(content[start:end+1])
+                except json.JSONDecodeError:
+                    pass
+
+        if questions is None or not isinstance(questions, list):
             logger.error(f"Failed to extract JSON from LLM response: {content[:200]}")
             return {"status": "error", "message": "Failed to generate valid quiz format"}
-
-        try:
-            questions = json.loads(json_match.group(0))
-        except json.JSONDecodeError as e:
-            logger.error(f"JSON decode error: {e}")
-            return {"status": "error", "message": "Failed to parse quiz questions"}
 
         quiz = TeacherQuiz(
             teacher_name=faculty_name,

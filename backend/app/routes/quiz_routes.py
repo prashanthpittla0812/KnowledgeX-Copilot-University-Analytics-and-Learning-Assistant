@@ -31,6 +31,7 @@ async def generate_quiz(
             number_of_questions=request.number_of_questions,
         )
         return QuizGenerateResponse(
+            quiz_id=result["quiz_id"],
             quiz=result["quiz"],
             topic=result["topic"],
             difficulty=result["difficulty"],

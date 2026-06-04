@@ -49,14 +49,28 @@ def main() -> None:
         topic_col = first_existing(documents_table, ["topic", "topic_name", "subject"])
         path_col = first_existing(documents_table, ["file_path", "path", "source"])
         type_col = first_existing(documents_table, ["document_type", "file_type", "type"])
+        date_col = first_existing(documents_table, ["upload_date", "uploaded_at", "created_at"])
 
         if not title_col:
             raise RuntimeError("Documents table must include a title/name column.")
+
+        user_id_col = first_existing(documents_table, ["user_id", "teacher_id", "faculty_id", "uploaded_by"])
+        admin_user = None
+        if user_id_col:
+            users_table = reflect_table(session.bind, ["users", "user"])
+            email_col = first_existing(users_table, ["email"])
+            admin_user = row_by_column(session, users_table, email_col, "admin@knowledgex.com")
+            if not admin_user:
+                admin_user = row_by_column(session, users_table, email_col, "faculty1@knowledgex.com")
 
         for doc in DOCUMENTS:
             if row_by_column(session, documents_table, title_col, doc["title"]):
                 continue
             values = {title_col: doc["title"]}
+            if user_id_col and admin_user:
+                user_id_val = admin_user.get("id") or admin_user.get("user_id")
+                if user_id_val:
+                    values[user_id_col] = user_id_val
             if content_col:
                 values[content_col] = doc["content"]
             if topic_col:
@@ -65,6 +79,9 @@ def main() -> None:
                 values[path_col] = f"seed://{doc['title'].lower().replace(' ', '-')}"
             if type_col:
                 values[type_col] = "seed"
+            if date_col:
+                from datetime import datetime
+                values[date_col] = datetime.utcnow()
             insert_dynamic(session, documents_table, values)
 
         session.commit()
