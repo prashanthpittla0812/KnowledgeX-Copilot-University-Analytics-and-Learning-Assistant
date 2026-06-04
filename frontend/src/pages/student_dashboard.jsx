@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { chatbotApi, documentApi, studentApi } from "../api";
+import { DashboardLayout } from "../components/layout/DashboardLayout";
 
 const menuItems = [
   "Attendance",
@@ -18,7 +19,7 @@ export default function StudentDashboard() {
   const pdfInputRef = useRef(null);
   const [userName, setUserName] = useState("Akshaya");
   const [studentId, setStudentId] = useState(null);
-  const [activeItem, setActiveItem] = useState("Home");
+  const [activeItem, setActiveItem] = useState("Chatbot");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [chatHistoryCollapsed, setChatHistoryCollapsed] = useState(false);
   const [chatInput, setChatInput] = useState("");
@@ -248,99 +249,112 @@ export default function StudentDashboard() {
   const selectedMessages = selectedChat?.messages || [];
 
   return (
-    <div className="h-screen overflow-hidden bg-[#F8FAFC] text-gray-900 font-sans flex flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-50 flex items-center justify-between bg-white/80 backdrop-blur-xl px-6 py-2.5 shadow-sm border-b border-gray-100">
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.25em] text-orange-500 font-bold mb-0">Student</p>
-          <h2 className="text-xl font-black text-gray-900 tracking-tight leading-tight">Dashboard</h2>
-        </div>
-        
-        <div className="relative">
-          <button 
-            onClick={() => setIsProfileOpen(!isProfileOpen)} 
-            className="flex items-center gap-3 rounded-full border border-gray-200 bg-white p-1 pr-4 shadow-sm hover:bg-gray-50 transition-all hover:shadow-md"
-          >
-            <div className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-orange-400 to-orange-500 text-white text-sm font-bold shadow-inner">
-              {userName.charAt(0).toUpperCase()}
-            </div>
-            <span className="font-bold text-gray-800 text-sm tracking-wide">{userName}</span>
-            <span className="text-gray-400 text-[9px]">▼</span>
-          </button>
-          
-          {isProfileOpen && (
-            <div className="absolute right-0 mt-2 w-48 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl shadow-gray-200/50">
-              <div className="border-b border-gray-100 px-4 py-3 bg-gray-50">
-                <p className="text-sm font-semibold text-gray-900">Student Profile</p>
-                <p className="text-xs text-gray-500 truncate">{userName}</p>
-              </div>
-              <button 
-                onClick={handleLogout} 
-                className="w-full px-4 py-3 text-left text-sm font-bold text-red-500 hover:bg-red-50 transition-colors"
-              >
-                Logout
-              </button>
-            </div>
-          )}
-        </div>
-      </header>
-
-      {/* Main Content Area */}
-      <main className={`flex-1 min-h-0 flex flex-col ${activeItem === 'Chatbot' ? 'p-3 lg:p-4 overflow-hidden' : 'p-6 lg:px-10 lg:py-6 overflow-y-auto'}`}>
-        {/* Render Home Grid or Subview */}
-        {activeItem === "Home" ? (
-          <div className="mx-auto w-full max-w-[1400px] flex-1 flex flex-col justify-center animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="mb-6 pl-2">
-              <h1 className="text-3xl lg:text-4xl font-black text-gray-900 tracking-tight mb-2">Welcome back, {userName}</h1>
-              <p className="text-sm lg:text-base text-gray-500 font-medium">What would you like to achieve today?</p>
+    <DashboardLayout 
+      role="student" 
+      activeItem={activeItem} 
+      setActiveItem={handleMenuClick} 
+      userName={userName} 
+      handleLogout={handleLogout}
+    >
+      <div className={`h-full flex flex-col ${activeItem === 'Chatbot' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+        {/* Render Dashboard Overview or Subview */}
+        {activeItem === "Dashboard" ? (
+          <div className="mx-auto w-full max-w-[1400px] flex-1 flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="mb-8">
+              <h1 className="text-3xl lg:text-4xl font-black text-foreground tracking-tight mb-2">Welcome back, {userName}</h1>
+              <p className="text-sm lg:text-base text-gray-500 font-medium">Here's your academic overview for today.</p>
             </div>
             
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {menuItems.map((item) => (
-                <button 
-                  key={item} 
-                  onClick={() => handleMenuClick(item)} 
-                  className="group relative flex h-36 lg:h-40 flex-col items-center justify-center gap-3 overflow-hidden rounded-[1.5rem] border border-orange-100/50 bg-white p-4 text-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-orange-200/40 hover:border-orange-200"
-                >
-                  <div className="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-orange-50 opacity-40 blur-2xl transition-all group-hover:bg-orange-100 group-hover:scale-150 duration-700"></div>
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-400 to-orange-500 text-2xl text-white shadow-md shadow-orange-500/30 transition-transform duration-500 group-hover:scale-110">
-                    {item[0]}
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+              {/* Stat Cards */}
+              <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary text-xl">🎓</div>
+                  <h3 className="font-bold text-gray-500">Attendance</h3>
+                </div>
+                <p className="text-4xl font-black text-foreground">92%</p>
+                <p className="text-sm font-medium text-emerald-500 mt-2">↑ 3% from last month</p>
+              </div>
+
+              <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-500 text-xl">📝</div>
+                  <h3 className="font-bold text-gray-500">Quizzes Taken</h3>
+                </div>
+                <p className="text-4xl font-black text-foreground">14</p>
+                <p className="text-sm font-medium text-indigo-500 mt-2">2 new this week</p>
+              </div>
+
+              <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500 text-xl">🎯</div>
+                  <h3 className="font-bold text-gray-500">Avg Score</h3>
+                </div>
+                <p className="text-4xl font-black text-foreground">88%</p>
+                <p className="text-sm font-medium text-emerald-500 mt-2">Top 10% of class</p>
+              </div>
+
+              <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500 text-xl">📚</div>
+                  <h3 className="font-bold text-gray-500">Study Plans</h3>
+                </div>
+                <p className="text-4xl font-black text-foreground">4</p>
+                <p className="text-sm font-medium text-gray-400 mt-2">Active this semester</p>
+              </div>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="rounded-3xl border border-border bg-card p-6 shadow-sm min-h-[300px]">
+                <h3 className="text-xl font-bold text-foreground mb-6">Recent Activity</h3>
+                <div className="space-y-6">
+                  <div className="flex gap-4">
+                    <div className="w-2 h-2 rounded-full bg-primary mt-2 shrink-0" />
+                    <div>
+                      <p className="font-bold text-foreground">Completed Physics Quiz</p>
+                      <p className="text-sm text-gray-500">Scored 90% in Kinematics</p>
+                    </div>
                   </div>
-                  <span className="font-extrabold text-gray-800 text-sm lg:text-base group-hover:text-orange-600 z-10 tracking-wide">{item}</span>
-                </button>
-              ))}
+                  <div className="flex gap-4">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0" />
+                    <div>
+                      <p className="font-bold text-foreground">Generated Math Study Plan</p>
+                      <p className="text-sm text-gray-500">Focus on Calculus integration</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-border bg-card p-6 shadow-sm min-h-[300px]">
+                <h3 className="text-xl font-bold text-foreground mb-6">AI Recommendations</h3>
+                <div className="space-y-4">
+                  <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                    <p className="font-bold text-primary mb-1">Needs Attention: Data Structures</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Your recent quiz scores indicate a drop in Trees and Graphs. Would you like to generate a focused study plan?</p>
+                    <button onClick={() => setActiveItem("Chatbot")} className="mt-3 text-sm font-bold text-primary hover:underline">Discuss with Copilot →</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         ) : (
-          <div className={`mx-auto w-full flex flex-col ${activeItem === 'Chatbot' ? 'max-w-[1800px] flex-1 min-h-0 overflow-hidden' : 'max-w-[1400px] min-h-[calc(100vh-10rem)] p-5 lg:p-7 bg-white rounded-[2.5rem] border border-gray-100 shadow-2xl shadow-gray-200/50'}`}>
-            {/* Subview Header with Back Button */}
-            <div className={`shrink-0 flex items-center justify-between ${activeItem === 'Chatbot' ? 'mb-4 px-2' : 'border-b border-gray-100 mb-10 pb-8'}`}>
-              <button 
-                onClick={() => setActiveItem("Home")} 
-                className="flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-orange-600 transition-all bg-white hover:bg-orange-50 px-5 py-2 rounded-full border border-gray-200 hover:border-orange-200 shadow-sm hover:shadow-md"
-              >
-                <span className="text-base leading-none">←</span> Back to Dashboard
-              </button>
-              <div className="bg-gradient-to-r from-orange-500 to-orange-400 px-5 py-2 rounded-full text-white shadow-md shadow-orange-500/30">
-                <span className="font-black tracking-wide text-xs uppercase">{activeItem}</span>
-              </div>
-            </div>
+          <div className={`mx-auto w-full flex flex-col ${activeItem === 'Chatbot' ? 'max-w-[1800px] flex-1 min-h-0 overflow-hidden' : 'max-w-[1400px] min-h-[calc(100vh-10rem)] p-5 lg:p-7 bg-transparent'}`}>
 
           {activeItem === "Chatbot" && (
             <div className={`flex-1 min-h-0 grid gap-8 ${chatHistoryCollapsed ? "xl:grid-cols-[82px_1fr]" : "xl:grid-cols-[450px_1fr]"}`}>
               <section className="min-h-0 rounded-[2rem] border border-gray-100 bg-white p-5 lg:p-6 shadow-xl shadow-gray-200/40 transition-all flex flex-col">
                 <div className="mb-5 flex items-center justify-between">
                   {!chatHistoryCollapsed && <h2 className="text-base font-black text-gray-800 tracking-tight pl-1">Chat History</h2>}
-                  <button onClick={() => setChatHistoryCollapsed(!chatHistoryCollapsed)} className="grid h-10 w-10 place-items-center rounded-full border border-orange-200 bg-white text-orange-500 hover:bg-orange-500 hover:text-white transition-all shadow-sm font-bold text-base">{chatHistoryCollapsed ? ">" : "<"}</button>
+                  <button onClick={() => setChatHistoryCollapsed(!chatHistoryCollapsed)} className="grid h-10 w-10 place-items-center rounded-full border border-border bg-card text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all shadow-sm font-bold text-base">{chatHistoryCollapsed ? ">" : "<"}</button>
                 </div>
                 {!chatHistoryCollapsed && (
                   <>
-                    <button onClick={handleNewChat} className="mb-5 w-full rounded-2xl bg-orange-500 px-5 py-3 text-xs font-black tracking-wide text-white transition-all hover:bg-orange-600 hover:shadow-xl hover:shadow-orange-500/30 active:scale-95 shadow-lg">+ NEW CONVERSATION</button>
+                    <button onClick={handleNewChat} className="mb-5 w-full rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 px-5 py-3 text-xs font-black tracking-wide text-white transition-all hover:opacity-90 hover:shadow-xl hover:shadow-indigo-500/30 active:scale-95 shadow-lg">+ NEW CONVERSATION</button>
                     <div className="space-y-2 overflow-y-auto flex-1 pr-3 custom-scrollbar">
                       {previousChats.map((chat) => (
-                        <button key={chat.id} onClick={() => setSelectedChatId(chat.id)} className={`w-full rounded-xl px-3 py-1.5 text-left transition-all duration-300 ${selectedChatId === chat.id ? "bg-gradient-to-r from-orange-500 to-orange-400 text-white shadow-md shadow-orange-500/20 scale-[1.01]" : "bg-white text-gray-700 hover:bg-orange-50 border border-gray-100 hover:border-orange-100 hover:shadow-sm"}`}>
-                          <span className="block truncate font-extrabold text-xs">{chat.title}</span>
-                          <span className={`block truncate text-[10px] font-medium leading-tight ${selectedChatId === chat.id ? "text-orange-100" : "text-gray-400"}`}>{chat.messages?.at(-1)?.text || "Empty chat"}</span>
+                        <button key={chat.id} onClick={() => setSelectedChatId(chat.id)} className={`w-full rounded-xl px-3 py-1.5 text-left transition-all duration-300 ${selectedChatId === chat.id ? "bg-primary/10 dark:bg-primary/20 text-primary shadow-none scale-[1.01]" : "bg-card text-foreground hover:bg-gray-50 dark:hover:bg-slate-800/50 border border-transparent hover:border-border hover:shadow-sm"}`}>
+                          <span className={`block truncate font-extrabold text-xs ${selectedChatId === chat.id ? "text-primary" : ""}`}>{chat.title}</span>
+                          <span className={`block truncate text-[10px] font-medium leading-tight ${selectedChatId === chat.id ? "text-primary/70" : "text-gray-400 dark:text-gray-500"}`}>{chat.messages?.at(-1)?.text || "Empty chat"}</span>
                         </button>
                       ))}
                     </div>
@@ -453,27 +467,27 @@ export default function StudentDashboard() {
           {activeItem === "Quizzes" && (
             <div className="max-w-3xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               {!activeQuiz ? (
-                <div className="rounded-3xl border border-orange-100 bg-white p-8 shadow-xl shadow-orange-100/50">
-                  <h2 className="text-3xl font-black text-gray-900 mb-2">Practice Quizzes</h2>
+                <div className="rounded-3xl border border-border bg-card p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)]">
+                  <h2 className="text-3xl font-black text-foreground mb-2">Practice Quizzes</h2>
                   <p className="text-gray-500 font-medium mb-8">Generate custom AI quizzes on any topic instantly.</p>
                   <div className="space-y-6">
                     <div>
-                      <label className="block text-sm font-bold text-gray-700 uppercase tracking-wider mb-2">Topic</label>
-                      <input value={quizTopic} onChange={e => setQuizTopic(e.target.value)} placeholder="e.g. React Hooks, Neural Networks..." className="w-full rounded-2xl border border-gray-200 px-5 py-4 text-sm font-medium focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none transition-all" />
+                      <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Topic</label>
+                      <input value={quizTopic} onChange={e => setQuizTopic(e.target.value)} placeholder="e.g. React Hooks, Neural Networks..." className="w-full rounded-2xl border border-border px-5 py-4 text-sm font-medium focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all bg-transparent" />
                     </div>
                     <div className="grid grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-sm font-bold text-gray-700 uppercase tracking-wider mb-2">Difficulty</label>
-                        <select value={quizDifficulty} onChange={e => setQuizDifficulty(e.target.value)} className="w-full rounded-2xl border border-gray-200 px-5 py-4 text-sm font-medium focus:border-orange-500 outline-none bg-white">
+                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Difficulty</label>
+                        <select value={quizDifficulty} onChange={e => setQuizDifficulty(e.target.value)} className="w-full rounded-2xl border border-border px-5 py-4 text-sm font-medium focus:border-primary outline-none bg-transparent">
                           <option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option>
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-bold text-gray-700 uppercase tracking-wider mb-2">Questions</label>
-                        <input type="number" value={quizNumQuestions} onChange={e => setQuizNumQuestions(Number(e.target.value))} className="w-full rounded-2xl border border-gray-200 px-5 py-4 text-sm font-medium focus:border-orange-500 outline-none" min="1" max="20" />
+                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Questions</label>
+                        <input type="number" value={quizNumQuestions} onChange={e => setQuizNumQuestions(Number(e.target.value))} className="w-full rounded-2xl border border-border px-5 py-4 text-sm font-medium focus:border-primary outline-none bg-transparent" min="1" max="20" />
                       </div>
                     </div>
-                    <button onClick={handleGenerateQuiz} disabled={isLoading} className="w-full rounded-2xl bg-gradient-to-r from-orange-500 to-orange-400 py-4 font-bold text-white shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 transition-all disabled:opacity-50 mt-4">
+                    <button onClick={handleGenerateQuiz} disabled={isLoading} className="w-full rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 py-4 font-bold text-white shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transition-all disabled:opacity-50 mt-4">
                       {isLoading ? "Generating..." : "Generate Quiz"}
                     </button>
                   </div>
@@ -655,7 +669,7 @@ export default function StudentDashboard() {
           )}
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
