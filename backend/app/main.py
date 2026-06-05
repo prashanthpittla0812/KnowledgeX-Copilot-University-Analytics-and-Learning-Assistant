@@ -8,6 +8,7 @@ from app.config.settings import settings
 from app.database.db import close_db, init_db
 from app.routes import (
     assessment_routes,
+    attendance_routes,
     auth_routes,
     chatbot_routes,
     dashboard_routes,
@@ -74,6 +75,7 @@ app.include_router(role_routes.student_router, prefix="/api/v1")
 app.include_router(role_routes.faculty_router, prefix="/api/v1")
 app.include_router(role_routes.admin_router, prefix="/api/v1")
 app.include_router(assessment_routes.router, prefix="/api/v1")
+app.include_router(attendance_routes.router, prefix="/api/v1")
 
 
 @app.get("/", tags=["Health"])

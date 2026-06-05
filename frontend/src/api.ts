@@ -100,9 +100,10 @@ export const authApi = {
 };
 
 export const facultyApi = {
-  uploadDocument(formData: FormData) {
+  uploadDocument(formData: FormData, topicName: string) {
     return api.post("/faculty/upload", formData, {
       headers: { "Content-Type": "multipart/form-data" },
+      params: { topic_name: topicName }
     });
   },
 
@@ -111,24 +112,37 @@ export const facultyApi = {
   },
 
   getUploadedDocuments() {
-    return api.get("/faculty/documents");
+    return api.get("/dashboard/teacher/documents");
   },
 
   getGeneratedQuizzes() {
-    return api.get("/faculty/quizzes");
+    return api.get("/dashboard/teacher/quizzes");
   },
 
   getQuizResults(quizId: string | number) {
-    return api.get(`/faculty/quizzes/${quizId}/results`);
+    return api.get(`/assessment/class-performance/${quizId}`);
   },
 
-  getLearningGaps() {
-    return api.get("/faculty/learning-gaps");
+  getLearningGaps(quizId?: string | number) {
+    if (quizId) return api.get(`/assessment/learning-gaps/${quizId}`);
+    return api.get("/dashboard/learning-gaps");
+  },
+
+  getClassInsights(quizId: string | number) {
+    return api.get(`/assessment/class-insights/${quizId}`);
   },
 
   getDashboard() {
     return api.get("/faculty/dashboard");
   },
+  
+  getAttendance() {
+    return api.get("/attendance/class");
+  },
+
+  getAtRiskStudents() {
+    return api.get("/attendance/at-risk");
+  }
 };
 
 export const studentApi = {
