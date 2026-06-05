@@ -11,29 +11,19 @@ import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card"
 import { StatCard } from "../components/ui/stat-card";
 import { AnalyticsCard } from "../components/ui/analytics-card";
 import { ChatBubble, ChatInput } from "../components/ui/chat";
-import { BookOpen, Users, AlertCircle, FileText, Send } from "lucide-react";
+import { BookOpen, Users, AlertCircle, FileText, Send, CheckCircle, BarChart as BarChartIcon } from "lucide-react";
 import { Button } from "../components/ui/button";
 
-const defaultFacultyChats = [
-  { id: 1, title: "Course Syllabus AI", messages: [] },
-];
+const defaultFacultyChats = [];
 
 export default function FacultyDashboard() {
   const navigate = useNavigate();
   const pdfInputRef = useRef(null);
   const [userName, setUserName] = useState("Faculty");
-  const [activeItem, setActiveItem] = useState(facultyMenuItems[0]);
-  
-  // Chatbot State
-  const [chatHistoryCollapsed, setChatHistoryCollapsed] = useState(false);
-  const [chatInput, setChatInput] = useState("");
-  const [isChatSending, setIsChatSending] = useState(false);
+  const [activeItem, setActiveItem] = useState("Dashboard");
   const [isLoading, setIsLoading] = useState(false);
-  const [previousChats, setPreviousChats] = useState(() => {
-    const stored = localStorage.getItem("facultyChats");
-    return stored ? JSON.parse(stored) : defaultFacultyChats;
-  });
-  const [selectedChatId, setSelectedChatId] = useState(previousChats[0]?.id || null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Conduct Quizzes State
   const [uploadFile, setUploadFile] = useState(null);
@@ -50,12 +40,15 @@ export default function FacultyDashboard() {
 
   // Analyze Results State
   const [learningGaps, setLearningGaps] = useState(null);
+  const [selectedQuizGaps, setSelectedQuizGaps] = useState(null);
 
   // Recommendations State
   const [dashboardStats, setDashboardStats] = useState(null);
 
-  // Attendance State
+  // Attendance States
   const [attendanceData, setAttendanceData] = useState([]);
+  const [studentStats, setStudentStats] = useState([]);
+  const [attendanceSummary, setAttendanceSummary] = useState(null);
   const [atRiskStudents, setAtRiskStudents] = useState([]);
 
   useEffect(() => {
@@ -67,17 +60,6 @@ export default function FacultyDashboard() {
     const cu = JSON.parse(stored);
     if (cu && cu.name) setUserName(cu.name);
   }, [navigate]);
-
-  useEffect(() => {
-    if (activeItem === "Quizzes") {
-      fetchQuizzes();
-    } else if (activeItem === "Analytics") {
-      fetchLearningGaps();
-      fetchDashboardStats();
-    } else if (activeItem === "Attendance") {
-      fetchAttendance();
-    }
-  }, [activeItem]);
 
   const fetchQuizzes = async () => {
     try {
@@ -94,8 +76,12 @@ export default function FacultyDashboard() {
   const fetchQuizPerformance = async (quizId) => {
     try {
       setIsLoading(true);
-      const res = await facultyApi.getQuizResults(quizId);
+      const [res, gapsRes] = await Promise.all([
+        facultyApi.getQuizResults(quizId),
+        facultyApi.getLearningGaps(quizId).catch(() => ({ data: null }))
+      ]);
       setQuizPerformance(res.data);
+      if (gapsRes && gapsRes.data) setSelectedQuizGaps(gapsRes.data);
       setSelectedQuiz(quizId);
     } catch (e) {
       console.error(e);
@@ -128,23 +114,43 @@ export default function FacultyDashboard() {
     }
   };
 
-  const fetchAttendance = async () => {
+  const fetchAttendanceData = async () => {
     try {
       setIsLoading(true);
-      const res1 = await facultyApi.getAttendance();
-      const res2 = await facultyApi.getAtRiskStudents();
-      setAttendanceData(res1.data || []);
-      setAtRiskStudents(res2.data.at_risk || []);
-    } catch (e) {
-      console.error(e);
+      const [trends, riskRes] = await Promise.all([
+        facultyApi.getAttendance(),
+        facultyApi.getAtRiskStudents()
+      ]);
+      if (trends.data?.trends) {
+        setAttendanceData(trends.data.trends);
+      }
+      if (trends.data?.summary) {
+        setAttendanceSummary(trends.data.summary);
+      }
+      if (riskRes.data?.at_risk) {
+        setStudentStats(riskRes.data.at_risk);
+      }
+    } catch (error) {
+      console.error("Failed to fetch attendance:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
+  useEffect(() => {
+    if (activeItem === "Quizzes") {
+      fetchQuizzes();
+    } else if (activeItem === "Analytics") {
+      fetchLearningGaps();
+      fetchDashboardStats();
+    } else if (activeItem === "Attendance") {
+      fetchAttendanceData();
+    }
+  }, [activeItem]);
+
   const handleUploadDocument = async () => {
     if (!uploadFile || !uploadTopic) return alert("Provide file and topic");
-    setIsLoading(true);
+    setIsUploading(true);
     try {
       const formData = new FormData();
       formData.append("file", uploadFile);
@@ -156,13 +162,13 @@ export default function FacultyDashboard() {
       console.error(e);
       alert("Failed upload.");
     } finally {
-      setIsLoading(false);
+      setIsUploading(false);
     }
   };
 
   const handleGenerateQuiz = async () => {
     if (!quizTopic) return alert("Enter topic.");
-    setIsLoading(true);
+    setIsGenerating(true);
     try {
       await facultyApi.generateQuiz({
         faculty_name: userName,
@@ -176,9 +182,10 @@ export default function FacultyDashboard() {
       fetchQuizzes();
     } catch (e) {
       console.error(e);
-      alert("Failed generation.");
+      const errorMsg = e.response?.data?.detail || e.response?.data?.message || "Failed generation.";
+      alert(errorMsg);
     } finally {
-      setIsLoading(false);
+      setIsGenerating(false);
     }
   };
 
@@ -186,55 +193,6 @@ export default function FacultyDashboard() {
     localStorage.removeItem("currentUser");
     navigate("/");
   };
-
-  const handleNewChat = () => {
-    const newChat = { id: Date.now(), title: "New chat", messages: [] };
-    const updated = [newChat, ...previousChats];
-    setPreviousChats(updated);
-    setSelectedChatId(newChat.id);
-    setChatInput("");
-    localStorage.setItem("facultyChats", JSON.stringify(updated));
-  };
-
-  const handleSendChat = () => {
-    const message = chatInput.trim();
-    if (!message) return;
-    setIsChatSending(true);
-    const updatedChats = previousChats.map(chat => {
-      if (chat.id !== selectedChatId) return chat;
-      const msgs = chat.messages || [];
-      return { ...chat, messages: [...msgs, { text: message, isUser: true }] };
-    });
-    setPreviousChats(updatedChats);
-    setChatInput("");
-    localStorage.setItem("facultyChats", JSON.stringify(updatedChats));
-    
-    // Simulate AI response
-    setTimeout(() => {
-      const respChats = updatedChats.map(chat => {
-        if (chat.id !== selectedChatId) return chat;
-        return { ...chat, messages: [...chat.messages, { text: "I'm analyzing your request. Here are some insights from the knowledge base...", isUser: false }] };
-      });
-      setPreviousChats(respChats);
-      localStorage.setItem("facultyChats", JSON.stringify(respChats));
-      setIsChatSending(false);
-    }, 1000);
-  };
-
-  const handleAttachPdf = (event) => {
-    const file = event.target.files?.[0];
-    if (!file || file.type !== "application/pdf") return;
-    const msg = { text: `Attached: ${file.name}`, isUser: true, fileType: "pdf" };
-    const updated = previousChats.map(chat => {
-      if (chat.id !== selectedChatId) return chat;
-      return { ...chat, messages: [...(chat.messages || []), msg] };
-    });
-    setPreviousChats(updated);
-    localStorage.setItem("facultyChats", JSON.stringify(updated));
-  };
-
-  const selectedChat = previousChats.find((chat) => chat.id === selectedChatId);
-  const selectedMessages = selectedChat?.messages || [];
 
   return (
     <DashboardLayout
@@ -282,54 +240,6 @@ export default function FacultyDashboard() {
               </AnalyticsCard>
             </div>
           </div>
-        ) : activeItem === "Chatbot" ? (
-            <div className="grid h-[calc(100vh-160px)] gap-6 xl:grid-cols-[280px_1fr]">
-              <Card className="flex flex-col hidden xl:flex glass-card">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-lg">Chat History</CardTitle>
-                </CardHeader>
-                <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2 custom-scrollbar">
-                  <Button onClick={handleNewChat} className="w-full mb-4">New Chat</Button>
-                  {previousChats.map((chat) => (
-                    <button key={chat.id} onClick={() => setSelectedChatId(chat.id)} className={`w-full text-left p-3 rounded-xl text-sm transition-all ${selectedChatId === chat.id ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-muted text-muted-foreground"}`}>
-                      <span className="block font-semibold truncate">{chat.title}</span>
-                      <span className={`block text-xs truncate mt-1 ${selectedChatId === chat.id ? "text-primary-foreground/80" : "opacity-70"}`}>
-                        {chat.messages?.at(-1)?.text || "New chat"}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </Card>
-
-              <Card className="flex flex-col overflow-hidden relative glass-card border-primary/20">
-                <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar">
-                  {selectedMessages.length > 0 ? (
-                    selectedMessages.map((msg, i) => (
-                      <ChatBubble key={i} message={msg.text} isUser={msg.isUser} />
-                    ))
-                  ) : (
-                    <div className="flex h-full flex-col items-center justify-center text-center max-w-md mx-auto">
-                      <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-6">
-                        <MessageSquare className="w-8 h-8" />
-                      </div>
-                      <h2 className="text-2xl font-bold text-foreground mb-2">KnowledgeX Copilot</h2>
-                      <p className="text-muted-foreground">Upload documents, generate quizzes, or ask questions about student performance.</p>
-                    </div>
-                  )}
-                  {isChatSending && <ChatBubble message="" isUser={false} isTyping={true} />}
-                </div>
-                <div className="p-4 bg-[var(--sidebar)]/80 backdrop-blur-md border-t border-[var(--border)] shrink-0">
-                  <input ref={pdfInputRef} type="file" accept="application/pdf" onChange={handleAttachPdf} className="hidden" />
-                  <ChatInput 
-                    input={chatInput} 
-                    setInput={setChatInput} 
-                    onSubmit={handleSendChat} 
-                    isSending={isChatSending}
-                    onAttachClick={() => pdfInputRef.current?.click()}
-                  />
-                </div>
-              </Card>
-            </div>
         ) : activeItem === "Quizzes" ? (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {!selectedQuiz ? (
@@ -352,7 +262,7 @@ export default function FacultyDashboard() {
                         <label className="text-sm font-semibold mb-1 block">Lecture PDF</label>
                         <input type="file" onChange={e=>setUploadFile(e.target.files[0])} accept=".pdf" className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm file:mr-4 file:rounded-full file:border-0 file:bg-primary/10 file:text-primary file:font-semibold hover:file:bg-primary/20 cursor-pointer" />
                       </div>
-                      <Button onClick={handleUploadDocument} disabled={isLoading} className="w-full h-11">{isLoading ? "Uploading..." : "Upload & Process PDF"}</Button>
+                      <Button onClick={handleUploadDocument} disabled={isUploading || isGenerating} className="w-full h-11">{isUploading ? "Uploading..." : "Upload & Process PDF"}</Button>
                     </div>
                   </AnalyticsCard>
 
@@ -436,6 +346,23 @@ export default function FacultyDashboard() {
                     </table>
                   </Card>
                 )}
+                
+                {selectedQuizGaps && selectedQuizGaps.ai_recommendations && (
+                  <Card className="glass-card mt-8 bg-primary/5 border-primary/20">
+                    <CardHeader>
+                      <CardTitle className="text-xl flex items-center gap-2 text-primary">
+                        <AlertCircle className="w-5 h-5" />
+                        AI Recommendations & Learning Gaps
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="prose prose-sm dark:prose-invert max-w-none">
+                        <p className="whitespace-pre-wrap leading-relaxed">{selectedQuizGaps.ai_recommendations}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                
               </div>
             )}
           </div>
@@ -448,15 +375,23 @@ export default function FacultyDashboard() {
             
             {isLoading ? <p className="text-muted-foreground">Loading Analytics...</p> : learningGaps && (
               <div className="grid lg:grid-cols-2 gap-8">
-                <AnalyticsCard title="Topic Performance" className="min-h-[400px]">
-                  <div className="h-[300px] mt-4">
+                <AnalyticsCard title="Student Performance" className="min-h-[400px]">
+                  <div className="flex flex-wrap gap-2 mt-4 mb-6">
+                    {learningGaps.student_performance.map((sp, idx) => (
+                      <div key={idx} className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-sm">
+                        <span className="font-semibold">{sp.student_name}</span>
+                        <span className="text-primary font-black">{sp.average_score}%</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={learningGaps.topic_performance}>
+                      <BarChart data={learningGaps.student_performance} margin={{ bottom: 30, right: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
-                        <XAxis dataKey="topic" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: 'var(--muted-foreground)'}} />
-                        <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: 'var(--muted-foreground)'}} />
+                        <XAxis dataKey="student_name" axisLine={false} tickLine={false} tick={{fontSize: 11, fill: 'var(--muted-foreground)', angle: -45, textAnchor: 'end'}} interval={0} height={60} />
+                        <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: 'var(--muted-foreground)'}} domain={[0, 100]} />
                         <Tooltip cursor={{fill: 'var(--muted)', opacity: 0.4}} contentStyle={{backgroundColor: 'var(--background)', borderRadius: '12px', border: '1px solid var(--border)'}} />
-                        <Bar dataKey="average_accuracy" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="average_score" fill="var(--primary)" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -497,8 +432,18 @@ export default function FacultyDashboard() {
             </div>
             
             {isLoading ? <p className="text-muted-foreground">Loading Attendance...</p> : (
-              <div className="grid lg:grid-cols-3 gap-8">
-                <AnalyticsCard title="Class Attendance Trends" className="lg:col-span-2 min-h-[400px]">
+              <div className="space-y-8">
+                {attendanceSummary && (
+                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                    <StatCard title="Today's Present" value={attendanceSummary.today_present || 0} icon={CheckCircle} trendColor="text-emerald-500" description="Present today" />
+                    <StatCard title="Today's Absent" value={attendanceSummary.today_absent || 0} icon={AlertCircle} trendColor="text-red-500" description="Absent today" />
+                    <StatCard title="Avg Attendance" value={`${attendanceSummary.average_attendance_percentage || 0}%`} icon={BarChartIcon} description="Class average" />
+                    <StatCard title="Total Records" value={attendanceSummary.total_records || 0} icon={Users} description="Total tracked days" />
+                  </div>
+                )}
+                
+                <div className="grid lg:grid-cols-3 gap-8">
+                  <AnalyticsCard title="Class Attendance Trends" className="lg:col-span-2 min-h-[400px]">
                   <div className="h-[300px] mt-4">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={attendanceData}>
@@ -512,20 +457,23 @@ export default function FacultyDashboard() {
                   </div>
                 </AnalyticsCard>
                 
-                <AnalyticsCard title="⚠️ At Risk Students" className="border-red-500/20 bg-red-500/5">
+                <AnalyticsCard title="Student Attendance Records" className="border-border bg-[var(--background)]">
                   <div className="flex-1 overflow-y-auto space-y-3 mt-4 custom-scrollbar">
-                    {atRiskStudents.length === 0 && <p className="text-sm text-muted-foreground">No students are currently at risk.</p>}
-                    {atRiskStudents.map((s, i) => (
-                      <div key={i} className="bg-background/50 p-4 rounded-xl border border-red-500/20 flex justify-between items-center">
+                    {studentStats.length === 0 && <p className="text-sm text-muted-foreground">No students found.</p>}
+                    {studentStats.map((s, i) => {
+                      const isRisk = s.attendance_percentage < 75;
+                      return (
+                      <div key={i} className={`p-4 rounded-xl border flex justify-between items-center ${isRisk ? 'border-red-500/20 bg-red-500/5' : 'border-border bg-muted/30'}`}>
                         <div>
-                          <p className="font-bold text-foreground">{s.student_name}</p>
-                          <p className="text-xs text-muted-foreground font-semibold mt-0.5">{s.email}</p>
+                          <p className={`font-bold ${isRisk ? 'text-red-600 dark:text-red-400' : 'text-foreground'}`}>{s.student_name}</p>
+                          <p className="text-xs text-muted-foreground font-semibold mt-0.5">Present: {s.present_days} | Absent: {s.absent_days}</p>
                         </div>
-                        <span className="font-black text-red-500 text-lg">{s.attendance_percentage.toFixed(0)}%</span>
+                        <span className={`font-black text-lg ${isRisk ? 'text-red-500' : 'text-primary'}`}>{s.attendance_percentage.toFixed(0)}%</span>
                       </div>
-                    ))}
+                    )})}
                   </div>
                 </AnalyticsCard>
+              </div>
               </div>
             )}
           </div>

@@ -46,6 +46,8 @@ export default function StudentDashboard() {
   const [quizResult, setQuizResult] = useState(null);
   const [quizHistory, setQuizHistory] = useState([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [assignedQuizzes, setAssignedQuizzes] = useState([]);
+
 
   // Studyplan States
   const [studySubjects, setStudySubjects] = useState("");
@@ -82,12 +84,14 @@ export default function StudentDashboard() {
     if (cu?.id) setStudentId(cu.id);
   }, [navigate]);
 
-  useEffect(() => {
-    if (activeItem === "Quizzes" || activeItem === "Analytics") fetchQuizHistory();
-    if (activeItem === "Study Plan") fetchStudyPlans();
-    if (activeItem === "Recommendations") fetchRecommendations();
-    if (activeItem === "Analytics") fetchAnalytics();
-  }, [activeItem, studentId]);
+  const fetchAssignedQuizzes = async () => {
+    try {
+      const res = await studentApi.getAssignedQuizzes();
+      setAssignedQuizzes(res.data.quizzes || []);
+    } catch (e) {
+      console.error("Failed to fetch assigned quizzes", e);
+    }
+  };
 
   const fetchQuizHistory = async () => {
     try {
@@ -126,6 +130,16 @@ export default function StudentDashboard() {
   const fetchAnalytics = async () => {
     setIsAnalyticsLoading(false);
   };
+
+  useEffect(() => {
+    if (activeItem === "Quizzes" || activeItem === "Analytics") {
+      fetchQuizHistory();
+      fetchAssignedQuizzes();
+    }
+    if (activeItem === "Study Plan") fetchStudyPlans();
+    if (activeItem === "Recommendations") fetchRecommendations();
+    if (activeItem === "Analytics") fetchAnalytics();
+  }, [activeItem, studentId]);
 
   const handleLogout = () => {
     localStorage.removeItem("currentUser");
@@ -215,21 +229,63 @@ export default function StudentDashboard() {
     }
   };
 
+  const handleTakeAssignedQuiz = async (quiz) => {
+    setIsLoading(true);
+    try {
+      const response = await studentApi.getAssignedQuiz(quiz.id);
+      setActiveQuiz({
+        id: quiz.id,
+        topic: quiz.topic_name,
+        difficulty: quiz.difficulty,
+        questions: response.data.questions,
+        isAssigned: true
+      });
+      setSelectedAnswers({});
+    } catch (error) {
+      alert("Failed to load assigned quiz");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSubmitQuiz = async () => {
     if (!activeQuiz) return;
     const numQ = activeQuiz.questions.length;
     const ansArray = [];
-    for (let i = 0; i < numQ; i++) {
-      if (!selectedAnswers[i]) return alert(`Answer Question ${i + 1}`);
-      ansArray.push(selectedAnswers[i]);
+    
+    if (activeQuiz.isAssigned) {
+      for (let i = 0; i < numQ; i++) {
+        if (!selectedAnswers[i]) return alert(`Answer Question ${i + 1}`);
+        ansArray.push({
+          question_id: activeQuiz.questions[i].question_id,
+          selected_answer: selectedAnswers[i]
+        });
+      }
+    } else {
+      for (let i = 0; i < numQ; i++) {
+        if (!selectedAnswers[i]) return alert(`Answer Question ${i + 1}`);
+        ansArray.push(selectedAnswers[i]);
+      }
     }
+    
     setIsLoading(true);
     try {
-      const response = await studentApi.submitQuiz({ quiz_id: activeQuiz.id, answers: ansArray });
-      setQuizResult(response.data);
+      let response;
+      if (activeQuiz.isAssigned) {
+        response = await studentApi.submitAssignedQuiz({
+          quiz_id: activeQuiz.id,
+          answers: ansArray
+        });
+        alert("Quiz submitted successfully! Your teacher will review your performance.");
+      } else {
+        response = await studentApi.submitQuiz({ quiz_id: activeQuiz.id, answers: ansArray });
+        setQuizResult(response.data);
+      }
       setActiveQuiz(null);
     } catch (error) {
-      alert("Failed to submit quiz");
+      console.error(error);
+      const errorMsg = error.response?.data?.detail || error.response?.data?.message || "Failed to submit quiz";
+      alert(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -458,7 +514,7 @@ export default function StudentDashboard() {
                   </div>
                 </div>
 
-                <AnalyticsCard title="Generate New Quiz" className="max-w-2xl">
+                <AnalyticsCard title="Generate New Quiz" className="max-w-2xl mb-10">
                   <div className="space-y-4">
                     <div>
                       <label className="text-sm font-semibold mb-1 block">Topic</label>
@@ -481,6 +537,28 @@ export default function StudentDashboard() {
                     <Button onClick={handleGenerateQuiz} disabled={isLoading} className="w-full h-11">{isLoading ? "Generating..." : "Generate AI Quiz"}</Button>
                   </div>
                 </AnalyticsCard>
+
+                {assignedQuizzes.length > 0 && (
+                  <div className="mb-10">
+                    <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                      <BookOpen className="text-primary w-6 h-6" />
+                      Assigned Quizzes (From Faculty)
+                    </h3>
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {assignedQuizzes.map((q, i) => (
+                        <Card key={i} className="glass-card border-primary/30 bg-primary/5 hover:border-primary transition-colors">
+                          <CardContent className="p-6">
+                            <h4 className="text-lg font-bold truncate">{q.topic_name}</h4>
+                            <p className="text-xs text-muted-foreground mt-1 mb-4">By {q.teacher_name} • {q.num_questions} Questions</p>
+                            <Button onClick={() => handleTakeAssignedQuiz(q)} className="w-full" disabled={isLoading}>
+                              Take Quiz
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <h3 className="text-xl font-bold mt-10 mb-4">Past Quizzes</h3>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">

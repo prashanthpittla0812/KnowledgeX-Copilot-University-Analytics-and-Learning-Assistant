@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.models import Attendance, User
@@ -70,40 +70,59 @@ class AttendanceService:
         total_days = present_days + absent_days
         percentage = (present_days / total_days * 100) if total_days > 0 else 0
         
-        # Get list of students with low attendance
-        students_result = await db.execute(
+        today = datetime.utcnow().date()
+        
+        today_present = 0
+        today_absent = 0
+        
+        # Get daily trends for the chart - last 5 days
+        trends_result = await db.execute(
             select(
-                User.id, 
-                User.name,
-                func.sum(case((Attendance.status == 'present', 1), else_=0)).label('present'),
-                func.count(Attendance.id).label('total')
+                func.date(Attendance.date).label("date"),
+                func.sum(case((Attendance.status == 'present', 1), else_=0)).label("present_count"),
+                func.sum(case((Attendance.status == 'absent', 1), else_=0)).label("absent_count")
             )
-            .join(Attendance, User.id == Attendance.student_id)
-            .where(User.role == 'student')
-            .group_by(User.id, User.name)
+            .group_by(func.date(Attendance.date))
+            .order_by(func.date(Attendance.date).desc())
+            .limit(5)
         )
         
-        at_risk_students = []
-        # Fallback raw calculation since case/func can be tricky in SQLAlchemy sometimes
-        # We will just fetch all students and calculate if it gets complex, but let's do a simple query.
-        pass # To be safe, we'll write a cleaner SQLAlchemy query for at-risk below.
+        trends = []
+        for row in trends_result.all():
+            trends.append({
+                "date": str(row.date),
+                "present_count": row.present_count,
+                "absent_count": row.absent_count
+            })
+            if str(row.date) == str(today):
+                today_present = row.present_count
+                today_absent = row.absent_count
+                
+        # Reverse to show chronological order in chart
+        trends.reverse()
 
         return {
-            "average_attendance_percentage": round(percentage, 2),
-            "total_records": total_days
+            "summary": {
+                "average_attendance_percentage": round(percentage, 2),
+                "total_records": total_days,
+                "total_present": present_days,
+                "total_absent": absent_days,
+                "today_present": today_present,
+                "today_absent": today_absent
+            },
+            "trends": trends
         }
 
     @staticmethod
-    async def get_at_risk_students(db: AsyncSession) -> List[Dict[str, Any]]:
-        """Identify students with attendance < 75%."""
-        # Fetch all attendance grouped by student
+    async def get_student_stats(db: AsyncSession) -> List[Dict[str, Any]]:
+        """Get attendance stats for all students."""
         result = await db.execute(
             select(
                 User.id, 
                 User.name, 
                 Attendance.status
             )
-            .join(Attendance, User.id == Attendance.student_id)
+            .outerjoin(Attendance, User.id == Attendance.student_id)
             .where(User.role == "student")
         )
         
@@ -111,23 +130,29 @@ class AttendanceService:
         for row in result.all():
             sid = row.id
             name = row.name
-            status = row.status.lower()
+            status = row.status.lower() if row.status else None
             
             if sid not in student_stats:
-                student_stats[sid] = {"name": name, "present": 0, "total": 0}
+                student_stats[sid] = {"name": name, "present": 0, "absent": 0, "total": 0}
             
-            student_stats[sid]["total"] += 1
-            if status == "present":
-                student_stats[sid]["present"] += 1
+            if status:
+                student_stats[sid]["total"] += 1
+                if status == "present":
+                    student_stats[sid]["present"] += 1
+                elif status == "absent":
+                    student_stats[sid]["absent"] += 1
                 
-        at_risk = []
+        stats_list = []
         for sid, stats in student_stats.items():
             pct = (stats["present"] / stats["total"] * 100) if stats["total"] > 0 else 0
-            if pct < 75 and stats["total"] > 0:
-                at_risk.append({
-                    "student_id": sid,
-                    "student_name": stats["name"],
-                    "attendance_percentage": round(pct, 2)
-                })
-                
-        return at_risk
+            stats_list.append({
+                "student_id": sid,
+                "student_name": stats["name"],
+                "present_days": stats["present"],
+                "absent_days": stats["absent"],
+                "total_days": stats["total"],
+                "attendance_percentage": round(pct, 2)
+            })
+            
+        stats_list.sort(key=lambda x: x["attendance_percentage"])
+        return stats_list

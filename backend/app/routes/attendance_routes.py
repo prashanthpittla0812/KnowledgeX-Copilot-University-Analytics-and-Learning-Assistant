@@ -44,4 +44,4 @@ async def get_at_risk_students(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_faculty),
 ):
-    return {"at_risk": await AttendanceService.get_at_risk_students(db)}
+    return {"at_risk": await AttendanceService.get_student_stats(db)}

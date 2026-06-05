@@ -17,6 +17,13 @@ from app.services.student_service import StudentQuizService, StudentSubmitServic
 router = APIRouter(prefix="/student", tags=["Student"])
 
 
+@router.get("/assigned-quizzes")
+async def get_assigned_quizzes(db: AsyncSession = Depends(get_db)):
+    service = StudentQuizService(db)
+    quizzes = await service.get_all_quizzes()
+    return {"quizzes": quizzes}
+
+
 @router.get("/quiz/{quiz_id}", response_model=StudentQuizResponse)
 async def get_quiz(
     quiz_id: int,

@@ -27,7 +27,17 @@ class LearningGapItem(BaseModel):
     recommended_action: str
 
 
+class StudentPerformance(BaseModel):
+    student_name: str
+    average_score: float
+
+class TopicAccuracy(BaseModel):
+    topic: str
+    average_accuracy: float
+
 class LearningGapsResponse(BaseModel):
-    learning_gaps: list[LearningGapItem]
+    student_performance: list[StudentPerformance]
+    weak_topics: list[TopicAccuracy]
+    strong_topics: list[TopicAccuracy]
     overall_class_health: str
     faculty_recommendations: list[str]

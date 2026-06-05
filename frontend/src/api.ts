@@ -158,6 +158,18 @@ export const studentApi = {
     return api.get("/quiz/history");
   },
 
+  getAssignedQuizzes() {
+    return api.get("/student/assigned-quizzes");
+  },
+
+  getAssignedQuiz(quizId: number | string) {
+    return api.get(`/student/quiz/${quizId}`);
+  },
+
+  submitAssignedQuiz(payload: { quiz_id: number; answers: { question_id: number; selected_answer: string }[] }) {
+    return api.post("/assessment/attempt", payload);
+  },
+
   generateStudyPlan(payload: { subjects: string[]; exam_date: string; daily_hours: number }) {
     return api.post("/studyplan/generate", payload);
   },
@@ -179,6 +191,10 @@ export const studentApi = {
       params: refreshKey ? { refresh: refreshKey } : undefined,
     });
   },
+
+  getAttendance() {
+    return api.get("/attendance/student/me");
+  }
 };
 
 export const chatbotApi = {
