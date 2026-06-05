@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { DashboardLayout } from "../components/layout/DashboardLayout";
 import { facultyMenuItems } from "./faculty_menu";
 import { facultyApi } from "../api";
 import { 
@@ -8,7 +9,7 @@ import {
 } from "recharts";
 
 const defaultFacultyChats = [
-  { id: 1, title: "New chat", messages: [] },
+  { id: 1, title: "Course Syllabus AI", messages: [] },
 ];
 
 export default function FacultyDashboard() {
@@ -21,6 +22,7 @@ export default function FacultyDashboard() {
   // Chatbot State
   const [chatHistoryCollapsed, setChatHistoryCollapsed] = useState(false);
   const [chatInput, setChatInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [previousChats, setPreviousChats] = useState(() => {
     const stored = localStorage.getItem("facultyChats");
     return stored ? JSON.parse(stored) : defaultFacultyChats;
@@ -28,8 +30,6 @@ export default function FacultyDashboard() {
   const [selectedChatId, setSelectedChatId] = useState(previousChats[0]?.id || null);
 
   // Global Loading State
-  const [isLoading, setIsLoading] = useState(false);
-
   // Conduct Quizzes State
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadTopic, setUploadTopic] = useState("");
@@ -237,59 +237,67 @@ export default function FacultyDashboard() {
   const selectedMessages = selectedChat?.messages || (selectedChat?.message ? [{ text: selectedChat.message }] : []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-orange-50 to-orange-200 text-gray-900">
-      <div className="flex min-h-screen w-full flex-col gap-4 p-4 lg:flex-row lg:gap-6 lg:p-6">
-        <aside className={`rounded-3xl border border-orange-100 bg-white/90 p-4 shadow-2xl shadow-orange-300/30 backdrop-blur transition-all lg:min-h-[calc(100vh-3rem)] lg:shrink-0 ${collapsed ? 'lg:w-20' : 'lg:w-72'}`}>
-          <div className="mb-6 flex items-center justify-between px-2">
-            {!collapsed ? (
-              <div>
-                <p className="text-sm uppercase tracking-[0.2em] text-orange-500">Faculty</p>
-                <h2 className="mt-2 text-2xl font-bold text-gray-900">Dashboard</h2>
+    <DashboardLayout
+      role="faculty"
+      activeItem={activeItem}
+      setActiveItem={setActiveItem}
+      userName={userName}
+      handleLogout={handleLogout}
+    >
+      <div className={`h-full flex flex-col ${activeItem === 'Chatbot' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+        
+        {/* Render Dashboard Overview or Subview */}
+        {activeItem === "Dashboard" ? (
+          <div className="mx-auto w-full max-w-[1400px] flex-1 flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="mb-8">
+              <h1 className="text-3xl lg:text-4xl font-black text-foreground tracking-tight mb-2">Welcome back, {userName}</h1>
+              <p className="text-sm lg:text-base text-gray-500 font-medium">Here's your faculty overview for today.</p>
+            </div>
+            
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+              <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary text-xl">🎓</div>
+                  <h3 className="font-bold text-gray-500">Active Courses</h3>
+                </div>
+                <p className="text-4xl font-black text-foreground">4</p>
+                <p className="text-sm font-medium text-primary mt-2">CS101, PHY204...</p>
               </div>
-            ) : (
-              <div className="text-orange-500 font-bold">F</div>
-            )}
-            <button onClick={() => setCollapsed((s) => !s)} className="text-gray-600 hover:text-gray-900">
-              {collapsed ? '>' : '<'}
-            </button>
-          </div>
 
-          <nav className="grid gap-2 px-2 sm:grid-cols-2 lg:block lg:space-y-2">
-            {facultyMenuItems.map((item) => (
-              <button
-                key={item}
-                onClick={() => { setActiveItem(item); setSelectedQuiz(null); }}
-                className={`flex h-11 w-full items-center rounded-2xl px-3 py-2 text-left text-sm transition ${
-                  activeItem === item
-                    ? "bg-orange-500 text-white"
-                    : "text-gray-700 hover:bg-gray-200 hover:text-gray-900"
-                }`}>
-                <span className="w-8 text-center mr-2 text-gray-600">{item[0]}</span>
-                <span className={collapsed ? "lg:hidden" : ""}>{item}</span>
-              </button>
-            ))}
-          </nav>
-
-          <button
-            onClick={handleLogout}
-            className="mt-6 w-full rounded-2xl border border-gray-300 bg-white px-4 py-2 text-sm text-gray-600 transition hover:border-orange-500 hover:text-orange-500"
-          >
-            Logout
-          </button>
-        </aside>
-
-        <main className="flex-1 rounded-3xl border border-orange-100 bg-white/90 p-6 shadow-2xl shadow-orange-300/30 backdrop-blur lg:min-h-[calc(100vh-3rem)] lg:p-8">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-8">
-            <div>
-              <p className="text-sm text-gray-600">Welcome back,</p>
-              <h1 className="text-4xl font-bold text-gray-900">{userName}</h1>
+              <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-500 text-xl">👥</div>
+                  <h3 className="font-bold text-gray-500">Students</h3>
+                </div>
+                <p className="text-4xl font-black text-foreground">120</p>
+                <p className="text-sm font-medium text-emerald-500 mt-2">↑ 5 enrolled recently</p>
+              </div>
             </div>
-            <div className="rounded-3xl bg-white border border-gray-300 px-4 py-3 text-sm text-gray-600">
-              <span className="font-semibold text-orange-500">{activeItem}</span> active
+
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="rounded-3xl border border-border bg-card p-6 shadow-sm min-h-[300px]">
+                <h3 className="text-xl font-bold text-foreground mb-6">Recent Alerts</h3>
+                <div className="space-y-4">
+                  <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/50">
+                    <p className="font-bold text-red-600 dark:text-red-400 mb-1">Low Attendance Alert</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">5 students in CS101 have dropped below 75% attendance this week.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-border bg-card p-6 shadow-sm min-h-[300px]">
+                <h3 className="text-xl font-bold text-foreground mb-6">AI Recommendations</h3>
+                <div className="space-y-4">
+                  <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                    <p className="font-bold text-primary mb-1">Suggest Study Plan: Data Structures</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Class average for Graph Theory was 65%. Would you like the AI to generate a supplementary study guide for the class?</p>
+                    <button onClick={() => setActiveItem("Chatbot")} className="mt-3 text-sm font-bold text-primary hover:underline">Draft with Copilot →</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-
-          {activeItem === "Open Chatbot" ? (
+        ) : activeItem === "Open Chatbot" ? (
             <div className={`grid min-h-[calc(100vh-14rem)] gap-6 ${chatHistoryCollapsed ? "xl:grid-cols-[72px_1fr]" : "xl:grid-cols-[280px_1fr]"}`}>
               <section className="rounded-2xl border border-orange-100 bg-orange-50/60 p-4 transition-all">
                 <div className="mb-4 flex items-center justify-between">
@@ -603,8 +611,7 @@ export default function FacultyDashboard() {
               </p>
             </div>
           )}
-        </main>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }
