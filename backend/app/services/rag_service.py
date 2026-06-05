@@ -1,4 +1,3 @@
-from langchain.chains import RetrievalQA
 from langchain.chat_models import init_chat_model
 from langchain_core.prompts import PromptTemplate
 
@@ -35,6 +34,13 @@ class RAGService:
                 api_version=settings.AZURE_OPENAI_API_VERSION,
                 temperature=0.3,
             )
+        elif settings.AI_PROVIDER == "groq":
+            return init_chat_model(
+                settings.GROQ_MODEL,
+                model_provider="groq",
+                api_key=settings.GROQ_API_KEY,
+                temperature=0.3,
+            )
         else:
             return init_chat_model(
                 settings.OLLAMA_MODEL,
@@ -65,20 +71,16 @@ class RAGService:
             input_variables=["context", "question"],
         )
 
-        qa_chain = RetrievalQA.from_chain_type(
-            llm=self.llm,
-            chain_type="stuff",
-            retriever=self.vector_store.as_retriever(search_kwargs={"k": 4}),
-            chain_type_kwargs={"prompt": prompt},
-            return_source_documents=True,
-        )
+        docs = self.vector_store.similarity_search(question, k=4)
+        context = "\n\n".join(doc.page_content for doc in docs)
 
-        result = qa_chain.invoke({"query": question})
+        chain = prompt | self.llm
+        result = chain.invoke({"context": context, "question": question})
 
         return {
-            "answer": result["result"],
+            "answer": result.content,
             "sources": [
                 doc.metadata.get("source", "unknown")
-                for doc in result.get("source_documents", [])
+                for doc in docs
             ],
         }

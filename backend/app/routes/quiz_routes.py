@@ -31,6 +31,7 @@ async def generate_quiz(
             number_of_questions=request.number_of_questions,
         )
         return QuizGenerateResponse(
+            quiz_id=result["quiz_id"],
             quiz=result["quiz"],
             topic=result["topic"],
             difficulty=result["difficulty"],
@@ -58,7 +59,8 @@ async def submit_quiz(
             total_questions=result["total_questions"],
             correct_answers=result["correct_answers"],
             topic=result["topic"],
-            created_at=current_user.created_at,
+            created_at=result["created_at"],
+            results=result["results"],
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

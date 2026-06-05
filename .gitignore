@@ -14,7 +14,6 @@ venv/
 
 # File uploads
 uploads/
-app/uploads/
 
 # ChromaDB vector store
 chroma_db/

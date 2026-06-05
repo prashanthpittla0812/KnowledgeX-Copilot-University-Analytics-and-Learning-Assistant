@@ -4,7 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.prompts import LEARNING_GAPS_PROMPT_TEMPLATE
-from app.database.models import Document, Quiz, User
+from app.database.models import Document, FacultyDocument, Quiz, QuizAttempt, TeacherQuiz, User, TopicPerformance
 from app.services.rag_service import RAGService
 from app.utils.logger import get_logger
 
@@ -65,59 +65,66 @@ class AnalyticsService:
         return metrics
 
     async def get_learning_gaps(self) -> dict:
-        quiz_topics = (
-            await self.db.execute(
-                select(Quiz.topic, func.avg(Quiz.score).label("avg_score"))
-                .where(Quiz.score.isnot(None))
-                .group_by(Quiz.topic)
-            )
-        ).all()
-
-        if not quiz_topics:
-            return {
-                "learning_gaps": [],
-                "overall_class_health": "No data available",
-                "faculty_recommendations": ["Encourage students to take quizzes"],
-            }
-
-        class_performance_data = "\n".join(
-            f"Topic: {row.topic}, Average Score: {float(row.avg_score):.1f}%"
-            for row in quiz_topics
+        student_query = await self.db.execute(
+            select(User.name, func.avg(QuizAttempt.percentage).label("avg_score"))
+            .join(QuizAttempt, User.id == QuizAttempt.student_id)
+            .group_by(User.name)
         )
+        student_scores = student_query.all()
 
-        prompt = LEARNING_GAPS_PROMPT_TEMPLATE.format(
-            class_performance_data=class_performance_data,
+        topic_query = await self.db.execute(
+            select(TopicPerformance.topic, func.avg(TopicPerformance.accuracy).label("avg_acc"))
+            .group_by(TopicPerformance.topic)
         )
+        topic_scores = topic_query.all()
 
-        response = self.rag.llm.invoke(prompt)
-        content = response.content
+        student_performance = [
+            {"student_name": row.name, "average_score": round(float(row.avg_score), 2)}
+            for row in student_scores
+        ]
 
-        import re
-        json_match = re.search(r"\{.*\}", content, re.DOTALL)
-        if json_match:
-            try:
-                return json.loads(json_match.group())
-            except json.JSONDecodeError:
-                logger.error("Failed to parse learning gaps JSON")
-
-        learning_gaps = []
-        for row in quiz_topics:
-            if float(row.avg_score) < 60:
-                learning_gaps.append({
-                    "topic": row.topic,
-                    "average_score": round(float(row.avg_score), 2),
-                    "students_at_risk": [],
-                    "recommended_action": f"Schedule review session on {row.topic}",
-                })
+        weak_topics = []
+        strong_topics = []
+        for row in topic_scores:
+            acc = round(float(row.avg_acc), 2)
+            item = {"topic": row.topic, "average_accuracy": acc}
+            if acc < 60:
+                weak_topics.append(item)
+            else:
+                strong_topics.append(item)
 
         return {
-            "learning_gaps": learning_gaps,
-            "overall_class_health": self._determine_health(quiz_topics),
+            "student_performance": student_performance,
+            "weak_topics": weak_topics,
+            "strong_topics": strong_topics,
+            "overall_class_health": "Good" if len(strong_topics) >= len(weak_topics) else "Needs Attention",
             "faculty_recommendations": [
-                "Focus on topics with average scores below 60%",
-                "Provide additional practice materials",
-                "Schedule one-on-one sessions for struggling students",
-            ],
+                f"Review {wt['topic']} as class average is {wt['average_accuracy']}%" for wt in weak_topics
+            ] or ["Keep up the good work! Class is performing well."]
+        }
+
+    async def get_admin_system_stats(self) -> dict:
+        total_students = await self.db.scalar(
+            select(func.count()).select_from(User).where(User.role == "student")
+        )
+        total_faculty = await self.db.scalar(
+            select(func.count()).select_from(User).where(User.role == "faculty")
+        )
+        total_quizzes_generated = await self.db.scalar(
+            select(func.count()).select_from(TeacherQuiz)
+        )
+        total_quizzes_attempted = await self.db.scalar(
+            select(func.count()).select_from(QuizAttempt)
+        )
+        avg_perf = await self.db.scalar(
+            select(func.avg(QuizAttempt.percentage))
+        )
+        return {
+            "total_students": total_students or 0,
+            "total_faculty": total_faculty or 0,
+            "total_quizzes_generated": total_quizzes_generated or 0,
+            "total_quizzes_attempted": total_quizzes_attempted or 0,
+            "average_performance": round(avg_perf or 0, 2),
         }
 
     def _determine_health(self, quiz_topics: list) -> str:
