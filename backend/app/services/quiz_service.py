@@ -80,12 +80,63 @@ class QuizService:
                 f"Expected {len(questions)} answers, got {len(answers)}"
             )
 
-        correct = sum(
-            1 for i, q in enumerate(questions) if i < len(answers) and q["correct_answer"] == answers[i]
-        )
+        correct = 0
+        detailed_results = []
+        student_answers_log = []
+
+        for i, q in enumerate(questions):
+            student_answer = str(answers[i] if i < len(answers) else "")
+            correct_answer = str(q.get("correct_answer", ""))
+            
+            sa_norm = student_answer.strip().lower()
+            ca_norm = correct_answer.strip().lower()
+            
+            is_correct = (sa_norm == ca_norm)
+            
+            # If the LLM returned "a", "b", "c", "d" as correct_answer but the frontend submitted the full option string
+            if not is_correct and len(ca_norm) == 1 and ca_norm in ['a', 'b', 'c', 'd']:
+                idx = ord(ca_norm) - ord('a')
+                options = q.get("options", [])
+                if 0 <= idx < len(options):
+                    if sa_norm == str(options[idx]).strip().lower():
+                        is_correct = True
+                        
+            # If the student submitted "a", "b", "c", "d" but the correct_answer is the full string
+            if not is_correct and len(sa_norm) == 1 and sa_norm in ['a', 'b', 'c', 'd']:
+                idx = ord(sa_norm) - ord('a')
+                options = q.get("options", [])
+                if 0 <= idx < len(options):
+                    if ca_norm == str(options[idx]).strip().lower():
+                        is_correct = True
+            
+            # Allow fallback if one is a substring of another and not empty
+            if not is_correct and sa_norm and ca_norm and (sa_norm in ca_norm or ca_norm in sa_norm):
+                # A basic heuristic in case prefixes mismatch (e.g. "A) Paris" vs "Paris")
+                is_correct = True
+
+            if is_correct:
+                correct += 1
+
+            detailed_results.append({
+                "question": q.get("question", ""),
+                "student_answer": student_answer,
+                "correct_answer": correct_answer,
+                "explanation": q.get("explanation", ""),
+                "status": "correct" if is_correct else "incorrect"
+            })
+            
+            student_answers_log.append({
+                "selected_answer": student_answer,
+                "correct_answer": correct_answer,
+                "is_correct": is_correct
+            })
+
         score = (correct / len(questions)) * 100 if questions else 0
 
         quiz.score = score
+        quiz_data["student_answers"] = student_answers_log
+        quiz.quiz_data = json.dumps(quiz_data)
+        
         await self.db.flush()
 
         return {
@@ -94,6 +145,8 @@ class QuizService:
             "total_questions": len(questions),
             "correct_answers": correct,
             "topic": quiz.topic,
+            "created_at": quiz.created_at,
+            "results": detailed_results
         }
 
     async def get_quiz_history(self, user: User) -> list[Quiz]:

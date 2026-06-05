@@ -29,6 +29,14 @@ class QuizSubmitRequest(BaseModel):
     answers: list[str]
 
 
+class QuizQuestionResult(BaseModel):
+    question: str
+    student_answer: str
+    correct_answer: str
+    explanation: str
+    status: str
+
+
 class QuizResultResponse(BaseModel):
     quiz_id: int
     score: float
@@ -36,6 +44,7 @@ class QuizResultResponse(BaseModel):
     correct_answers: int
     topic: str
     created_at: datetime
+    results: list[QuizQuestionResult]
 
     model_config = {"from_attributes": True}
 
