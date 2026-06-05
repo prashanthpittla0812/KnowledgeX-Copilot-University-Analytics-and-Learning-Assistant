@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { DashboardLayout } from "../components/layout/DashboardLayout";
 import { facultyMenuItems } from "./faculty_menu";
 import { facultyApi } from "../api";
 import { 
@@ -29,8 +30,6 @@ export default function FacultyDashboard() {
   const [selectedChatId, setSelectedChatId] = useState(previousChats[0]?.id || null);
 
   // Global Loading State
-  const [isLoading, setIsLoading] = useState(false);
-
   // Conduct Quizzes State
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadTopic, setUploadTopic] = useState("");
@@ -273,36 +272,6 @@ export default function FacultyDashboard() {
                 <p className="text-4xl font-black text-foreground">120</p>
                 <p className="text-sm font-medium text-emerald-500 mt-2">↑ 5 enrolled recently</p>
               </div>
-
-          <nav className="grid gap-2 px-2 sm:grid-cols-2 lg:block lg:space-y-2">
-            {facultyMenuItems.map((item) => (
-              <button
-                key={item}
-                onClick={() => { setActiveItem(item); setSelectedQuiz(null); }}
-                className={`flex h-11 w-full items-center rounded-2xl px-3 py-2 text-left text-sm transition ${
-                  activeItem === item
-                    ? "bg-orange-500 text-white"
-                    : "text-gray-700 hover:bg-gray-200 hover:text-gray-900"
-                }`}>
-                <span className="w-8 text-center mr-2 text-gray-600">{item[0]}</span>
-                <span className={collapsed ? "lg:hidden" : ""}>{item}</span>
-              </button>
-            ))}
-          </nav>
-
-          <button
-            onClick={handleLogout}
-            className="mt-6 w-full rounded-2xl border border-gray-300 bg-white px-4 py-2 text-sm text-gray-600 transition hover:border-orange-500 hover:text-orange-500"
-          >
-            Logout
-          </button>
-        </aside>
-
-        <main className="flex-1 rounded-3xl border border-orange-100 bg-white/90 p-6 shadow-2xl shadow-orange-300/30 backdrop-blur lg:min-h-[calc(100vh-3rem)] lg:p-8">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-8">
-            <div>
-              <p className="text-sm text-gray-600">Welcome back,</p>
-              <h1 className="text-4xl font-bold text-gray-900">{userName}</h1>
             </div>
 
             <div className="grid gap-6 lg:grid-cols-2">
@@ -328,8 +297,7 @@ export default function FacultyDashboard() {
               </div>
             </div>
           </div>
-
-          {activeItem === "Open Chatbot" ? (
+        ) : activeItem === "Open Chatbot" ? (
             <div className={`grid min-h-[calc(100vh-14rem)] gap-6 ${chatHistoryCollapsed ? "xl:grid-cols-[72px_1fr]" : "xl:grid-cols-[280px_1fr]"}`}>
               <section className="rounded-2xl border border-orange-100 bg-orange-50/60 p-4 transition-all">
                 <div className="mb-4 flex items-center justify-between">
@@ -643,7 +611,6 @@ export default function FacultyDashboard() {
               </p>
             </div>
           )}
-        </main>
       </div>
     </DashboardLayout>
   );
