@@ -341,7 +341,7 @@ export default function StudentDashboard() {
           <div className={`mx-auto w-full flex flex-col ${activeItem === 'Chatbot' ? 'max-w-[1800px] flex-1 min-h-0 overflow-hidden' : 'max-w-[1400px] min-h-[calc(100vh-10rem)] p-5 lg:p-7 bg-transparent'}`}>
 
           {activeItem === "Chatbot" && (
-            <div className={`flex-1 min-h-0 grid gap-8 ${chatHistoryCollapsed ? "xl:grid-cols-[82px_1fr]" : "xl:grid-cols-[450px_1fr]"}`}>
+            <div className={`flex-1 min-h-0 grid gap-8 ${chatHistoryCollapsed ? "xl:grid-cols-[82px_1fr]" : "xl:grid-cols-[280px_1fr]"}`}>
               <section className="min-h-0 rounded-[2rem] border border-gray-100 bg-white p-5 lg:p-6 shadow-xl shadow-gray-200/40 transition-all flex flex-col">
                 <div className="mb-5 flex items-center justify-between">
                   {!chatHistoryCollapsed && <h2 className="text-base font-black text-gray-800 tracking-tight pl-1">Chat History</h2>}
