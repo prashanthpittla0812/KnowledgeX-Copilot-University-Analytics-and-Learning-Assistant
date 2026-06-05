@@ -258,3 +258,25 @@ class LearningGapReport(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     quiz = relationship("TeacherQuiz", back_populates="learning_gap_reports")
+
+
+class Attendance(Base):
+    __tablename__ = "attendance"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    date = Column(DateTime, default=datetime.utcnow, nullable=False)
+    status = Column(String(50), nullable=False) # "present" or "absent"
+
+    student = relationship("User")
+
+
+class FacultyInsight(Base):
+    __tablename__ = "faculty_insights"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    teacher_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    insight_text = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    teacher = relationship("User")
