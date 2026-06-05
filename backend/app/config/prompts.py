@@ -42,6 +42,7 @@ CRITICAL INSTRUCTION: Output ONLY raw JSON. Do NOT wrap the JSON in markdown blo
 
 STUDYPLAN_GENERATION_PROMPT_TEMPLATE = """You are an expert academic advisor creating a personalized study plan.
 
+Current Date: {current_date}
 Subjects: {subjects}
 Exam Date: {exam_date}
 Daily Study Hours: {daily_hours}

@@ -109,10 +109,13 @@ class QuizService:
                     if ca_norm == str(options[idx]).strip().lower():
                         is_correct = True
             
-            # Allow fallback if one is a substring of another and not empty
-            if not is_correct and sa_norm and ca_norm and (sa_norm in ca_norm or ca_norm in sa_norm):
-                # A basic heuristic in case prefixes mismatch (e.g. "A) Paris" vs "Paris")
-                is_correct = True
+            # Better fallback: strip "a)", "b.", etc. and compare exactly
+            if not is_correct:
+                import re
+                sa_stripped = re.sub(r'^[a-d][\.\)]\s*', '', sa_norm).strip()
+                ca_stripped = re.sub(r'^[a-d][\.\)]\s*', '', ca_norm).strip()
+                if sa_stripped and ca_stripped and sa_stripped == ca_stripped:
+                    is_correct = True
 
             if is_correct:
                 correct += 1

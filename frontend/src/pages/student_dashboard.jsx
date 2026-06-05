@@ -7,7 +7,8 @@ import { StatCard } from "../components/ui/stat-card";
 import { AnalyticsCard } from "../components/ui/analytics-card";
 import { ChatBubble, ChatInput } from "../components/ui/chat";
 import { Button } from "../components/ui/button";
-import { BookOpen, AlertCircle, FileText, Calendar, CheckCircle, BarChart, GraduationCap, Target, Lightbulb, TrendingUp } from "lucide-react";
+import { BookOpen, AlertCircle, FileText, Calendar, CheckCircle, BarChart as BarChartIcon, GraduationCap, Target, Lightbulb, TrendingUp } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
@@ -15,18 +16,18 @@ export default function StudentDashboard() {
   const [userName, setUserName] = useState("Student");
   const [studentId, setStudentId] = useState(null);
   const [activeItem, setActiveItem] = useState("Dashboard");
-  
+
   // Chatbot State
   const [chatInput, setChatInput] = useState("");
   const [isChatSending, setIsChatSending] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [attachedFile, setAttachedFile] = useState(null);
-  
+
   const [previousChats, setPreviousChats] = useState(() => {
     let userId = "default";
     const storedUser = localStorage.getItem("currentUser");
     if (storedUser) {
-      try { userId = JSON.parse(storedUser).id; } catch (e) {}
+      try { userId = JSON.parse(storedUser).id; } catch (e) { }
     }
     const stored = localStorage.getItem(`studentChats_${userId}`);
     return stored ? JSON.parse(stored) : [
@@ -82,19 +83,17 @@ export default function StudentDashboard() {
   }, [navigate]);
 
   useEffect(() => {
-    if (activeItem === "Quizzes" && quizHistory.length === 0) fetchQuizHistory();
-    else if (activeItem === "Study Plan") fetchStudyPlans();
-    else if (activeItem === "Analytics") {
-      fetchAnalytics();
-      fetchRecommendations();
-    }
-  }, [activeItem]);
+    if (activeItem === "Quizzes" || activeItem === "Analytics") fetchQuizHistory();
+    if (activeItem === "Study Plan") fetchStudyPlans();
+    if (activeItem === "Recommendations") fetchRecommendations();
+    if (activeItem === "Analytics") fetchAnalytics();
+  }, [activeItem, studentId]);
 
   const fetchQuizHistory = async () => {
     try {
       setIsHistoryLoading(true);
       const res = await studentApi.getQuizHistory();
-      setQuizHistory(res.data.history || []);
+      setQuizHistory(Array.isArray(res.data) ? res.data : (res.data.history || []));
     } catch (e) {
       console.error(e);
     } finally {
@@ -104,18 +103,19 @@ export default function StudentDashboard() {
 
   const fetchStudyPlans = async () => {
     try {
-      const res = await studentApi.getStudyPlans();
-      setStudyPlans(res.data.plans || []);
+      const res = await studentApi.getStudyPlanHistory();
+      setStudyPlans(res.data || []);
     } catch (e) {
       console.error(e);
     }
   };
 
   const fetchRecommendations = async () => {
+    if (!studentId) return;
     try {
       setIsRecsLoading(true);
-      const res = await studentApi.getRecommendations();
-      setRecommendations(res.data.recommendations || []);
+      const res = await studentApi.getRecommendations(studentId);
+      setRecommendations(res.data || null);
     } catch (e) {
       console.error(e);
     } finally {
@@ -124,15 +124,7 @@ export default function StudentDashboard() {
   };
 
   const fetchAnalytics = async () => {
-    try {
-      setIsAnalyticsLoading(true);
-      const res = await studentApi.getAnalytics();
-      setAnalytics(res.data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsAnalyticsLoading(false);
-    }
+    setIsAnalyticsLoading(false);
   };
 
   const handleLogout = () => {
@@ -152,21 +144,21 @@ export default function StudentDashboard() {
   const handleSendChat = async () => {
     const message = chatInput.trim();
     if ((!message && !attachedFile) || isLoading) return;
-    
+
     let currentChats = [...previousChats];
     setIsChatSending(true);
     setIsLoading(true);
-    
+
     try {
       if (attachedFile) {
         await documentApi.uploadPdf(attachedFile);
         currentChats = currentChats.map((chat) => {
           if (chat.id !== selectedChatId) return chat;
-          return { ...chat, messages: [...(chat.messages||[]), { text: `Attached PDF: ${attachedFile.name}`, isUser: true }] };
+          return { ...chat, messages: [...(chat.messages || []), { text: `Attached PDF: ${attachedFile.name}`, isUser: true }] };
         });
         setAttachedFile(null);
       }
-      
+
       if (message) {
         currentChats = currentChats.map((chat) => {
           if (chat.id !== selectedChatId) return chat;
@@ -174,10 +166,10 @@ export default function StudentDashboard() {
           return { ...chat, title: messages.length === 0 ? (message.length > 30 ? message.slice(0, 30) + "..." : message) : chat.title, messages: [...messages, { text: message, isUser: true }] };
         });
       }
-      
+
       setPreviousChats(currentChats);
       setChatInput("");
-      
+
       if (message) {
         const response = await chatbotApi.askQuestion(message);
         currentChats = currentChats.map((chat) => {
@@ -186,7 +178,7 @@ export default function StudentDashboard() {
         });
         setPreviousChats(currentChats);
       }
-      
+
       localStorage.setItem(`studentChats_${studentId || "default"}`, JSON.stringify(currentChats));
     } catch (error) {
       alert("Failed to process request.");
@@ -248,8 +240,8 @@ export default function StudentDashboard() {
     setIsGeneratingPlan(true);
     try {
       const subs = studySubjects.split(",").map(s => s.trim());
-      const response = await studentApi.generateStudyPlan({ subjects: subs, exam_date: studyExamDate, daily_study_hours: studyDailyHours });
-      setActiveStudyPlan(typeof response.data.plan === 'string' ? JSON.parse(response.data.plan) : response.data.plan);
+      const response = await studentApi.generateStudyPlan({ subjects: subs, exam_date: studyExamDate, daily_hours: parseFloat(studyDailyHours) });
+      setActiveStudyPlan(typeof response.data.plan_content === 'string' ? JSON.parse(response.data.plan_content) : response.data.plan_content);
       fetchStudyPlans();
     } catch (error) {
       alert("Failed to generate plan");
@@ -270,7 +262,7 @@ export default function StudentDashboard() {
       handleLogout={handleLogout}
     >
       <div className={`h-full w-full flex flex-col ${activeItem === 'Chatbot' ? 'overflow-hidden' : ''}`}>
-        
+
         {/* OVERVIEW DASHBOARD */}
         {activeItem === "Dashboard" ? (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -278,7 +270,7 @@ export default function StudentDashboard() {
               <h1 className="text-3xl font-black text-foreground tracking-tight">Overview</h1>
               <p className="text-muted-foreground mt-1">Here's your learning progress for today.</p>
             </div>
-            
+
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               <StatCard title="Quizzes Taken" value="12" icon={CheckCircle} description="Across 3 subjects" />
               <StatCard title="Average Score" value="82%" icon={Target} trend="↑ 4%" trendColor="text-emerald-500" description="since last week" />
@@ -291,14 +283,14 @@ export default function StudentDashboard() {
                 <div className="space-y-4">
                   <div className="p-4 rounded-xl bg-accent/10 border border-accent/20 flex justify-between items-center">
                     <div>
-                      <p className="font-bold text-accent flex items-center gap-2"><BookOpen className="w-4 h-4"/> Operating Systems Midterm</p>
+                      <p className="font-bold text-accent flex items-center gap-2"><BookOpen className="w-4 h-4" /> Operating Systems Midterm</p>
                       <p className="text-sm text-foreground mt-1">Due in 3 days. Complete chapter 4 and 5 revision.</p>
                     </div>
                     <Button size="sm" variant="outline" onClick={() => setActiveItem("Study Plan")}>Plan</Button>
                   </div>
                   <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 flex justify-between items-center">
                     <div>
-                      <p className="font-bold text-primary flex items-center gap-2"><CheckCircle className="w-4 h-4"/> Computer Networks Quiz</p>
+                      <p className="font-bold text-primary flex items-center gap-2"><CheckCircle className="w-4 h-4" /> Computer Networks Quiz</p>
                       <p className="text-sm text-foreground mt-1">Practice subnetting calculations.</p>
                     </div>
                     <Button size="sm" onClick={() => setActiveItem("Quizzes")}>Practice</Button>
@@ -327,61 +319,67 @@ export default function StudentDashboard() {
             </div>
           </div>
         ) : activeItem === "Chatbot" ? (
-            <div className="grid h-[calc(100vh-160px)] gap-6 xl:grid-cols-[280px_1fr]">
-              <Card className="flex flex-col hidden xl:flex glass-card">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-lg">Chat History</CardTitle>
-                </CardHeader>
-                <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2 custom-scrollbar">
-                  <Button onClick={handleNewChat} className="w-full mb-4">New Chat</Button>
-                  {previousChats.map((chat) => (
-                    <button key={chat.id} onClick={() => setSelectedChatId(chat.id)} className={`w-full text-left p-3 rounded-xl text-sm transition-all ${selectedChatId === chat.id ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-muted text-muted-foreground"}`}>
-                      <span className="block font-semibold truncate">{chat.title}</span>
-                      <span className={`block text-xs truncate mt-1 ${selectedChatId === chat.id ? "text-primary-foreground/80" : "opacity-70"}`}>
-                        {chat.messages?.at(-1)?.text || "New chat"}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </Card>
+          <div className="grid h-[calc(100vh-160px)] gap-6 xl:grid-cols-[280px_1fr]">
+            <Card className="flex flex-col hidden xl:flex glass-card">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg">Chat History</CardTitle>
+              </CardHeader>
+              <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2 custom-scrollbar">
+                <Button onClick={handleNewChat} className="w-full mb-4">New Chat</Button>
+                {previousChats.map((chat) => (
+                  <button key={chat.id} onClick={() => setSelectedChatId(chat.id)} className={`w-full text-left p-3 rounded-xl text-sm transition-all ${selectedChatId === chat.id ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-muted text-muted-foreground"}`}>
+                    <span className="block font-semibold truncate">{chat.title}</span>
+                    <span className={`block text-xs truncate mt-1 ${selectedChatId === chat.id ? "text-primary-foreground/80" : "opacity-70"}`}>
+                      {chat.messages?.at(-1)?.text || "New chat"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </Card>
 
-              <Card className="flex flex-col overflow-hidden relative glass-card border-primary/20">
-                <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar">
-                  {selectedMessages.length > 0 ? (
-                    selectedMessages.map((msg, i) => (
-                      <ChatBubble key={i} message={msg.text} isUser={msg.isUser} />
-                    ))
-                  ) : (
-                    <div className="flex h-full flex-col items-center justify-center text-center max-w-md mx-auto">
-                      <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-6">
-                        <Lightbulb className="w-8 h-8" />
-                      </div>
-                      <h2 className="text-2xl font-bold text-foreground mb-2">KnowledgeX AI Tutor</h2>
-                      <p className="text-muted-foreground">Ask questions, clarify doubts, or request explanations on any academic topic.</p>
+            <Card className="flex flex-col overflow-hidden relative glass-card border-primary/20">
+              <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar">
+                {selectedMessages.length > 0 ? (
+                  selectedMessages.map((msg, i) => (
+                    <ChatBubble key={i} message={msg.text} isUser={msg.isUser} />
+                  ))
+                ) : (
+                  <div className="flex h-full flex-col items-center justify-center text-center max-w-md mx-auto">
+                    <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-6">
+                      <Lightbulb className="w-8 h-8" />
                     </div>
-                  )}
-                  {isChatSending && <ChatBubble message="" isUser={false} isTyping={true} />}
-                </div>
-                <div className="p-4 bg-[var(--sidebar)]/80 backdrop-blur-md border-t border-[var(--border)] shrink-0">
-                  <input ref={pdfInputRef} type="file" accept="application/pdf" onChange={handleAttachPdf} className="hidden" />
-                  <ChatInput 
-                    input={chatInput} 
-                    setInput={setChatInput} 
-                    onSubmit={handleSendChat} 
-                    isSending={isChatSending}
-                    onAttachClick={() => pdfInputRef.current?.click()}
-                  />
-                </div>
-              </Card>
-            </div>
+                    <h2 className="text-2xl font-bold text-foreground mb-2">KnowledgeX AI Tutor</h2>
+                    <p className="text-muted-foreground">Ask questions, clarify doubts, or request explanations on any academic topic.</p>
+                  </div>
+                )}
+                {isChatSending && <ChatBubble message="" isUser={false} isTyping={true} />}
+              </div>
+              <div className="p-4 bg-[var(--sidebar)]/80 backdrop-blur-md border-t border-[var(--border)] shrink-0">
+                <input ref={pdfInputRef} type="file" accept="application/pdf" onChange={handleAttachPdf} className="hidden" />
+                <ChatInput
+                  input={chatInput}
+                  setInput={setChatInput}
+                  onSubmit={handleSendChat}
+                  isSending={isChatSending}
+                  onAttachClick={() => pdfInputRef.current?.click()}
+                />
+              </div>
+            </Card>
+          </div>
         ) : activeItem === "Quizzes" ? (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {quizResult ? (
               <div className="max-w-3xl mx-auto">
-                <Button variant="ghost" onClick={() => setQuizResult(null)} className="pl-0 mb-4 hover:bg-transparent hover:text-primary">← Back to Quizzes</Button>
+                <div className="flex justify-between items-center mb-4">
+                  <Button variant="ghost" onClick={() => setQuizResult(null)} className="pl-0 hover:bg-transparent hover:text-primary">← Back to Quizzes</Button>
+                  <Button onClick={() => setActiveItem("Recommendations")} variant="default" className="gap-2">
+                    <Lightbulb className="w-4 h-4" />
+                    Get AI Recommendations
+                  </Button>
+                </div>
                 <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/5 p-8 text-center mb-8">
                   <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-background shadow-sm mb-6 border border-border">
-                    <span className="text-4xl font-black text-emerald-500">{((quizResult.score / quizResult.total_questions) * 100).toFixed(0)}%</span>
+                    <span className="text-4xl font-black text-emerald-500">{quizResult.score.toFixed(0)}%</span>
                   </div>
                   <h2 className="text-3xl font-black text-foreground mb-2">Quiz Completed!</h2>
                   <p className="text-muted-foreground">You got {quizResult.correct_answers} out of {quizResult.total_questions} correct.</p>
@@ -398,7 +396,7 @@ export default function StudentDashboard() {
                               {isCorrect ? "✓ Correct" : "✗ Incorrect"}
                             </span>
                           </div>
-                          
+
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <div className="p-4 rounded-xl border border-border bg-[var(--background)]">
                               <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Your Answer</p>
@@ -434,11 +432,11 @@ export default function StudentDashboard() {
                   {activeQuiz.questions.map((q, i) => (
                     <Card key={i} className="glass-card">
                       <CardContent className="p-6">
-                        <p className="font-bold text-foreground mb-4"><span className="text-primary mr-2">Q{i+1}.</span>{q.question}</p>
+                        <p className="font-bold text-foreground mb-4"><span className="text-primary mr-2">Q{i + 1}.</span>{q.question}</p>
                         <div className="space-y-3">
                           {q.options.map((opt, j) => (
                             <label key={j} className={`flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all border ${selectedAnswers[i] === opt ? "border-primary bg-primary/5 shadow-sm" : "border-border bg-background hover:border-primary/50"}`}>
-                              <input type="radio" name={`q-${i}`} value={opt} checked={selectedAnswers[i] === opt} onChange={() => setSelectedAnswers(prev => ({...prev, [i]: opt}))} className="text-primary" />
+                              <input type="radio" name={`q-${i}`} value={opt} checked={selectedAnswers[i] === opt} onChange={() => setSelectedAnswers(prev => ({ ...prev, [i]: opt }))} className="text-primary" />
                               <span className={`text-sm font-medium ${selectedAnswers[i] === opt ? "text-foreground" : "text-muted-foreground"}`}>{opt}</span>
                             </label>
                           ))}
@@ -464,12 +462,12 @@ export default function StudentDashboard() {
                   <div className="space-y-4">
                     <div>
                       <label className="text-sm font-semibold mb-1 block">Topic</label>
-                      <input value={quizTopic} onChange={e=>setQuizTopic(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="e.g., Data Structures" />
+                      <input value={quizTopic} onChange={e => setQuizTopic(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="e.g., Data Structures" />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-semibold mb-1 block">Difficulty</label>
-                        <select value={quizDifficulty} onChange={e=>setQuizDifficulty(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none">
+                        <select value={quizDifficulty} onChange={e => setQuizDifficulty(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none">
                           <option value="easy">Easy</option>
                           <option value="medium">Medium</option>
                           <option value="hard">Hard</option>
@@ -477,7 +475,7 @@ export default function StudentDashboard() {
                       </div>
                       <div>
                         <label className="text-sm font-semibold mb-1 block">Questions</label>
-                        <input type="number" value={quizNumQuestions} onChange={e=>setQuizNumQuestions(Number(e.target.value))} min="1" max="20" className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none" />
+                        <input type="number" value={quizNumQuestions} onChange={e => setQuizNumQuestions(Number(e.target.value))} min="1" max="20" className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none" />
                       </div>
                     </div>
                     <Button onClick={handleGenerateQuiz} disabled={isLoading} className="w-full h-11">{isLoading ? "Generating..." : "Generate AI Quiz"}</Button>
@@ -505,8 +503,8 @@ export default function StudentDashboard() {
               <h1 className="text-3xl font-black tracking-tight">Study Plans</h1>
               <p className="text-muted-foreground">Generate structured learning schedules.</p>
             </div>
-            <div className="grid lg:grid-cols-2 gap-8">
-              <AnalyticsCard title="Create Plan" className="self-start">
+            <div className="grid lg:grid-cols-2 gap-8 items-start">
+              <AnalyticsCard title="Create Plan" className="sticky top-6">
                 <div className="space-y-4">
                   <div>
                     <label className="text-sm font-semibold mb-1 block">Subjects (comma separated)</label>
@@ -525,69 +523,264 @@ export default function StudentDashboard() {
                   </Button>
                 </div>
               </AnalyticsCard>
-              
-              <div className="space-y-6">
+
+              <div className="space-y-6 h-[calc(100vh-140px)] overflow-y-auto pr-2 pb-10 custom-scrollbar">
                 {activeStudyPlan && (
                   <Card className="glass-card border-primary/50 bg-primary/5">
                     <CardHeader>
                       <CardTitle className="text-xl">Your New Plan</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <pre className="whitespace-pre-wrap text-sm font-sans">{JSON.stringify(activeStudyPlan, null, 2)}</pre>
+                      {(() => {
+                        const plan = activeStudyPlan.plan || activeStudyPlan;
+                        return (
+                          <div className="space-y-6">
+                            {plan.overview && (
+                              <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 text-primary-foreground/90 leading-relaxed">
+                                {plan.overview}
+                              </div>
+                            )}
+                            
+                            <div className="space-y-4">
+                              {plan.daily_schedule?.map((day, idx) => (
+                                <div key={idx} className="p-5 rounded-xl border border-[var(--border)] bg-[var(--background)]">
+                                  <div className="flex justify-between items-center mb-3">
+                                    <h4 className="font-bold text-lg text-primary">Day {day.day} - {day.subject}</h4>
+                                    <span className="text-xs font-bold px-2 py-1 bg-muted rounded-md">{day.duration_hours} hrs</span>
+                                  </div>
+                                  {day.date && <p className="text-sm text-muted-foreground mb-4">Target Date: {day.date}</p>}
+                                  
+                                  <div className="grid md:grid-cols-2 gap-4">
+                                    <div>
+                                      <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Topics to Cover</p>
+                                      <ul className="list-disc list-inside space-y-1 text-sm text-foreground">
+                                        {day.topics?.map((topic, tIdx) => (
+                                          <li key={tIdx}>{topic}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Activities & Resources</p>
+                                      <ul className="list-disc list-inside space-y-1 text-sm text-foreground">
+                                        {day.activities?.map((act, aIdx) => (
+                                          <li key={aIdx}>{act}</li>
+                                        ))}
+                                        {day.resources?.map((res, rIdx) => (
+                                          <li key={`res-${rIdx}`} className="text-secondary">{res}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </CardContent>
                   </Card>
                 )}
-                <h3 className="text-xl font-bold">Plan History</h3>
-                <div className="space-y-4">
-                  {studyPlans.length === 0 && <p className="text-muted-foreground">No past plans found.</p>}
-                  {studyPlans.map((p, i) => (
-                    <Card key={i} className="glass-card cursor-pointer hover:border-primary/50 transition-colors" onClick={() => setActiveStudyPlan(typeof p.plan_content === 'string' ? JSON.parse(p.plan_content) : p.plan_content)}>
-                      <CardContent className="p-4 flex justify-between items-center">
-                        <div>
-                          <p className="font-bold">{p.subjects.join(", ")}</p>
-                          <p className="text-xs text-muted-foreground mt-1">Exam: {new Date(p.exam_date).toLocaleDateString()}</p>
-                        </div>
-                        <GraduationCap className="w-5 h-5 text-muted-foreground" />
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
               </div>
             </div>
+          </div>
+        ) : activeItem === "Recommendations" ? (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div>
+              <h1 className="text-3xl font-black tracking-tight">AI Recommendations</h1>
+              <p className="text-muted-foreground mt-1">Personalized guidance based on your recent quiz performance.</p>
+            </div>
+
+            {isRecsLoading ? (
+              <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+                <Lightbulb className="w-12 h-12 mb-4 animate-pulse text-primary" />
+                <p>Analyzing your performance...</p>
+              </div>
+            ) : !recommendations ? (
+              <div className="text-center py-20 bg-[var(--card)] rounded-2xl border border-[var(--border)]">
+                <Lightbulb className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground">Take a quiz to generate personalized recommendations.</p>
+                <Button onClick={() => setActiveItem("Quizzes")} className="mt-4">Go to Quizzes</Button>
+              </div>
+            ) : (
+              <div className="grid lg:grid-cols-2 gap-8">
+                <div className="space-y-8">
+                  <AnalyticsCard title="Weak Topics Identified">
+                    <ul className="space-y-3">
+                      {recommendations.weak_topics?.length > 0 ? (
+                        recommendations.weak_topics.map((topic, i) => (
+                          <li key={i} className="flex items-center gap-3 p-3 rounded-lg bg-red-500/5 border border-red-500/20 text-red-600 dark:text-red-400 font-medium">
+                            <Target className="w-5 h-5" />
+                            {topic}
+                          </li>
+                        ))
+                      ) : (
+                        <p className="text-muted-foreground">No weak topics identified! Keep up the great work.</p>
+                      )}
+                    </ul>
+                  </AnalyticsCard>
+
+                  <AnalyticsCard title="Suggested Quizzes">
+                    <ul className="space-y-3">
+                      {recommendations.suggested_quizzes?.map((quiz, i) => (
+                        <li key={i} className="flex flex-col gap-1 p-3 rounded-lg bg-[var(--background)] border border-[var(--border)]">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-primary" />
+                            <span className="font-bold text-foreground">{quiz.topic}</span>
+                            <span className="px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded bg-primary/10 text-primary">{quiz.difficulty}</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground ml-6">{quiz.reason}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </AnalyticsCard>
+                </div>
+
+                <div className="space-y-8">
+                  <AnalyticsCard title="Recommended Materials">
+                    <ul className="space-y-3">
+                      {recommendations.recommended_materials?.map((mat, i) => (
+                        <li key={i} className="flex flex-col gap-1 p-3 rounded-lg bg-[var(--background)] border border-[var(--border)]">
+                          <div className="flex items-center gap-2">
+                            <BookOpen className="w-4 h-4 text-secondary" />
+                            <span className="font-bold text-foreground">{mat.resource}</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground ml-6">For: {mat.topic}</p>
+                          <p className="text-xs text-muted-foreground ml-6">{mat.reason}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </AnalyticsCard>
+
+                  <AnalyticsCard title="Overall Advice">
+                    <div className="p-5 rounded-xl bg-primary/5 border border-primary/20 text-foreground leading-relaxed">
+                      {recommendations.overall_advice}
+                    </div>
+                  </AnalyticsCard>
+                </div>
+              </div>
+            )}
           </div>
         ) : activeItem === "Analytics" ? (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div>
               <h1 className="text-3xl font-black tracking-tight">Performance Analytics</h1>
-              <p className="text-muted-foreground">Track your progress and AI recommendations.</p>
+              <p className="text-muted-foreground">Track your progress.</p>
             </div>
-            
-            {isAnalyticsLoading ? <p className="text-muted-foreground">Loading Analytics...</p> : analytics && (
-              <div className="grid sm:grid-cols-3 gap-6 mb-8">
-                <StatCard title="Quizzes Taken" value={analytics.total_quizzes_taken || 0} icon={FileText} />
-                <StatCard title="Average Score" value={`${analytics.average_score?.toFixed(1) || 0}%`} icon={Target} trendColor="text-emerald-500" />
-                <StatCard title="Study Plans" value={analytics.total_study_plans || 0} icon={BookOpen} />
-              </div>
-            )}
 
-            <h3 className="text-xl font-bold mt-8 mb-4 flex items-center gap-2"><Lightbulb className="w-5 h-5 text-primary"/> AI Recommendations</h3>
-            {isRecsLoading ? <p className="text-muted-foreground">Loading recommendations...</p> : (!recommendations || recommendations.length === 0) ? (
-              <p className="text-muted-foreground">No recommendations available yet.</p>
-            ) : (
-              <div className="grid lg:grid-cols-2 gap-6">
-                {recommendations.map((r, i) => (
-                  <Card key={i} className="glass-card">
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">{i+1}</div>
-                        <h3 className="font-bold capitalize">{r.type}</h3>
+            {(() => {
+              const totalQuizzes = quizHistory.length;
+              const avgScore = totalQuizzes > 0 ? quizHistory.reduce((acc, q) => acc + q.score, 0) / totalQuizzes : 0;
+              return (
+              <>
+                <div className="grid sm:grid-cols-3 gap-6 mb-8">
+                  <StatCard title="Quizzes Taken" value={totalQuizzes} icon={FileText} />
+                  <StatCard title="Average Score" value={`${avgScore.toFixed(1)}%`} icon={Target} trendColor="text-emerald-500" />
+                  <StatCard title="Study Plans" value={studyPlans.length} icon={BookOpen} />
+                </div>
+
+                <div className="grid lg:grid-cols-2 gap-8">
+                  <AnalyticsCard title="Recent Quiz Performance">
+                    <div className="h-[300px] mt-4">
+                      {quizHistory.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={quizHistory.slice(0, 5).reverse()} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                            <XAxis dataKey="topic" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+                            <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} />
+                            <Tooltip
+                              cursor={{ fill: 'var(--muted)' }}
+                              contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '8px' }}
+                            />
+                            <Bar dataKey="score" fill="#6366F1" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
+                          <BarChartIcon className="w-8 h-8 mb-2 opacity-50" />
+                          <p>No quiz data available.</p>
+                        </div>
+                      )}
+                    </div>
+                  </AnalyticsCard>
+
+                  <AnalyticsCard title="Learning Trends">
+                    <div className="h-[300px] mt-4">
+                      {quizHistory.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={quizHistory.slice(0, 10).reverse()} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                            <XAxis dataKey="created_at" tickFormatter={(val) => new Date(val).toLocaleDateString()} stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+                            <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+                            <Tooltip 
+                              contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '8px' }}
+                              labelFormatter={(label) => new Date(label).toLocaleDateString()}
+                            />
+                            <Line type="monotone" dataKey="score" stroke="#10B981" strokeWidth={3} dot={{ r: 4, fill: '#10B981', strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
+                          <TrendingUp className="w-8 h-8 mb-2 opacity-50" />
+                          <p>Not enough data to show trends.</p>
+                        </div>
+                      )}
+                    </div>
+                  </AnalyticsCard>
+
+                  <AnalyticsCard title="Attendance Overview">
+                    <div className="h-[300px] mt-4">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={attendanceData.map(d => ({ subject: d.subject, percentage: Math.round((d.present/d.total)*100) }))} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                          <XAxis dataKey="subject" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+                          <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} />
+                          <Tooltip 
+                            cursor={{fill: 'var(--muted)'}}
+                            contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '8px' }}
+                            formatter={(value) => [`${value}%`, 'Attendance']}
+                          />
+                          <Bar dataKey="percentage" fill="#F59E0B" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </AnalyticsCard>
+                </div>
+              </>
+              );
+            })()}
+          </div>
+        ) : activeItem === "Attendance" ? (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div>
+              <h1 className="text-3xl font-black tracking-tight">Attendance Tracking</h1>
+              <p className="text-muted-foreground mt-1">Review your subject-wise attendance and requirements.</p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              {attendanceData.map((item, i) => {
+                const percentage = ((item.present / item.total) * 100).toFixed(0);
+                const isWarning = percentage < 75;
+                return (
+                  <AnalyticsCard key={i} title={item.subject}>
+                    <div className="flex items-center justify-between p-4 bg-[var(--background)] rounded-xl border border-[var(--border)]">
+                      <div>
+                        <p className="text-sm font-semibold text-muted-foreground mb-1">Classes Attended</p>
+                        <p className="text-2xl font-black">{item.present} <span className="text-sm font-medium text-muted-foreground">/ {item.total}</span></p>
                       </div>
-                      <p className="text-sm text-muted-foreground leading-relaxed">{r.content || r.message}</p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+                      <div className={`w-20 h-20 rounded-full flex items-center justify-center border-4 ${isWarning ? 'border-red-500 text-red-500 bg-red-500/10' : 'border-emerald-500 text-emerald-500 bg-emerald-500/10'}`}>
+                        <span className="text-xl font-bold">{percentage}%</span>
+                      </div>
+                    </div>
+                    {isWarning && (
+                      <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex gap-2 items-center text-red-600 dark:text-red-400 text-sm">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        <p>Attendance is below 75%. You need to attend the next few classes!</p>
+                      </div>
+                    )}
+                  </AnalyticsCard>
+                );
+              })}
+            </div>
           </div>
         ) : (
           <div className="flex h-full flex-col items-center justify-center text-center animate-in fade-in duration-500">

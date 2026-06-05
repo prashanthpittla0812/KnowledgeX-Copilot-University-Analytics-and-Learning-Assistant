@@ -42,6 +42,8 @@ export function ChatBubble({ message, isUser, isTyping = false }) {
 }
 
 export function ChatInput({ input, setInput, onSubmit, isSending = false, onAttachClick }) {
+  const [isListening, setIsListening] = React.useState(false);
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -51,13 +53,45 @@ export function ChatInput({ input, setInput, onSubmit, isSending = false, onAtta
     }
   };
 
+  const handleVoiceInput = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Your browser does not support Speech Recognition.");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+
+    recognition.onstart = () => {
+      setIsListening(true);
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setInput(prev => (prev ? prev + " " + transcript : transcript));
+    };
+
+    recognition.onerror = (event) => {
+      console.error("Speech recognition error", event.error);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognition.start();
+  };
+
   return (
     <div className="relative flex w-full flex-col overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)] shadow-lg focus-within:ring-2 focus-within:ring-[var(--primary)]/50 transition-all">
       <textarea
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Message KnowledgeX Copilot..."
+        placeholder={isListening ? "Listening..." : "Message KnowledgeX Copilot..."}
         className="min-h-[60px] w-full resize-none bg-transparent px-4 pt-4 pb-12 focus:outline-none sm:text-sm custom-scrollbar text-[var(--foreground)]"
         rows={1}
         style={{ height: 'auto', maxHeight: '200px' }}
@@ -79,7 +113,8 @@ export function ChatInput({ input, setInput, onSubmit, isSending = false, onAtta
           type="button"
           variant="ghost"
           size="icon"
-          className="h-8 w-8 rounded-full text-muted-foreground hover:bg-muted"
+          onClick={handleVoiceInput}
+          className={cn("h-8 w-8 rounded-full transition-all", isListening ? "bg-red-500/10 text-red-500 hover:bg-red-500/20 animate-pulse" : "text-muted-foreground hover:bg-muted")}
           title="Voice Input"
         >
           <Mic className="h-4 w-4" />

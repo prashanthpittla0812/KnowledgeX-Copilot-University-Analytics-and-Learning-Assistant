@@ -15,7 +15,8 @@ import {
   Menu,
   X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Lightbulb
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
@@ -48,6 +49,7 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
     { name: "Attendance", icon: Calendar },
     { name: "Quizzes", icon: CheckCircle },
     { name: "Study Plan", icon: BookOpen },
+    { name: "Recommendations", icon: Lightbulb },
     { name: "Analytics", icon: PieChart },
   ];
 

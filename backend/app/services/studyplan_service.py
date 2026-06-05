@@ -22,6 +22,7 @@ class StudyPlanService:
         self, user: User, subjects: list[str], exam_date: str, daily_hours: float
     ) -> dict:
         prompt = STUDYPLAN_GENERATION_PROMPT_TEMPLATE.format(
+            current_date=datetime.now().strftime("%Y-%m-%d"),
             subjects=subjects,
             exam_date=exam_date,
             daily_hours=daily_hours,
