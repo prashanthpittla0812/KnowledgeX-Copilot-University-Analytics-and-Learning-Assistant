@@ -76,7 +76,7 @@ export default function Register() {
             opacity: [0.3, 0.4, 0.3]
           }}
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute bottom-[-20%] left-[-10%] w-[60vw] h-[60vw] max-w-[600px] max-h-[600px] rounded-full bg-purple-500/20 blur-[100px]"
+          className="absolute bottom-[-20%] left-[-10%] w-[60vw] h-[60vw] max-w-[600px] max-h-[600px] rounded-full bg-orange-500/20 blur-[100px]"
         />
         <motion.div 
           animate={{ 
@@ -84,7 +84,7 @@ export default function Register() {
             opacity: [0.2, 0.5, 0.2]
           }}
           transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[30%] left-[20%] w-[40vw] h-[40vw] max-w-[400px] max-h-[400px] rounded-full bg-cyan-500/10 blur-[80px]"
+          className="absolute top-[30%] left-[20%] w-[40vw] h-[40vw] max-w-[400px] max-h-[400px] rounded-full bg-amber-500/10 blur-[80px]"
         />
       </div>
 
@@ -100,7 +100,7 @@ export default function Register() {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.2 }}
-            className="mx-auto flex w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 items-center justify-center text-white font-black text-3xl shadow-2xl shadow-indigo-500/30 mb-6"
+            className="mx-auto flex w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 items-center justify-center text-white font-black text-3xl shadow-2xl shadow-orange-500/30 mb-6"
           >
             K
           </motion.div>
