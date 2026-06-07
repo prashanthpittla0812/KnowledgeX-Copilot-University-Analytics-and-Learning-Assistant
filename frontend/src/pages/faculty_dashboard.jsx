@@ -246,7 +246,7 @@ export default function FacultyDashboard() {
           <LearningMaterialsTab />
         ) : activeItem === "Multimodal Content" ? (
           <MultimodalUploadTab />
-        ) : activeItem === "Conduct Quizzes" ? (
+        ) : activeItem === "Quizzes" ? (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {!selectedQuiz ? (
               <>
