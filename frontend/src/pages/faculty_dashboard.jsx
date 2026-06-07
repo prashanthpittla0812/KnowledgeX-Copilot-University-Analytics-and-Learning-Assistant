@@ -11,8 +11,10 @@ import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card"
 import { StatCard } from "../components/ui/stat-card";
 import { AnalyticsCard } from "../components/ui/analytics-card";
 import { ChatBubble, ChatInput } from "../components/ui/chat";
-import { BookOpen, Users, AlertCircle, FileText, Send, CheckCircle, BarChart as BarChartIcon } from "lucide-react";
+import { BookOpen, Users, AlertCircle, FileText, Send, CheckCircle, BarChart as BarChartIcon, BookMarked } from "lucide-react";
 import { Button } from "../components/ui/button";
+import { LearningMaterialsTab } from "../components/faculty/LearningMaterialsTab";
+import { MultimodalUploadTab } from "../components/faculty/MultimodalUploadTab";
 
 const defaultFacultyChats = [];
 
@@ -240,6 +242,10 @@ export default function FacultyDashboard() {
               </AnalyticsCard>
             </div>
           </div>
+        ) : activeItem === "Learning Materials" ? (
+          <LearningMaterialsTab />
+        ) : activeItem === "Multimodal Content" ? (
+          <MultimodalUploadTab />
         ) : activeItem === "Quizzes" ? (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {!selectedQuiz ? (

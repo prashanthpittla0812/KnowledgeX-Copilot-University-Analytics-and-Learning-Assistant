@@ -65,22 +65,70 @@ class RAGService:
         docs = self.vector_store.similarity_search(query, k=k)
         return [doc.page_content for doc in docs]
 
-    def generate_answer(self, question: str) -> dict:
+    def generate_answer(self, question: str, content_ids: list[int] = None) -> dict:
         prompt = PromptTemplate(
             template=RAG_QA_PROMPT_TEMPLATE,
             input_variables=["context", "question"],
         )
 
-        docs = self.vector_store.similarity_search(question, k=4)
+        filter_dict = None
+        if content_ids:
+            if len(content_ids) == 1:
+                filter_dict = {"content_id": content_ids[0]}
+            else:
+                filter_dict = {"content_id": {"$in": content_ids}}
+
+        docs = self.vector_store.similarity_search(question, k=4, filter=filter_dict)
         context = "\n\n".join(doc.page_content for doc in docs)
 
         chain = prompt | self.llm
         result = chain.invoke({"context": context, "question": question})
 
+        sources_metadata = []
+        for doc in docs:
+            # Look for Timestamp in content or use metadata
+            meta = doc.metadata
+            source_info = {
+                "source": meta.get("source", "unknown"),
+                "source_type": meta.get("source_type", "PDF"),
+                "timestamp_or_page": "Not specified"
+            }
+            # Heuristic to extract timestamp from video OCR text if present
+            if "[Timestamp" in doc.page_content:
+                parts = doc.page_content.split("[Timestamp")
+                if len(parts) > 1:
+                    ts = parts[1].split("]")[0].strip()
+                    source_info["timestamp_or_page"] = f"Timestamp {ts}"
+            
+            sources_metadata.append(source_info)
+
         return {
             "answer": result.content,
-            "sources": [
-                doc.metadata.get("source", "unknown")
-                for doc in docs
-            ],
+            "sources": sources_metadata,
         }
+
+    def summarize_content(self, text: str, summary_type: str = "Short Summary") -> str:
+        if not text:
+            return "No content provided to summarize."
+            
+        prompts = {
+            "Short Summary": "Provide a brief 3-sentence summary of the following content:\n\n{text}",
+            "Detailed Summary": "Provide a detailed summary covering all main points of the following content:\n\n{text}",
+            "Exam Notes": "Convert the following content into concise bullet points suitable for exam preparation:\n\n{text}",
+            "Revision Notes": "Extract the key concepts and explain them briefly for revision:\n\n{text}",
+            "Key Concepts": "List ONLY the top 5 key concepts mentioned in this text with a 1-sentence explanation for each:\n\n{text}"
+        }
+        
+        prompt_template = prompts.get(summary_type, prompts["Short Summary"])
+        
+        from langchain_core.prompts import PromptTemplate
+        prompt = PromptTemplate(
+            template=prompt_template,
+            input_variables=["text"]
+        )
+        
+        chain = prompt | self.llm
+        result = chain.invoke({"text": text[:15000]}) # Limit text to avoid token limits
+        
+        return result.content
+

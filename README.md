@@ -1,20 +1,60 @@
-# Introduction 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
+# KnowledgeX Copilot
 
-# Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
-1.	Installation process
-2.	Software dependencies
-3.	Latest releases
-4.	API references
+An AI-powered academic assistant platform built with an Enterprise-grade Tech Stack. This full-stack application enables real-time student analytics, dynamic quiz generation via LLMs, and robust administrative workflows.
 
-# Build and Test
-TODO: Describe and show how to build your code and run the tests. 
+## Architecture
 
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better. 
+KnowledgeX Copilot is structured as a robust split-stack architecture:
 
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
+- **Frontend (`/frontend`)**: A fast, responsive, and beautifully designed Single Page Application (SPA) built with React, Vite, and TailwindCSS.
+- **Backend (`/backend`)**: A high-performance Python server built with FastAPI, utilizing a MySQL database via SQLAlchemy, and LangChain for LLM integrations.
+
+## How to Run the Application
+
+To run KnowledgeX Copilot locally, you must start both the **Backend API Server** and the **Frontend Development Server** concurrently. You will need two separate terminal windows.
+
+### Step 1: Start the Backend
+The backend runs on Python and provides all the data and AI processing capabilities.
+
+1. Open your **first terminal**.
+2. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
+3. Activate the virtual environment (if you are using one):
+   ```bash
+   # Windows:
+   venv\Scripts\activate
+   # Mac/Linux:
+   source venv/bin/activate
+   ```
+4. Start the FastAPI server using `uvicorn`:
+   ```bash
+   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+   ```
+   *Your backend is now running at `http://localhost:8000`. You can view the API documentation at `http://localhost:8000/docs`.*
+
+### Step 2: Start the Frontend
+The frontend is the graphical user interface for students, faculty, and admins.
+
+1. Open your **second terminal**.
+2. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
+3. Install dependencies (if this is your first time):
+   ```bash
+   npm install
+   ```
+4. Start the Vite development server:
+   ```bash
+   npm run dev
+   ```
+   *Your frontend is now running at `http://localhost:5173`. Open this URL in your web browser to use the application!*
+
+---
+
+### Detailed Documentation
+For deep-dives into specific subsystems, see the localized READMEs:
+- **[Backend Setup & API Guide](backend/README.md)**
+- **[Frontend Setup & Architecture](frontend/README.md)**

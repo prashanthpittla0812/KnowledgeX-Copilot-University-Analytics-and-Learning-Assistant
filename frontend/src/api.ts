@@ -8,9 +8,6 @@ export const USER_STORAGE_KEY = "knowledgex_user";
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
 });
 
 api.interceptors.request.use((config) => {
@@ -102,7 +99,6 @@ export const authApi = {
 export const facultyApi = {
   uploadDocument(formData: FormData, topicName: string) {
     return api.post("/faculty/upload", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
       params: { topic_name: topicName }
     });
   },
@@ -198,19 +194,35 @@ export const studentApi = {
 };
 
 export const chatbotApi = {
-  async askQuestion(question: string) {
-    const response = await api.post("/chat/", { question });
+  async askQuestion(question: string, content_ids: number[] = []) {
+    const response = await api.post("/chat/", { question, content_ids });
     return response.data;
   },
+  async summarize(content_id: number, summary_type: string = "Short Summary") {
+    const response = await api.post("/chat/summarize", { content_id, summary_type });
+    return response.data;
+  },
+  async summarizeBatch(content_ids: number[], summary_type: string = "Short Summary") {
+    const response = await api.post("/chat/summarize-batch", { content_ids, summary_type });
+    return response.data;
+  }
 };
 
 export const documentApi = {
   async uploadPdf(file: File) {
     const formData = new FormData();
     formData.append("file", file);
-    const response = await api.post("/documents/upload", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const response = await api.post("/documents/upload", formData);
+    return response.data;
+  },
+
+  async uploadMultimodal(formData: FormData) {
+    const response = await api.post("/documents/multimodal/upload", formData);
+    return response.data;
+  },
+
+  async uploadMultimodalBatch(formData: FormData) {
+    const response = await api.post("/documents/multimodal/upload-batch", formData);
     return response.data;
   },
 
@@ -229,4 +241,44 @@ export const adminApi = {
   },
 };
 
+export const materialApi = {
+  // Faculty
+  async uploadMaterial(formData: FormData) {
+    const response = await api.post("/materials/faculty", formData);
+    return response.data;
+  },
+  getFacultyMaterials() {
+    return api.get("/materials/faculty");
+  },
+  deleteMaterial(id: number) {
+    return api.delete(`/materials/faculty/${id}`);
+  },
+  getFacultyAnalytics() {
+    return api.get("/materials/faculty/analytics");
+  },
+
+  // Student
+  getStudentMaterials(params?: any) {
+    return api.get("/materials/student", { params });
+  },
+  getRecentMaterials() {
+    return api.get("/materials/student/recent");
+  },
+  trackAction(id: number, action_type: "VIEW" | "DOWNLOAD") {
+    return api.post(`/materials/student/${id}/action`, { action_type });
+  },
+  toggleBookmark(id: number) {
+    return api.post(`/materials/student/${id}/bookmark`);
+  },
+
+  // Notifications
+  getNotifications() {
+    return api.get("/materials/notifications");
+  },
+  markNotificationsRead() {
+    return api.post("/materials/notifications/read");
+  }
+};
+
 export default api;
+

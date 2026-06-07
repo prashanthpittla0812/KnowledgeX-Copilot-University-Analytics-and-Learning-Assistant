@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text, Enum
 from sqlalchemy.orm import relationship
 
 from app.database.db import Base
@@ -14,6 +14,13 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
     role = Column(String(50), nullable=False, default="student")
+    status = Column(String(50), nullable=False, default="PENDING")
+    approved_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    approved_at = Column(DateTime, nullable=True)
+    rejected_at = Column(DateTime, nullable=True)
+    department = Column(String(255), nullable=True)
+    designation = Column(String(255), nullable=True)
+    must_change_password = Column(Boolean, default=False, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
@@ -26,6 +33,10 @@ class User(Base):
     quiz_attempts = relationship("QuizAttempt", back_populates="student", cascade="all, delete-orphan")
     topic_performances = relationship("TopicPerformance", back_populates="student", cascade="all, delete-orphan")
     topic_summaries = relationship("StudentTopicSummary", back_populates="student", cascade="all, delete-orphan")
+    
+    # Self-referential relationship for approver
+    approved_users = relationship("User", back_populates="approver", foreign_keys=[approved_by])
+    approver = relationship("User", back_populates="approved_users", remote_side=[id], foreign_keys=[approved_by])
 
 
 class Document(Base):
@@ -183,6 +194,19 @@ class StudentQuizResult(Base):
     quiz = relationship("StudentQuiz", back_populates="results")
 
 
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    action = Column(String(255), nullable=False)
+    performed_by = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    target_user = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    performer = relationship("User", foreign_keys=[performed_by])
+    target = relationship("User", foreign_keys=[target_user])
+
+
 class QuizAttempt(Base):
     __tablename__ = "quiz_attempts"
 
@@ -280,3 +304,74 @@ class FacultyInsight(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     teacher = relationship("User")
+
+class LearningMaterial(Base):
+    __tablename__ = "learning_materials"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    faculty_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    subject = Column(String(100), nullable=False)
+    topic = Column(String(100), nullable=False)
+    department = Column(String(100), nullable=True)
+    semester = Column(Integer, nullable=True)
+    material_type = Column(Enum("PDF", "PPT", "DOC", "NOTE", "ASSIGNMENT", "LINK", "VIDEO", name="material_type"), nullable=False)
+    file_path = Column(String(500), nullable=True)
+    file_url = Column(String(500), nullable=True)
+    file_size_bytes = Column(Integer, nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    faculty = relationship("User")
+    activities = relationship("MaterialActivity", back_populates="material", cascade="all, delete-orphan")
+    bookmarks = relationship("MaterialBookmark", back_populates="material", cascade="all, delete-orphan")
+
+class MaterialActivity(Base):
+    __tablename__ = "material_activities"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    material_id = Column(Integer, ForeignKey("learning_materials.id", ondelete="CASCADE"), nullable=False)
+    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    action_type = Column(String(50), nullable=False)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    material = relationship("LearningMaterial", back_populates="activities")
+    student = relationship("User")
+
+class MaterialBookmark(Base):
+    __tablename__ = "material_bookmarks"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    material_id = Column(Integer, ForeignKey("learning_materials.id", ondelete="CASCADE"), nullable=False)
+    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    is_active = Column(Boolean, default=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    material = relationship("LearningMaterial", back_populates="bookmarks")
+    student = relationship("User")
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    title = Column(String(255), nullable=False)
+    message = Column(Text, nullable=False)
+    link = Column(String(500), nullable=True)
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    user = relationship("User")
+
+class ProcessedContent(Base):
+    __tablename__ = "processed_content"
+    
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    title = Column(String(255), nullable=False)
+    source_type = Column(String(50), nullable=False) # PDF, IMAGE, OCR, AUDIO, VIDEO
+    transcript = Column(Text, nullable=True)
+    ocr_text = Column(Text, nullable=True)
+    summary = Column(Text, nullable=True)
+    file_path = Column(String(500), nullable=False)
+    uploaded_by = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    user = relationship("User")

@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { chatbotApi, documentApi, studentApi } from "../api";
+import { chatbotApi, documentApi, studentApi, materialApi } from "../api";
 import { DashboardLayout } from "../components/layout/DashboardLayout";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
 import { StatCard } from "../components/ui/stat-card";
 import { AnalyticsCard } from "../components/ui/analytics-card";
 import { ChatBubble, ChatInput } from "../components/ui/chat";
 import { Button } from "../components/ui/button";
-import { BookOpen, AlertCircle, FileText, Calendar, CheckCircle, BarChart as BarChartIcon, GraduationCap, Target, Lightbulb, TrendingUp } from "lucide-react";
+import { BookOpen, AlertCircle, FileText, Calendar, CheckCircle, BarChart as BarChartIcon, GraduationCap, Target, Lightbulb, TrendingUp, X } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
+import { LearningResourcesTab } from "../components/student/LearningResourcesTab";
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ export default function StudentDashboard() {
   const [chatInput, setChatInput] = useState("");
   const [isChatSending, setIsChatSending] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [attachedFile, setAttachedFile] = useState(null);
+  const [attachedFiles, setAttachedFiles] = useState([]);
 
   const [previousChats, setPreviousChats] = useState(() => {
     let userId = "default";
@@ -60,6 +61,9 @@ export default function StudentDashboard() {
   // Recommendations States
   const [recommendations, setRecommendations] = useState(null);
   const [isRecsLoading, setIsRecsLoading] = useState(false);
+
+  // Recent Materials State
+  const [recentMaterials, setRecentMaterials] = useState([]);
 
   // Analytics States
   const [analytics, setAnalytics] = useState(null);
@@ -131,7 +135,19 @@ export default function StudentDashboard() {
     setIsAnalyticsLoading(false);
   };
 
+  const fetchRecentMaterials = async () => {
+    try {
+      const res = await studentApi.getRecentMaterials?.() || await materialApi?.getRecentMaterials();
+      setRecentMaterials(res.data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   useEffect(() => {
+    if (activeItem === "Dashboard") {
+      fetchRecentMaterials();
+    }
     if (activeItem === "Quizzes" || activeItem === "Analytics") {
       fetchQuizHistory();
       fetchAssignedQuizzes();
@@ -155,67 +171,108 @@ export default function StudentDashboard() {
     localStorage.setItem(`studentChats_${studentId || "default"}`, JSON.stringify(updated));
   };
 
+  const handleAttachFiles = (event) => {
+    const files = Array.from(event.target.files);
+    if (files.length === 0) return;
+    setAttachedFiles(prev => [...prev, ...files]);
+  };
+
   const handleSendChat = async () => {
     const message = chatInput.trim();
-    if ((!message && !attachedFile) || isLoading) return;
+    if ((!message && attachedFiles.length === 0) || isLoading) return;
 
     let currentChats = [...previousChats];
     setIsChatSending(true);
     setIsLoading(true);
 
     try {
-      if (attachedFile) {
-        await documentApi.uploadPdf(attachedFile);
-        currentChats = currentChats.map((chat) => {
-          if (chat.id !== selectedChatId) return chat;
-          return { ...chat, messages: [...(chat.messages || []), { text: `Attached PDF: ${attachedFile.name}`, isUser: true }] };
-        });
-        setAttachedFile(null);
-      }
+      let uploadedIds = [];
+      const fileNamesList = attachedFiles.map(f => f.name).join(", ");
+      
+      // Represent the user's message in the chat immediately
+      const displayMessage = message ? message : `Uploaded files: ${fileNamesList}`;
+      const userText = fileNamesList && message ? `[Attached: ${fileNamesList}]\n\n${message}` : displayMessage;
 
-      if (message) {
-        currentChats = currentChats.map((chat) => {
-          if (chat.id !== selectedChatId) return chat;
-          const messages = chat.messages || [];
-          return { ...chat, title: messages.length === 0 ? (message.length > 30 ? message.slice(0, 30) + "..." : message) : chat.title, messages: [...messages, { text: message, isUser: true }] };
-        });
-      }
+      currentChats = currentChats.map((chat) => {
+        if (chat.id !== selectedChatId) return chat;
+        const messages = chat.messages || [];
+        return { 
+          ...chat, 
+          title: messages.length === 0 ? (displayMessage.length > 30 ? displayMessage.slice(0, 30) + "..." : displayMessage) : chat.title, 
+          messages: [...messages, { text: userText, isUser: true }] 
+        };
+      });
 
       setPreviousChats(currentChats);
       setChatInput("");
 
-      if (message) {
-        const response = await chatbotApi.askQuestion(message);
-        currentChats = currentChats.map((chat) => {
-          if (chat.id !== selectedChatId) return chat;
-          return { ...chat, messages: [...(chat.messages || []), { text: response.answer || response.data?.answer || "Sorry, I could not process that.", isUser: false }] };
+      // Upload files if any
+      if (attachedFiles.length > 0) {
+        const formData = new FormData();
+        attachedFiles.forEach(file => {
+          formData.append("files", file);
         });
-        setPreviousChats(currentChats);
+        formData.append("asr_provider", "Whisper"); 
+        
+        const uploadRes = await documentApi.uploadMultimodalBatch(formData);
+        if (uploadRes && uploadRes.uploaded) {
+          uploadedIds = uploadRes.uploaded.map(doc => doc.id);
+        }
+        setAttachedFiles([]);
+      }
+
+      // If there is no message but files were uploaded, just summarize them.
+      // If there is a message, ask the question (files are now in vector DB).
+      if (!message && uploadedIds.length > 0) {
+        try {
+          const summaryRes = await chatbotApi.summarizeBatch(uploadedIds, "Short Summary");
+          currentChats = currentChats.map((chat) => {
+            if (chat.id !== selectedChatId) return chat;
+            return { 
+              ...chat, 
+              messages: [...(chat.messages || []), { 
+                text: `**Summary of uploaded documents:**\n\n${summaryRes.summary}`, 
+                sources: [],
+                isUser: false 
+              }] 
+            };
+          });
+          setPreviousChats(currentChats);
+        } catch (e) {
+          console.error("Batch summary error", e);
+        }
+      } else if (message) {
+        try {
+          // If we want the bot to specifically focus on the newly uploaded docs, 
+          // we pass uploadedIds to the askQuestion API.
+          const response = await chatbotApi.askQuestion(message, uploadedIds);
+          currentChats = currentChats.map((chat) => {
+            if (chat.id !== selectedChatId) return chat;
+            return { 
+              ...chat, 
+              messages: [...(chat.messages || []), { 
+                text: response.answer || response.data?.answer || "Sorry, I could not process that.", 
+                sources: response.sources || response.data?.sources || [],
+                isUser: false 
+              }] 
+            };
+          });
+          setPreviousChats(currentChats);
+        } catch (e) {
+          console.error(e);
+        }
       }
 
       localStorage.setItem(`studentChats_${studentId || "default"}`, JSON.stringify(currentChats));
     } catch (error) {
-      alert("Failed to process request.");
+      console.error("Error sending chat:", error);
     } finally {
       setIsLoading(false);
       setIsChatSending(false);
     }
   };
 
-  const handleAttachPdf = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    if (file.type !== "application/pdf") return alert("Select a PDF");
-    setAttachedFile(file);
-    const msg = { text: `Prepared PDF: ${file.name}`, isUser: true };
-    const updated = previousChats.map(chat => {
-      if (chat.id !== selectedChatId) return chat;
-      return { ...chat, messages: [...(chat.messages || []), msg] };
-    });
-    setPreviousChats(updated);
-  };
-
-  const handleGenerateQuiz = async () => {
+    const handleGenerateQuiz = async () => {
     if (!quizTopic.trim()) return alert("Enter a topic");
     setIsLoading(true);
     try {
@@ -373,6 +430,30 @@ export default function StudentDashboard() {
                 </div>
               </AnalyticsCard>
             </div>
+
+            <AnalyticsCard title="Recently Uploaded Materials">
+              <div className="space-y-4">
+                {recentMaterials.length === 0 ? (
+                  <p className="text-muted-foreground text-sm py-4">No recent materials.</p>
+                ) : (
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {recentMaterials.slice(0, 3).map((m) => (
+                      <div key={m.id} className="p-4 rounded-xl border bg-card hover:border-primary/50 transition-colors cursor-pointer" onClick={() => setActiveItem("Learning Resources")}>
+                        <div className="flex items-start justify-between mb-2">
+                          <FileText className="text-primary w-6 h-6" />
+                          <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-1 rounded-md">{m.material_type}</span>
+                        </div>
+                        <h4 className="font-bold text-sm line-clamp-1">{m.title}</h4>
+                        <p className="text-xs text-muted-foreground mt-1">By {m.faculty_name}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <Button variant="ghost" className="w-full text-sm mt-2" onClick={() => setActiveItem("Learning Resources")}>
+                  View All Resources
+                </Button>
+              </div>
+            </AnalyticsCard>
           </div>
         ) : activeItem === "Chatbot" ? (
           <div className="grid h-[calc(100vh-160px)] gap-6 xl:grid-cols-[280px_1fr]">
@@ -397,7 +478,7 @@ export default function StudentDashboard() {
               <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar">
                 {selectedMessages.length > 0 ? (
                   selectedMessages.map((msg, i) => (
-                    <ChatBubble key={i} message={msg.text} isUser={msg.isUser} />
+                    <ChatBubble key={i} message={msg.text} sources={msg.sources} isUser={msg.isUser} />
                   ))
                 ) : (
                   <div className="flex h-full flex-col items-center justify-center text-center max-w-md mx-auto">
@@ -411,8 +492,27 @@ export default function StudentDashboard() {
                 {isChatSending && <ChatBubble message="" isUser={false} isTyping={true} />}
               </div>
               <div className="p-4 bg-[var(--sidebar)]/80 backdrop-blur-md border-t border-[var(--border)] shrink-0">
-                <input ref={pdfInputRef} type="file" accept="application/pdf" onChange={handleAttachPdf} className="hidden" />
-                <ChatInput
+                {attachedFiles.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {attachedFiles.map((file, idx) => (
+                      <div key={idx} className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-medium">
+                        <span className="truncate max-w-[150px]">{file.name}</span>
+                        <button onClick={() => setAttachedFiles(attachedFiles.filter((_, i) => i !== idx))} className="hover:text-red-500 rounded-full p-0.5">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <input 
+                    ref={pdfInputRef} 
+                    type="file" 
+                    accept=".pdf,.jpg,.jpeg,.png,.mp3,.wav,.m4a,.flac,.mp4,.avi,.mov,.mkv" 
+                    multiple
+                    onChange={handleAttachFiles} 
+                    className="hidden" 
+                  />
+                  <ChatInput
                   input={chatInput}
                   setInput={setChatInput}
                   onSubmit={handleSendChat}
@@ -575,6 +675,8 @@ export default function StudentDashboard() {
               </>
             )}
           </div>
+        ) : activeItem === "Learning Resources" ? (
+          <LearningResourcesTab />
         ) : activeItem === "Study Plan" ? (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div>

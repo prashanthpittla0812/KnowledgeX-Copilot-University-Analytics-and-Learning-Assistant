@@ -18,6 +18,8 @@ from app.routes import (
     role_routes,
     student_routes,
     studyplan_routes,
+    admin_routes,
+    material_routes,
 )
 from app.utils.constants import APP_DESCRIPTION, APP_NAME, APP_VERSION
 from app.utils.logger import get_logger, setup_logger
@@ -63,6 +65,7 @@ app.add_middleware(
 
 app.mount("/uploads", StaticFiles(directory=str(settings.UPLOAD_PATH)), name="uploads")
 
+app.include_router(admin_routes.router, prefix="/api/v1")
 app.include_router(auth_routes.router, prefix="/api/v1")
 app.include_router(chatbot_routes.router, prefix="/api/v1")
 app.include_router(document_routes.router, prefix="/api/v1")
@@ -76,6 +79,7 @@ app.include_router(role_routes.faculty_router, prefix="/api/v1")
 app.include_router(role_routes.admin_router, prefix="/api/v1")
 app.include_router(assessment_routes.router, prefix="/api/v1")
 app.include_router(attendance_routes.router, prefix="/api/v1")
+app.include_router(material_routes.router, prefix="/api/v1")
 
 
 @app.get("/", tags=["Health"])

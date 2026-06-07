@@ -16,10 +16,12 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  Lightbulb
+  Lightbulb,
+  Bell
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
+import { materialApi } from "../../api";
 
 export function DashboardLayout({ children, role = "student", activeItem, setActiveItem, userName = "User", handleLogout }) {
   const [sidebarOpen, setSidebarOpen] = useState(() => {
@@ -32,6 +34,21 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
   useEffect(() => {
     localStorage.setItem("sidebarOpen", JSON.stringify(sidebarOpen));
   }, [sidebarOpen]);
+
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const res = await materialApi.getNotifications();
+        const unread = res.data.filter(n => !n.is_read).length;
+        setUnreadCount(unread);
+      } catch (e) {
+        // ignore
+      }
+    };
+    fetchNotifications();
+  }, []);
 
   const toggleTheme = () => {
     const isDarkMode = !isDark;
@@ -48,6 +65,7 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
     { name: "Chatbot", icon: MessageSquare },
     { name: "Attendance", icon: Calendar },
     { name: "Quizzes", icon: CheckCircle },
+    { name: "Learning Resources", icon: BookOpen },
     { name: "Study Plan", icon: BookOpen },
     { name: "Recommendations", icon: Lightbulb },
     { name: "Analytics", icon: PieChart },
@@ -56,6 +74,7 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
   const facultyLinks = [
     { name: "Dashboard", icon: LayoutDashboard },
     { name: "Attendance", icon: Calendar },
+    { name: "Learning Materials", icon: BookOpen },
     { name: "Quizzes", icon: CheckCircle },
     { name: "Analytics", icon: PieChart },
   ];
@@ -143,6 +162,21 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
           </div>
 
           <div className="flex items-center gap-4">
+            <button 
+              className="relative p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors"
+              onClick={async () => {
+                if (unreadCount > 0) {
+                  await materialApi.markNotificationsRead();
+                  setUnreadCount(0);
+                }
+              }}
+              title="Notifications"
+            >
+              <Bell className="w-5 h-5" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-background"></span>
+              )}
+            </button>
             <button 
               onClick={toggleTheme}
               className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors"

@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from pathlib import Path
 
 from app.auth.permissions import require_role
+from app.config.settings import settings
 from app.database.db import get_db
 from app.database.models import User
 from app.schemas.document_schema import (
@@ -11,6 +13,7 @@ from app.schemas.document_schema import (
 )
 from app.services.document_service import DocumentService
 from app.services.rag_service import RAGService
+from app.services.multimodal_rag_service import MultimodalRAGService
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
@@ -39,6 +42,78 @@ async def upload_document(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
+
+@router.post("/multimodal/upload", response_model=DocumentUploadResponse, status_code=status.HTTP_201_CREATED)
+async def upload_multimodal_document(
+    file: UploadFile = File(...),
+    asr_provider: str = Form("Whisper"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("student", "faculty")),
+):
+    try:
+        content = await file.read()
+        if len(content) > settings.MAX_UPLOAD_SIZE_BYTES:
+            raise ValueError(f"File size exceeds limit")
+            
+        user_dir = settings.UPLOAD_PATH / str(current_user.id)
+        user_dir.mkdir(parents=True, exist_ok=True)
+        file_path = user_dir / file.filename
+        
+        with open(file_path, "wb") as f:
+            f.write(content)
+            
+        rag_service = MultimodalRAGService(db)
+        processed_content = await rag_service.process_upload(
+            file_path=str(file_path),
+            file_name=file.filename,
+            user=current_user,
+            asr_provider=asr_provider
+        )
+        
+        return DocumentUploadResponse(
+            id=processed_content.id,
+            file_name=processed_content.title,
+            upload_date=processed_content.created_at,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+@router.post("/multimodal/upload-batch", status_code=status.HTTP_201_CREATED)
+async def upload_multimodal_batch(
+    files: list[UploadFile] = File(...),
+    asr_provider: str = Form("Whisper"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("student", "faculty")),
+):
+    try:
+        user_dir = settings.UPLOAD_PATH / str(current_user.id)
+        user_dir.mkdir(parents=True, exist_ok=True)
+        rag_service = MultimodalRAGService(db)
+        
+        uploaded_docs = []
+        for file in files:
+            content = await file.read()
+            if len(content) > settings.MAX_UPLOAD_SIZE_BYTES:
+                continue # Skip large files in batch
+                
+            file_path = user_dir / file.filename
+            with open(file_path, "wb") as f:
+                f.write(content)
+                
+            processed_content = await rag_service.process_upload(
+                file_path=str(file_path),
+                file_name=file.filename,
+                user=current_user,
+                asr_provider=asr_provider
+            )
+            uploaded_docs.append({
+                "id": processed_content.id,
+                "file_name": processed_content.title
+            })
+            
+        return {"uploaded": uploaded_docs}
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 @router.get("/", response_model=DocumentListResponse)
 async def list_documents(

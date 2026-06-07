@@ -4,7 +4,7 @@ import { Bot, User, Paperclip, Send, Loader2, Mic } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Button } from './button';
 
-export function ChatBubble({ message, isUser, isTyping = false }) {
+export function ChatBubble({ message, sources, isUser, isTyping = false }) {
   return (
     <div className={cn("flex w-full gap-4 p-4 md:p-6 transition-all", isUser ? "justify-end" : "justify-start")}>
       {!isUser && (
@@ -27,7 +27,26 @@ export function ChatBubble({ message, isUser, isTyping = false }) {
               <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary"></span>
             </div>
           ) : (
-            <ReactMarkdown>{message}</ReactMarkdown>
+            <>
+              <ReactMarkdown>{message}</ReactMarkdown>
+              {sources && sources.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-primary/20 text-xs text-muted-foreground/80 space-y-1">
+                  <p className="font-semibold text-primary/80 mb-1">Sources:</p>
+                  {sources.map((s, idx) => (
+                    <div key={idx} className="flex flex-col mb-2 p-2 bg-primary/5 rounded-md border border-primary/10">
+                      <span className="font-medium text-foreground">{typeof s === 'string' ? s : s.source}</span>
+                      {typeof s !== 'string' && (
+                        <div className="flex gap-2 mt-1 opacity-70">
+                          <span>{s.source_type}</span>
+                          <span>&bull;</span>
+                          <span>{s.timestamp_or_page}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

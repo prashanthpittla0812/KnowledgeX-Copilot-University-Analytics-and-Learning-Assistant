@@ -9,6 +9,8 @@ from app.database.models import User
 class InactiveAccountError(ValueError):
     pass
 
+class UnapprovedAccountError(ValueError):
+    pass
 
 class AuthService:
     def __init__(self, db: AsyncSession):
@@ -39,6 +41,10 @@ class AuthService:
             raise ValueError("Invalid email or password")
         if not user.is_active:
             raise InactiveAccountError("Account is inactive")
+        if user.role == "student" and user.status != "APPROVED":
+            if user.status == "REJECTED":
+                raise UnapprovedAccountError("Your account was rejected by admin")
+            raise UnapprovedAccountError("Your account is awaiting admin approval")
         if not verify_password(password, user.password_hash):
             raise ValueError("Invalid email or password")
         return user
