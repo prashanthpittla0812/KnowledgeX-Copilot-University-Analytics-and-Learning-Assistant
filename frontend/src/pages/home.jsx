@@ -24,10 +24,11 @@ export default function Home() {
 
     setIsLoading(true);
     try {
-      const { user } = await authApi.login({
+      const loginResponse = await authApi.login({
         email: identifier.trim(),
         password,
       });
+      const { user } = loginResponse;
 
       if (!user || !user.role) {
         toast.error("Logged in successfully, but could not retrieve your role.");
@@ -35,6 +36,12 @@ export default function Home() {
       }
 
       toast.success(`Welcome back, ${user.name}!`);
+
+      if (user.must_change_password || loginResponse.must_change_password) {
+        toast.error("You must change your password to continue.");
+        navigate("/change-password");
+        return;
+      }
 
       // Route dynamically based on backend role
       if (user.role === "student") navigate("/student-dashboard");

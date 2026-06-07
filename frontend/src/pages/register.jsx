@@ -36,7 +36,9 @@ export default function Register() {
         password,
         role: "student",
       });
-      toast.success("Account created successfully! Please sign in.");
+      window.alert(
+        "Account created successfully!\n\nYour account is currently in a PENDING state. An administrator must approve your registration before you can log in."
+      );
       navigate("/");
     } catch (error) {
       const message =
@@ -171,8 +173,8 @@ export default function Register() {
           <div className="mt-8 p-4 rounded-xl bg-primary/5 border border-primary/10 flex items-start gap-3">
             <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
             <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed font-medium">
-              Only student accounts can be self-registered. 
-              <strong className="block mt-1 text-primary">Faculty and Admin accounts are created by administrators.</strong>
+              Only student accounts can be self-registered.
+              <strong className="block mt-1 text-primary">Faculty account is created by the admin.</strong>
             </p>
           </div>
 

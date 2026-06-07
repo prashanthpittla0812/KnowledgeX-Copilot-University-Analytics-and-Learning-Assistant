@@ -14,6 +14,13 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
     role = Column(String(50), nullable=False, default="student")
+    status = Column(String(50), nullable=False, default="PENDING")
+    approved_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    approved_at = Column(DateTime, nullable=True)
+    rejected_at = Column(DateTime, nullable=True)
+    department = Column(String(255), nullable=True)
+    designation = Column(String(255), nullable=True)
+    must_change_password = Column(Boolean, default=False, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
@@ -26,6 +33,10 @@ class User(Base):
     quiz_attempts = relationship("QuizAttempt", back_populates="student", cascade="all, delete-orphan")
     topic_performances = relationship("TopicPerformance", back_populates="student", cascade="all, delete-orphan")
     topic_summaries = relationship("StudentTopicSummary", back_populates="student", cascade="all, delete-orphan")
+    
+    # Self-referential relationship for approver
+    approved_users = relationship("User", back_populates="approver", foreign_keys=[approved_by])
+    approver = relationship("User", back_populates="approved_users", remote_side=[id], foreign_keys=[approved_by])
 
 
 class Document(Base):
@@ -181,6 +192,19 @@ class StudentQuizResult(Base):
     submitted_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     quiz = relationship("StudentQuiz", back_populates="results")
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    action = Column(String(255), nullable=False)
+    performed_by = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    target_user = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    performer = relationship("User", foreign_keys=[performed_by])
+    target = relationship("User", foreign_keys=[target_user])
 
 
 class QuizAttempt(Base):
