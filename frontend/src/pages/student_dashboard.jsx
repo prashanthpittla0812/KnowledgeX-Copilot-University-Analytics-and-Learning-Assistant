@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { chatbotApi, documentApi, studentApi, materialApi } from "../api";
 import { DashboardLayout } from "../components/layout/DashboardLayout";
+import { LearningResourcesTab } from "../components/student/LearningResourcesTab";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
 import { StatCard } from "../components/ui/stat-card";
 import { AnalyticsCard } from "../components/ui/analytics-card";
@@ -309,7 +310,7 @@ export default function StudentDashboard() {
     if (!activeQuiz) return;
     const numQ = activeQuiz.questions.length;
     const ansArray = [];
-    
+
     if (activeQuiz.isAssigned) {
       for (let i = 0; i < numQ; i++) {
         if (!selectedAnswers[i]) return alert(`Answer Question ${i + 1}`);
@@ -324,7 +325,7 @@ export default function StudentDashboard() {
         ansArray.push(selectedAnswers[i]);
       }
     }
-    
+
     setIsLoading(true);
     try {
       let response;
@@ -399,7 +400,7 @@ export default function StudentDashboard() {
                       <p className="font-bold text-accent flex items-center gap-2"><BookOpen className="w-4 h-4" /> Operating Systems Midterm</p>
                       <p className="text-sm text-foreground mt-1">Due in 3 days. Complete chapter 4 and 5 revision.</p>
                     </div>
-                    <Button size="sm" variant="outline" onClick={() => setActiveItem("Study Plan")}>Plan</Button>
+                    <Button size="sm" onClick={() => setActiveItem("Study Plan")}>Plan</Button>
                   </div>
                   <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 flex justify-between items-center">
                     <div>
@@ -457,16 +458,16 @@ export default function StudentDashboard() {
           </div>
         ) : activeItem === "Chatbot" ? (
           <div className="grid h-[calc(100vh-160px)] gap-6 xl:grid-cols-[280px_1fr]">
-            <Card className="flex flex-col hidden xl:flex glass-card">
+            <Card className="flex flex-col hidden xl:flex glass-card border-none">
               <CardHeader className="pb-4">
-                <CardTitle className="text-lg">Chat History</CardTitle>
+                <CardTitle className="text-lg font-bold text-foreground">Chat History</CardTitle>
               </CardHeader>
               <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2 custom-scrollbar">
-                <Button onClick={handleNewChat} className="w-full mb-4">New Chat</Button>
+                <Button onClick={handleNewChat} variant="gradient" className="w-full mb-4 font-bold text-sm shadow-sm cursor-pointer">New Chat</Button>
                 {previousChats.map((chat) => (
-                  <button key={chat.id} onClick={() => setSelectedChatId(chat.id)} className={`w-full text-left p-3 rounded-xl text-sm transition-all ${selectedChatId === chat.id ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-muted text-muted-foreground"}`}>
+                  <button key={chat.id} onClick={() => setSelectedChatId(chat.id)} className={`w-full text-left p-3 rounded-xl text-sm transition-all cursor-pointer ${selectedChatId === chat.id ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold shadow-md shadow-orange-500/10" : "hover:bg-slate-100 text-slate-600 font-medium"}`}>
                     <span className="block font-semibold truncate">{chat.title}</span>
-                    <span className={`block text-xs truncate mt-1 ${selectedChatId === chat.id ? "text-primary-foreground/80" : "opacity-70"}`}>
+                    <span className={`block text-xs truncate mt-1 ${selectedChatId === chat.id ? "text-white/80" : "text-slate-400"}`}>
                       {chat.messages?.at(-1)?.text || "New chat"}
                     </span>
                   </button>
@@ -474,15 +475,15 @@ export default function StudentDashboard() {
               </div>
             </Card>
 
-            <Card className="flex flex-col overflow-hidden relative glass-card border-primary/20">
-              <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar">
+            <Card className="flex flex-col overflow-hidden relative glass-card border-none">
+              <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar bg-slate-50/50">
                 {selectedMessages.length > 0 ? (
                   selectedMessages.map((msg, i) => (
                     <ChatBubble key={i} message={msg.text} sources={msg.sources} isUser={msg.isUser} />
                   ))
                 ) : (
                   <div className="flex h-full flex-col items-center justify-center text-center max-w-md mx-auto">
-                    <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-6">
+                    <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-500 flex items-center justify-center mb-6 shadow-sm border border-amber-200/50">
                       <Lightbulb className="w-8 h-8" />
                     </div>
                     <h2 className="text-2xl font-bold text-foreground mb-2">KnowledgeX AI Tutor</h2>
@@ -491,7 +492,7 @@ export default function StudentDashboard() {
                 )}
                 {isChatSending && <ChatBubble message="" isUser={false} isTyping={true} />}
               </div>
-              <div className="p-4 bg-[var(--sidebar)]/80 backdrop-blur-md border-t border-[var(--border)] shrink-0">
+              <div className="p-4 bg-white/90 backdrop-blur-md border-t border-[var(--border)] shrink-0">
                 {attachedFiles.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-3">
                     {attachedFiles.map((file, idx) => (
@@ -505,14 +506,14 @@ export default function StudentDashboard() {
                   </div>
                 )}
                 <input 
-                    ref={pdfInputRef} 
-                    type="file" 
-                    accept=".pdf,.jpg,.jpeg,.png,.mp3,.wav,.m4a,.flac,.mp4,.avi,.mov,.mkv" 
-                    multiple
-                    onChange={handleAttachFiles} 
-                    className="hidden" 
-                  />
-                  <ChatInput
+                  ref={pdfInputRef} 
+                  type="file" 
+                  accept=".pdf,.jpg,.jpeg,.png,.mp3,.wav,.m4a,.flac,.mp4,.avi,.mov,.mkv" 
+                  multiple
+                  onChange={handleAttachFiles} 
+                  className="hidden" 
+                />
+                <ChatInput
                   input={chatInput}
                   setInput={setChatInput}
                   onSubmit={handleSendChat}
@@ -720,7 +721,7 @@ export default function StudentDashboard() {
                                 {plan.overview}
                               </div>
                             )}
-                            
+
                             <div className="space-y-4">
                               {plan.daily_schedule?.map((day, idx) => (
                                 <div key={idx} className="p-5 rounded-xl border border-[var(--border)] bg-[var(--background)]">
@@ -729,7 +730,7 @@ export default function StudentDashboard() {
                                     <span className="text-xs font-bold px-2 py-1 bg-muted rounded-md">{day.duration_hours} hrs</span>
                                   </div>
                                   {day.date && <p className="text-sm text-muted-foreground mb-4">Target Date: {day.date}</p>}
-                                  
+
                                   <div className="grid md:grid-cols-2 gap-4">
                                     <div>
                                       <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Topics to Cover</p>
@@ -851,81 +852,81 @@ export default function StudentDashboard() {
               const totalQuizzes = quizHistory.length;
               const avgScore = totalQuizzes > 0 ? quizHistory.reduce((acc, q) => acc + q.score, 0) / totalQuizzes : 0;
               return (
-              <>
-                <div className="grid sm:grid-cols-3 gap-6 mb-8">
-                  <StatCard title="Quizzes Taken" value={totalQuizzes} icon={FileText} />
-                  <StatCard title="Average Score" value={`${avgScore.toFixed(1)}%`} icon={Target} trendColor="text-emerald-500" />
-                  <StatCard title="Study Plans" value={studyPlans.length} icon={BookOpen} />
-                </div>
+                <>
+                  <div className="grid sm:grid-cols-3 gap-6 mb-8">
+                    <StatCard title="Quizzes Taken" value={totalQuizzes} icon={FileText} />
+                    <StatCard title="Average Score" value={`${avgScore.toFixed(1)}%`} icon={Target} trendColor="text-emerald-500" />
+                    <StatCard title="Study Plans" value={studyPlans.length} icon={BookOpen} />
+                  </div>
 
-                <div className="grid lg:grid-cols-2 gap-8">
-                  <AnalyticsCard title="Recent Quiz Performance">
-                    <div className="h-[300px] mt-4">
-                      {quizHistory.length > 0 ? (
+                  <div className="grid lg:grid-cols-2 gap-8">
+                    <AnalyticsCard title="Recent Quiz Performance">
+                      <div className="h-[300px] mt-4">
+                        {quizHistory.length > 0 ? (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={quizHistory.slice(0, 5).reverse()} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                              <XAxis dataKey="topic" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+                              <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} />
+                              <Tooltip
+                                cursor={{ fill: 'var(--muted)' }}
+                                contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '8px' }}
+                              />
+                              <Bar dataKey="score" fill="#F59E0B" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
+                            <BarChartIcon className="w-8 h-8 mb-2 opacity-50" />
+                            <p>No quiz data available.</p>
+                          </div>
+                        )}
+                      </div>
+                    </AnalyticsCard>
+
+                    <AnalyticsCard title="Learning Trends">
+                      <div className="h-[300px] mt-4">
+                        {quizHistory.length > 0 ? (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={quizHistory.slice(0, 10).reverse()} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                              <XAxis dataKey="created_at" tickFormatter={(val) => new Date(val).toLocaleDateString()} stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+                              <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+                              <Tooltip
+                                contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '8px' }}
+                                labelFormatter={(label) => new Date(label).toLocaleDateString()}
+                              />
+                              <Line type="monotone" dataKey="score" stroke="#FB923C" strokeWidth={3} dot={{ r: 4, fill: '#FB923C', strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
+                            <TrendingUp className="w-8 h-8 mb-2 opacity-50" />
+                            <p>Not enough data to show trends.</p>
+                          </div>
+                        )}
+                      </div>
+                    </AnalyticsCard>
+
+                    <AnalyticsCard title="Attendance Overview">
+                      <div className="h-[300px] mt-4">
                         <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={quizHistory.slice(0, 5).reverse()} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                          <BarChart data={attendanceData.map(d => ({ subject: d.subject, percentage: Math.round((d.present / d.total) * 100) }))} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                            <XAxis dataKey="topic" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+                            <XAxis dataKey="subject" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
                             <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} />
                             <Tooltip
                               cursor={{ fill: 'var(--muted)' }}
                               contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '8px' }}
+                              formatter={(value) => [`${value}%`, 'Attendance']}
                             />
-                            <Bar dataKey="score" fill="#6366F1" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                            <Bar dataKey="percentage" fill="#F59E0B" radius={[4, 4, 0, 0]} maxBarSize={50} />
                           </BarChart>
                         </ResponsiveContainer>
-                      ) : (
-                        <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
-                          <BarChartIcon className="w-8 h-8 mb-2 opacity-50" />
-                          <p>No quiz data available.</p>
-                        </div>
-                      )}
-                    </div>
-                  </AnalyticsCard>
-
-                  <AnalyticsCard title="Learning Trends">
-                    <div className="h-[300px] mt-4">
-                      {quizHistory.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={quizHistory.slice(0, 10).reverse()} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                            <XAxis dataKey="created_at" tickFormatter={(val) => new Date(val).toLocaleDateString()} stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
-                            <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
-                            <Tooltip 
-                              contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '8px' }}
-                              labelFormatter={(label) => new Date(label).toLocaleDateString()}
-                            />
-                            <Line type="monotone" dataKey="score" stroke="#10B981" strokeWidth={3} dot={{ r: 4, fill: '#10B981', strokeWidth: 2 }} activeDot={{ r: 6 }} />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      ) : (
-                        <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
-                          <TrendingUp className="w-8 h-8 mb-2 opacity-50" />
-                          <p>Not enough data to show trends.</p>
-                        </div>
-                      )}
-                    </div>
-                  </AnalyticsCard>
-
-                  <AnalyticsCard title="Attendance Overview">
-                    <div className="h-[300px] mt-4">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={attendanceData.map(d => ({ subject: d.subject, percentage: Math.round((d.present/d.total)*100) }))} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                          <XAxis dataKey="subject" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
-                          <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} />
-                          <Tooltip 
-                            cursor={{fill: 'var(--muted)'}}
-                            contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '8px' }}
-                            formatter={(value) => [`${value}%`, 'Attendance']}
-                          />
-                          <Bar dataKey="percentage" fill="#F59E0B" radius={[4, 4, 0, 0]} maxBarSize={50} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </AnalyticsCard>
-                </div>
-              </>
+                      </div>
+                    </AnalyticsCard>
+                  </div>
+                </>
               );
             })()}
           </div>
