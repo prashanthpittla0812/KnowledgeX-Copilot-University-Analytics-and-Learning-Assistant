@@ -194,10 +194,18 @@ export const studentApi = {
 };
 
 export const chatbotApi = {
-  async askQuestion(question: string) {
-    const response = await api.post("/chat/", { question });
+  async askQuestion(question: string, content_ids: number[] = []) {
+    const response = await api.post("/chat/", { question, content_ids });
     return response.data;
   },
+  async summarize(content_id: number, summary_type: string = "Short Summary") {
+    const response = await api.post("/chat/summarize", { content_id, summary_type });
+    return response.data;
+  },
+  async summarizeBatch(content_ids: number[], summary_type: string = "Short Summary") {
+    const response = await api.post("/chat/summarize-batch", { content_ids, summary_type });
+    return response.data;
+  }
 };
 
 export const documentApi = {
@@ -205,6 +213,16 @@ export const documentApi = {
     const formData = new FormData();
     formData.append("file", file);
     const response = await api.post("/documents/upload", formData);
+    return response.data;
+  },
+
+  async uploadMultimodal(formData: FormData) {
+    const response = await api.post("/documents/multimodal/upload", formData);
+    return response.data;
+  },
+
+  async uploadMultimodalBatch(formData: FormData) {
+    const response = await api.post("/documents/multimodal/upload-batch", formData);
     return response.data;
   },
 

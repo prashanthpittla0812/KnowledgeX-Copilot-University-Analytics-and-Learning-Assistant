@@ -360,3 +360,18 @@ class Notification(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     user = relationship("User")
+
+class ProcessedContent(Base):
+    __tablename__ = "processed_content"
+    
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    title = Column(String(255), nullable=False)
+    source_type = Column(String(50), nullable=False) # PDF, IMAGE, OCR, AUDIO, VIDEO
+    transcript = Column(Text, nullable=True)
+    ocr_text = Column(Text, nullable=True)
+    summary = Column(Text, nullable=True)
+    file_path = Column(String(500), nullable=False)
+    uploaded_by = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    user = relationship("User")

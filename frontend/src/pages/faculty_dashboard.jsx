@@ -14,6 +14,7 @@ import { ChatBubble, ChatInput } from "../components/ui/chat";
 import { BookOpen, Users, AlertCircle, FileText, Send, CheckCircle, BarChart as BarChartIcon, BookMarked } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { LearningMaterialsTab } from "../components/faculty/LearningMaterialsTab";
+import { MultimodalUploadTab } from "../components/faculty/MultimodalUploadTab";
 
 const defaultFacultyChats = [];
 
@@ -243,6 +244,8 @@ export default function FacultyDashboard() {
           </div>
         ) : activeItem === "Learning Materials" ? (
           <LearningMaterialsTab />
+        ) : activeItem === "Multimodal Content" ? (
+          <MultimodalUploadTab />
         ) : activeItem === "Conduct Quizzes" ? (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {!selectedQuiz ? (
