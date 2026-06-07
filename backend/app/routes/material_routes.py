@@ -40,10 +40,10 @@ async def upload_material(
     title: str = Form(...),
     material_type: str = Form(...),
     description: Optional[str] = Form(None),
-    subject: Optional[str] = Form(None),
-    topic: Optional[str] = Form(None),
+    subject: str = Form(...),
+    topic: str = Form(...),
     department: Optional[str] = Form(None),
-    semester: Optional[str] = Form(None),
+    semester: Optional[int] = Form(None),
     link_url: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None),
     db: AsyncSession = Depends(get_db),
@@ -63,7 +63,7 @@ async def upload_material(
         file_path = os.path.join(UPLOAD_DIR, unique_filename)
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
-        file_url = f"/api/v1/uploads/materials/{unique_filename}"
+        file_url = f"/uploads/materials/{unique_filename}"
         
     new_material = LearningMaterial(
         title=title,

@@ -8,9 +8,6 @@ export const USER_STORAGE_KEY = "knowledgex_user";
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
 });
 
 api.interceptors.request.use((config) => {
@@ -102,7 +99,6 @@ export const authApi = {
 export const facultyApi = {
   uploadDocument(formData: FormData, topicName: string) {
     return api.post("/faculty/upload", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
       params: { topic_name: topicName }
     });
   },
@@ -208,9 +204,7 @@ export const documentApi = {
   async uploadPdf(file: File) {
     const formData = new FormData();
     formData.append("file", file);
-    const response = await api.post("/documents/upload", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const response = await api.post("/documents/upload", formData);
     return response.data;
   },
 
@@ -232,9 +226,7 @@ export const adminApi = {
 export const materialApi = {
   // Faculty
   async uploadMaterial(formData: FormData) {
-    const response = await api.post("/materials/faculty", formData, {
-      headers: { "Content-Type": "multipart/form-data" }
-    });
+    const response = await api.post("/materials/faculty", formData);
     return response.data;
   },
   getFacultyMaterials() {

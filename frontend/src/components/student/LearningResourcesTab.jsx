@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { materialApi } from "../../api";
+import { materialApi, API_BASE_URL } from "../../api";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { BookOpen, Search, Download, Eye, Bookmark, BookmarkCheck, FileText, File, Video, Link as LinkIcon, Filter, ExternalLink } from "lucide-react";
@@ -36,20 +36,48 @@ export function LearningResourcesTab() {
     fetchMaterials();
   };
 
+  const getFullUrl = (url) => {
+    if (!url) return "";
+    if (url.startsWith("http")) return url;
+    let baseUrl = API_BASE_URL.replace("/api/v1", "");
+    if (!baseUrl || !baseUrl.startsWith("http")) {
+      baseUrl = "http://localhost:8000";
+    }
+    return `${baseUrl}${url.startsWith("/") ? "" : "/"}${url}`;
+  };
+
   const handleAction = async (material, action) => {
     try {
+      const fullUrl = getFullUrl(material.file_url);
       if (action === "VIEW") {
-        window.open(material.file_url, '_blank');
+        window.open(fullUrl, '_blank');
       } else if (action === "DOWNLOAD") {
-        const link = document.createElement('a');
-        link.href = material.file_url;
-        link.download = material.title;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        try {
+          const response = await fetch(fullUrl);
+          const blob = await response.blob();
+          const objectUrl = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = objectUrl;
+          
+          // Try to preserve original extension
+          const urlParts = fullUrl.split('.');
+          const extension = urlParts.length > 1 ? `.${urlParts.pop().split('?')[0]}` : '';
+          // Ensure we don't duplicate extension if title already has it
+          const finalTitle = material.title.endsWith(extension) ? material.title : `${material.title}${extension}`;
+          
+          link.download = finalTitle;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(objectUrl);
+        } catch (err) {
+          console.error("Download fetch failed, falling back to new tab:", err);
+          window.open(fullUrl, '_blank');
+        }
       }
-      // Track action silently
+
       await materialApi.trackAction(material.id, action);
+      fetchMaterials();
     } catch (error) {
       console.error(error);
     }

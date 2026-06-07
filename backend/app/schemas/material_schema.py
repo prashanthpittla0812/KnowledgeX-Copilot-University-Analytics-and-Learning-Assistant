@@ -9,7 +9,7 @@ class MaterialBase(BaseModel):
     subject: Optional[str] = None
     topic: Optional[str] = None
     department: Optional[str] = None
-    semester: Optional[str] = None
+    semester: Optional[int] = None
     material_type: str
 
 
@@ -24,14 +24,14 @@ class MaterialUpdate(BaseModel):
     subject: Optional[str] = None
     topic: Optional[str] = None
     department: Optional[str] = None
-    semester: Optional[str] = None
+    semester: Optional[int] = None
     is_active: Optional[bool] = None
 
 
 class MaterialResponse(MaterialBase):
     id: int
     file_url: str
-    thumbnail_url: Optional[str]
+    thumbnail_url: Optional[str] = None
     faculty_id: int
     is_active: bool
     created_at: datetime

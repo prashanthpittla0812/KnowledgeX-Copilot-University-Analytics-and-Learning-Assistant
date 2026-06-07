@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text, Enum
 from sqlalchemy.orm import relationship
 
 from app.database.db import Base
@@ -304,3 +304,59 @@ class FacultyInsight(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     teacher = relationship("User")
+
+class LearningMaterial(Base):
+    __tablename__ = "learning_materials"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    faculty_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    subject = Column(String(100), nullable=False)
+    topic = Column(String(100), nullable=False)
+    department = Column(String(100), nullable=True)
+    semester = Column(Integer, nullable=True)
+    material_type = Column(Enum("PDF", "PPT", "DOC", "NOTE", "ASSIGNMENT", "LINK", "VIDEO", name="material_type"), nullable=False)
+    file_path = Column(String(500), nullable=True)
+    file_url = Column(String(500), nullable=True)
+    file_size_bytes = Column(Integer, nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    faculty = relationship("User")
+    activities = relationship("MaterialActivity", back_populates="material", cascade="all, delete-orphan")
+    bookmarks = relationship("MaterialBookmark", back_populates="material", cascade="all, delete-orphan")
+
+class MaterialActivity(Base):
+    __tablename__ = "material_activities"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    material_id = Column(Integer, ForeignKey("learning_materials.id", ondelete="CASCADE"), nullable=False)
+    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    action_type = Column(String(50), nullable=False)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    material = relationship("LearningMaterial", back_populates="activities")
+    student = relationship("User")
+
+class MaterialBookmark(Base):
+    __tablename__ = "material_bookmarks"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    material_id = Column(Integer, ForeignKey("learning_materials.id", ondelete="CASCADE"), nullable=False)
+    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    is_active = Column(Boolean, default=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    material = relationship("LearningMaterial", back_populates="bookmarks")
+    student = relationship("User")
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    title = Column(String(255), nullable=False)
+    message = Column(Text, nullable=False)
+    link = Column(String(500), nullable=True)
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    user = relationship("User")

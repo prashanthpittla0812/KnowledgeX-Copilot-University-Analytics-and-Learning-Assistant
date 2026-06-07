@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { materialApi } from "../../api";
+import { materialApi, API_BASE_URL } from "../../api";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { BookOpen, Upload, Link as LinkIcon, FileText, File, Video, Trash2, Eye, Download } from "lucide-react";
@@ -94,7 +94,9 @@ export function LearningMaterialsTab() {
       
       setActiveTab("my-materials");
     } catch (error) {
-      toast.error(error?.response?.data?.detail || "Upload failed");
+      const detail = error?.response?.data?.detail;
+      const errorMsg = Array.isArray(detail) ? detail[0]?.msg || "Validation error" : (detail || "Upload failed");
+      toast.error(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -120,6 +122,16 @@ export function LearningMaterialsTab() {
       case "LINK": return <LinkIcon className="text-green-500 w-5 h-5" />;
       default: return <BookOpen className="text-primary w-5 h-5" />;
     }
+  };
+
+  const getFullUrl = (url) => {
+    if (!url) return "";
+    if (url.startsWith("http")) return url;
+    let baseUrl = API_BASE_URL.replace("/api/v1", "");
+    if (!baseUrl || !baseUrl.startsWith("http")) {
+      baseUrl = "http://localhost:8000";
+    }
+    return `${baseUrl}${url.startsWith("/") ? "" : "/"}${url}`;
   };
 
   return (
@@ -151,7 +163,7 @@ export function LearningMaterialsTab() {
                     <option value="PDF">PDF Document</option>
                     <option value="PPT">Presentation (PPT)</option>
                     <option value="DOC">Word Document (DOC)</option>
-                    <option value="NOTES">Study Notes</option>
+                    <option value="NOTE">Study Notes</option>
                     <option value="ASSIGNMENT">Assignment</option>
                     <option value="VIDEO">Video Link</option>
                     <option value="LINK">Reference Link</option>
@@ -166,12 +178,12 @@ export function LearningMaterialsTab() {
 
               <div className="grid sm:grid-cols-2 gap-6">
                 <div>
-                  <label className="text-sm font-semibold mb-1 block">Subject</label>
-                  <input value={subject} onChange={e => setSubject(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-2 text-sm focus:ring-1 focus:ring-primary outline-none" placeholder="e.g., Computer Networks" />
+                  <label className="text-sm font-semibold mb-1 block">Subject *</label>
+                  <input required value={subject} onChange={e => setSubject(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-2 text-sm focus:ring-1 focus:ring-primary outline-none" placeholder="e.g., Computer Networks" />
                 </div>
                 <div>
-                  <label className="text-sm font-semibold mb-1 block">Topic</label>
-                  <input value={topic} onChange={e => setTopic(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-2 text-sm focus:ring-1 focus:ring-primary outline-none" placeholder="e.g., TCP/IP" />
+                  <label className="text-sm font-semibold mb-1 block">Topic *</label>
+                  <input required value={topic} onChange={e => setTopic(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-2 text-sm focus:ring-1 focus:ring-primary outline-none" placeholder="e.g., TCP/IP" />
                 </div>
                 <div>
                   <label className="text-sm font-semibold mb-1 block">Department</label>
@@ -251,7 +263,7 @@ export function LearningMaterialsTab() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex justify-end gap-2">
-                            <Button size="sm" variant="outline" onClick={() => window.open(m.file_url, '_blank')}>View</Button>
+                            <Button size="sm" variant="outline" onClick={() => window.open(getFullUrl(m.file_url), '_blank')}>View</Button>
                             <Button size="icon" variant="destructive" className="h-9 w-9" onClick={() => handleDelete(m.id)}>
                               <Trash2 className="w-4 h-4" />
                             </Button>
