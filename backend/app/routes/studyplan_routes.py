@@ -1,3 +1,5 @@
+import json
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -31,8 +33,8 @@ async def generate_study_plan(
         return StudyPlanResponse(
             id=result["id"],
             user_id=current_user.id,
-            plan_content=str(result["plan"]),
-            created_at=current_user.created_at,
+            plan_content=json.dumps(result["plan"]),
+            created_at=result["created_at"],
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -48,6 +50,7 @@ async def get_study_plan_history(
     return [
         StudyPlanHistoryItem(
             id=p.id,
+            plan_content=p.plan_content,
             created_at=p.created_at,
         )
         for p in plans

@@ -10,6 +10,7 @@ from app.schemas.dashboard_schema import (
     PerformanceResponse,
 )
 from app.services.analytics_service import AnalyticsService
+from app.services.teacher_dashboard_service import TeacherDashboardService
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
@@ -40,3 +41,30 @@ async def get_learning_gaps(
 ):
     analytics = AnalyticsService(db)
     return await analytics.get_learning_gaps()
+
+
+@router.get("/teacher/performance")
+async def get_teacher_performance(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_faculty),
+):
+    service = TeacherDashboardService(db)
+    return await service.get_all_quiz_performance(current_user.id)
+
+
+@router.get("/teacher/quizzes")
+async def get_teacher_quizzes(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_faculty),
+):
+    service = TeacherDashboardService(db)
+    return {"quizzes": await service.get_teacher_quizzes(current_user.id)}
+
+
+@router.get("/teacher/documents")
+async def get_teacher_documents(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_faculty),
+):
+    service = TeacherDashboardService(db)
+    return {"documents": await service.get_teacher_documents(current_user.id)}

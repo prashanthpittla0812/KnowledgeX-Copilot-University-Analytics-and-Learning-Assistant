@@ -1,18 +1,20 @@
 RAG_QA_PROMPT_TEMPLATE = """You are KnowledgeX Copilot, an AI academic assistant.
-Use the following context to answer the student's question accurately and educationally.
+You have access to a repository of reference documents. Use the following snippets to help answer the question if they are relevant. If they are not relevant or do not contain the answer, ignore them and answer the question directly using your own extensive general knowledge.
 
-Context:
+Reference snippets (may or may not be relevant):
 {context}
 
 Question: {question}
 
 Instructions:
-- Answer in a clear, concise manner suitable for university students.
-- If the context doesn't contain relevant information, say so honestly.
-- Include examples or analogies where helpful.
-- Cite relevant parts of the context when possible.
+- Answer the question directly, creatively, and educationally.
+- Seamlessly combine information from the reference snippets (if helpful) and your own general knowledge.
+- If the reference snippets do not contain the answer, answer the question completely on your own.
+- Only mention the "uploaded document" or "PDF" if the user explicitly asks about it in their prompt. Otherwise, do not mention the existence of a "context".
+- Use clear formatting, bullet points, and examples where appropriate to explain concepts.
 
 Answer:"""
+
 
 QUIZ_GENERATION_PROMPT_TEMPLATE = """You are an expert university professor creating a quiz.
 Generate {number_of_questions} multiple-choice questions on the topic "{topic}" at "{difficulty}" difficulty.
@@ -34,10 +36,13 @@ Requirements:
 - 4 options per question.
 - One clearly correct answer.
 - Educational explanations.
-- Difficulty: {difficulty}."""
+- Difficulty: {difficulty}.
+
+CRITICAL INSTRUCTION: Output ONLY raw JSON. Do NOT wrap the JSON in markdown blocks (e.g., ```json or ```). Do not include any conversational text before or after the JSON."""
 
 STUDYPLAN_GENERATION_PROMPT_TEMPLATE = """You are an expert academic advisor creating a personalized study plan.
 
+Current Date: {current_date}
 Subjects: {subjects}
 Exam Date: {exam_date}
 Daily Study Hours: {daily_hours}
@@ -64,7 +69,9 @@ Return ONLY valid JSON in this exact format:
   }}
 }}
 
-Ensure the plan is realistic, covers all subjects, and includes breaks."""
+Ensure the plan is realistic, covers all subjects, and includes breaks.
+
+CRITICAL INSTRUCTION: Output ONLY raw JSON. Do NOT wrap the JSON in markdown blocks (e.g., ```json or ```). Do not include any conversational text before or after the JSON."""
 
 RECOMMENDATION_PROMPT_TEMPLATE = """Based on the following student data, generate personalized academic recommendations.
 
@@ -92,7 +99,92 @@ Return ONLY valid JSON in this exact format:
     }}
   ],
   "overall_advice": "General advice for the student"
-}}"""
+}}
+
+CRITICAL INSTRUCTION: Output ONLY raw JSON. Do NOT wrap the JSON in markdown blocks (e.g., ```json or ```). Do not include any conversational text before or after the JSON."""
+
+TEACHER_MCQ_PROMPT_TEMPLATE = """You are an academic quiz generator.
+
+Generate exactly {num_questions} Multiple Choice Questions.
+
+Difficulty: {difficulty}
+
+Use ONLY the provided context.
+
+Return ONLY valid JSON.
+
+Do NOT:
+- Add explanations
+- Add markdown
+- Add ```json
+- Add text before JSON
+- Add text after JSON
+
+Format:
+[
+  {{
+    "question": "",
+    "options": [
+      "",
+      "",
+      "",
+      ""
+    ],
+    "answer": ""
+  }}
+]
+
+Context:
+{context}"""
+
+TEACHER_FILL_BLANKS_PROMPT_TEMPLATE = """Generate exactly {num_questions} Fill in the Blank questions.
+
+Difficulty: {difficulty}
+
+Use ONLY the provided context.
+
+Return ONLY valid JSON.
+
+Format:
+[
+  {{
+    "question": "",
+    "answer": ""
+  }}
+]
+
+Context:
+{context}"""
+
+TEACHER_THEORY_PROMPT_TEMPLATE = """Generate exactly {num_questions} Theory questions.
+
+Difficulty: {difficulty}
+
+Use ONLY the provided context.
+
+Return ONLY valid JSON.
+
+Format:
+[
+  {{
+    "question": ""
+  }}
+]
+
+Context:
+{context}"""
+
+TEACHER_MIXED_PROMPT_TEMPLATE = """Generate exactly {num_questions} mixed questions.
+
+Include:
+- MCQ
+- Fill Blank
+- Theory
+
+Return ONLY JSON.
+
+Context:
+{context}"""
 
 LEARNING_GAPS_PROMPT_TEMPLATE = """Analyze the following class performance data and identify learning gaps.
 
