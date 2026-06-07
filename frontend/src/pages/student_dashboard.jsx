@@ -456,7 +456,7 @@ export default function StudentDashboard() {
             </AnalyticsCard>
           </div>
         ) : activeItem === "Chatbot" ? (
-          <div className="grid h-[calc(100vh-160px)] gap-6 xl:grid-cols-[280px_1fr]">
+          <div className="grid h-full min-h-[500px] gap-6 xl:grid-cols-[280px_1fr]">
             <Card className="flex flex-col hidden xl:flex glass-card border-none">
               <CardHeader className="pb-4">
                 <CardTitle className="text-lg font-bold text-foreground">Chat History</CardTitle>
