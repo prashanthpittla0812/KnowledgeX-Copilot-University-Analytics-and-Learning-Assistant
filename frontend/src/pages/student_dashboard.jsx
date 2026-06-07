@@ -10,7 +10,6 @@ import { ChatBubble, ChatInput } from "../components/ui/chat";
 import { Button } from "../components/ui/button";
 import { BookOpen, AlertCircle, FileText, Calendar, CheckCircle, BarChart as BarChartIcon, GraduationCap, Target, Lightbulb, TrendingUp, X } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
-import { LearningResourcesTab } from "../components/student/LearningResourcesTab";
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
