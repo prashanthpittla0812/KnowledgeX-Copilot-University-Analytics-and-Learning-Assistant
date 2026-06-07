@@ -136,7 +136,6 @@ export default function Home() {
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Password</label>
-                <button type="button" className="text-xs font-bold text-primary hover:text-primary/80 transition-colors">Forgot password?</button>
               </div>
               <Input
                 value={password}
