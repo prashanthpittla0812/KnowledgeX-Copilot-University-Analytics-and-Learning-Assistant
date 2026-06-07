@@ -229,4 +229,46 @@ export const adminApi = {
   },
 };
 
+export const materialApi = {
+  // Faculty
+  async uploadMaterial(formData: FormData) {
+    const response = await api.post("/materials/faculty", formData, {
+      headers: { "Content-Type": "multipart/form-data" }
+    });
+    return response.data;
+  },
+  getFacultyMaterials() {
+    return api.get("/materials/faculty");
+  },
+  deleteMaterial(id: number) {
+    return api.delete(`/materials/faculty/${id}`);
+  },
+  getFacultyAnalytics() {
+    return api.get("/materials/faculty/analytics");
+  },
+
+  // Student
+  getStudentMaterials(params?: any) {
+    return api.get("/materials/student", { params });
+  },
+  getRecentMaterials() {
+    return api.get("/materials/student/recent");
+  },
+  trackAction(id: number, action_type: "VIEW" | "DOWNLOAD") {
+    return api.post(`/materials/student/${id}/action`, { action_type });
+  },
+  toggleBookmark(id: number) {
+    return api.post(`/materials/student/${id}/bookmark`);
+  },
+
+  // Notifications
+  getNotifications() {
+    return api.get("/materials/notifications");
+  },
+  markNotificationsRead() {
+    return api.post("/materials/notifications/read");
+  }
+};
+
 export default api;
+

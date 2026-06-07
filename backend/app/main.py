@@ -19,6 +19,7 @@ from app.routes import (
     student_routes,
     studyplan_routes,
     admin_routes,
+    material_routes,
 )
 from app.utils.constants import APP_DESCRIPTION, APP_NAME, APP_VERSION
 from app.utils.logger import get_logger, setup_logger
@@ -78,6 +79,7 @@ app.include_router(role_routes.faculty_router, prefix="/api/v1")
 app.include_router(role_routes.admin_router, prefix="/api/v1")
 app.include_router(assessment_routes.router, prefix="/api/v1")
 app.include_router(attendance_routes.router, prefix="/api/v1")
+app.include_router(material_routes.router, prefix="/api/v1")
 
 
 @app.get("/", tags=["Health"])

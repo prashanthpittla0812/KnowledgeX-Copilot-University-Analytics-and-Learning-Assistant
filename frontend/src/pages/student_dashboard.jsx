@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { chatbotApi, documentApi, studentApi } from "../api";
+import { chatbotApi, documentApi, studentApi, materialApi } from "../api";
 import { DashboardLayout } from "../components/layout/DashboardLayout";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
 import { StatCard } from "../components/ui/stat-card";
@@ -60,6 +60,9 @@ export default function StudentDashboard() {
   // Recommendations States
   const [recommendations, setRecommendations] = useState(null);
   const [isRecsLoading, setIsRecsLoading] = useState(false);
+
+  // Recent Materials State
+  const [recentMaterials, setRecentMaterials] = useState([]);
 
   // Analytics States
   const [analytics, setAnalytics] = useState(null);
@@ -131,7 +134,19 @@ export default function StudentDashboard() {
     setIsAnalyticsLoading(false);
   };
 
+  const fetchRecentMaterials = async () => {
+    try {
+      const res = await studentApi.getRecentMaterials?.() || await materialApi?.getRecentMaterials();
+      setRecentMaterials(res.data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   useEffect(() => {
+    if (activeItem === "Dashboard") {
+      fetchRecentMaterials();
+    }
     if (activeItem === "Quizzes" || activeItem === "Analytics") {
       fetchQuizHistory();
       fetchAssignedQuizzes();
@@ -373,6 +388,30 @@ export default function StudentDashboard() {
                 </div>
               </AnalyticsCard>
             </div>
+
+            <AnalyticsCard title="Recently Uploaded Materials">
+              <div className="space-y-4">
+                {recentMaterials.length === 0 ? (
+                  <p className="text-muted-foreground text-sm py-4">No recent materials.</p>
+                ) : (
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {recentMaterials.slice(0, 3).map((m) => (
+                      <div key={m.id} className="p-4 rounded-xl border bg-card hover:border-primary/50 transition-colors cursor-pointer" onClick={() => setActiveItem("Learning Resources")}>
+                        <div className="flex items-start justify-between mb-2">
+                          <FileText className="text-primary w-6 h-6" />
+                          <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-1 rounded-md">{m.material_type}</span>
+                        </div>
+                        <h4 className="font-bold text-sm line-clamp-1">{m.title}</h4>
+                        <p className="text-xs text-muted-foreground mt-1">By {m.faculty_name}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <Button variant="ghost" className="w-full text-sm mt-2" onClick={() => setActiveItem("Learning Resources")}>
+                  View All Resources
+                </Button>
+              </div>
+            </AnalyticsCard>
           </div>
         ) : activeItem === "Chatbot" ? (
           <div className="grid h-[calc(100vh-160px)] gap-6 xl:grid-cols-[280px_1fr]">
@@ -575,6 +614,8 @@ export default function StudentDashboard() {
               </>
             )}
           </div>
+        ) : activeItem === "Learning Resources" ? (
+          <LearningResourcesTab />
         ) : activeItem === "Study Plan" ? (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div>
