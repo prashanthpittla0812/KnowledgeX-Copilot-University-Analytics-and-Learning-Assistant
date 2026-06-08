@@ -12,7 +12,7 @@ const Button = React.forwardRef(
         "bg-gray-100 text-gray-900 hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700",
       ghost: "hover:bg-gray-100 dark:hover:bg-slate-800 text-foreground",
       link: "text-primary underline-offset-4 hover:underline",
-      gradient: "bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:opacity-90 shadow-md",
+      gradient: "bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:opacity-95 shadow-md shadow-orange-500/10",
     };
 
     const sizes = {

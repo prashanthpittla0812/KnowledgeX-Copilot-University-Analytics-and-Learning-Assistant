@@ -22,6 +22,9 @@ class AdminStudentResponse(BaseModel):
     status: str
     created_at: datetime
 
+    class Config:
+        from_attributes = True
+
 class AdminFacultyResponse(BaseModel):
     id: int
     name: str
@@ -30,6 +33,9 @@ class AdminFacultyResponse(BaseModel):
     designation: Optional[str]
     is_active: bool
     created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 class AdminResetPasswordResponse(BaseModel):
     id: int
@@ -41,6 +47,9 @@ class AuditLogResponse(BaseModel):
     performed_by_name: str
     target_user_name: Optional[str]
     timestamp: datetime
+
+    class Config:
+        from_attributes = True
 
 class AdminDashboardAnalytics(BaseModel):
     total_students: int

@@ -76,7 +76,7 @@ export default function Register() {
             opacity: [0.3, 0.4, 0.3]
           }}
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute bottom-[-20%] left-[-10%] w-[60vw] h-[60vw] max-w-[600px] max-h-[600px] rounded-full bg-purple-500/20 blur-[100px]"
+          className="absolute bottom-[-20%] left-[-10%] w-[60vw] h-[60vw] max-w-[600px] max-h-[600px] rounded-full bg-orange-500/20 blur-[100px]"
         />
         <motion.div 
           animate={{ 
@@ -84,7 +84,7 @@ export default function Register() {
             opacity: [0.2, 0.5, 0.2]
           }}
           transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[30%] left-[20%] w-[40vw] h-[40vw] max-w-[400px] max-h-[400px] rounded-full bg-cyan-500/10 blur-[80px]"
+          className="absolute top-[30%] left-[20%] w-[40vw] h-[40vw] max-w-[400px] max-h-[400px] rounded-full bg-amber-500/10 blur-[80px]"
         />
       </div>
 
@@ -100,7 +100,7 @@ export default function Register() {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.2 }}
-            className="mx-auto flex w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 items-center justify-center text-white font-black text-3xl shadow-2xl shadow-indigo-500/30 mb-6"
+            className="mx-auto flex w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 items-center justify-center text-white font-black text-3xl shadow-2xl shadow-orange-500/30 mb-6"
           >
             K
           </motion.div>
@@ -109,51 +109,51 @@ export default function Register() {
             Join Thousands of Students
           </div>
           <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">Create Account</h1>
-          <p className="text-gray-500 dark:text-gray-400 font-medium mt-2">Start your AI-powered academic journey</p>
+          <p className="text-gray-500  font-medium mt-2">Start your AI-powered academic journey</p>
         </div>
 
-        <div className="rounded-[2rem] border border-white/20 dark:border-white/10 bg-white/70 dark:bg-slate-900/70 p-6 sm:p-10 shadow-2xl shadow-black/5 backdrop-blur-xl">
+        <div className="rounded-[2rem] border border-white/20  bg-white/70  p-6 sm:p-10 shadow-2xl shadow-black/5 backdrop-blur-xl">
           <form onSubmit={handleRegister} className="space-y-5">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Full Name</label>
+              <label className="text-sm font-bold text-gray-700 ">Full Name</label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Alex Smith"
-                className="h-12 bg-white/50 dark:bg-slate-950/50 border-gray-200 dark:border-slate-800 focus:bg-white dark:focus:bg-slate-900"
+                className="h-12 bg-white/50  border-gray-200  focus:bg-white "
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Email Address</label>
+              <label className="text-sm font-bold text-gray-700 ">Email Address</label>
               <Input
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="alex@university.edu"
-                className="h-12 bg-white/50 dark:bg-slate-950/50 border-gray-200 dark:border-slate-800 focus:bg-white dark:focus:bg-slate-900"
+                className="h-12 bg-white/50  border-gray-200  focus:bg-white "
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Password</label>
+                <label className="text-sm font-bold text-gray-700 ">Password</label>
                 <Input
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   type="password"
                   placeholder="••••••••"
-                  className="h-12 bg-white/50 dark:bg-slate-950/50 border-gray-200 dark:border-slate-800 focus:bg-white dark:focus:bg-slate-900"
+                  className="h-12 bg-white/50  border-gray-200  focus:bg-white "
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Confirm</label>
+                <label className="text-sm font-bold text-gray-700 ">Confirm</label>
                 <Input
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   type="password"
                   placeholder="••••••••"
-                  className="h-12 bg-white/50 dark:bg-slate-950/50 border-gray-200 dark:border-slate-800 focus:bg-white dark:focus:bg-slate-900"
+                  className="h-12 bg-white/50  border-gray-200  focus:bg-white "
                 />
               </div>
             </div>
@@ -172,13 +172,13 @@ export default function Register() {
           {/* Info banner for Faculty/Admin restriction */}
           <div className="mt-8 p-4 rounded-xl bg-primary/5 border border-primary/10 flex items-start gap-3">
             <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-            <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed font-medium">
+            <p className="text-xs text-gray-600  leading-relaxed font-medium">
               Only student accounts can be self-registered.
               <strong className="block mt-1 text-primary">Faculty account is created by the admin.</strong>
             </p>
           </div>
 
-          <div className="mt-8 text-center text-sm font-medium text-gray-500 dark:text-gray-400">
+          <div className="mt-8 text-center text-sm font-medium text-gray-500 ">
             Already have an account?{" "}
             <Link to="/" className="font-bold text-primary hover:text-primary/80 transition-colors">
               Sign in

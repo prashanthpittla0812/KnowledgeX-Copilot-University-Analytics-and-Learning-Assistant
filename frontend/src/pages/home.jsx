@@ -85,7 +85,7 @@ export default function Home() {
             opacity: [0.3, 0.4, 0.3]
           }}
           transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute bottom-[-20%] right-[-10%] w-[60vw] h-[60vw] max-w-[600px] max-h-[600px] rounded-full bg-purple-500/20 blur-[100px]"
+          className="absolute bottom-[-20%] right-[-10%] w-[60vw] h-[60vw] max-w-[600px] max-h-[600px] rounded-full bg-orange-500/20 blur-[100px]"
         />
         <motion.div 
           animate={{ 
@@ -93,7 +93,7 @@ export default function Home() {
             opacity: [0.2, 0.5, 0.2]
           }}
           transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[20%] left-[40%] w-[40vw] h-[40vw] max-w-[400px] max-h-[400px] rounded-full bg-cyan-500/10 blur-[80px]"
+          className="absolute top-[20%] left-[40%] w-[40vw] h-[40vw] max-w-[400px] max-h-[400px] rounded-full bg-amber-500/10 blur-[80px]"
         />
       </div>
 
@@ -109,7 +109,7 @@ export default function Home() {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.2 }}
-            className="mx-auto flex w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 items-center justify-center text-white font-black text-3xl shadow-2xl shadow-indigo-500/30 mb-6"
+            className="mx-auto flex w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 items-center justify-center text-white font-black text-3xl shadow-2xl shadow-orange-500/30 mb-6"
           >
             K
           </motion.div>
@@ -118,32 +118,31 @@ export default function Home() {
             KnowledgeX Copilot
           </div>
           <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">Welcome back</h1>
-          <p className="text-gray-500 dark:text-gray-400 font-medium mt-2">Sign in to your account to continue</p>
+          <p className="text-gray-500  font-medium mt-2">Sign in to your account to continue</p>
         </div>
 
-        <div className="rounded-[2rem] border border-white/20 dark:border-white/10 bg-white/70 dark:bg-slate-900/70 p-6 sm:p-10 shadow-2xl shadow-black/5 backdrop-blur-xl">
+        <div className="rounded-[2rem] border border-white/20  bg-white/70  p-6 sm:p-10 shadow-2xl shadow-black/5 backdrop-blur-xl">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Email Address</label>
+              <label className="text-sm font-bold text-gray-700 ">Email Address</label>
               <Input
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 placeholder="user@university.edu"
-                className="h-12 bg-white/50 dark:bg-slate-950/50 border-gray-200 dark:border-slate-800 focus:bg-white dark:focus:bg-slate-900"
+                className="h-12 bg-white/50  border-gray-200  focus:bg-white "
               />
             </div>
 
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Password</label>
-                <button type="button" className="text-xs font-bold text-primary hover:text-primary/80 transition-colors">Forgot password?</button>
+                <label className="text-sm font-bold text-gray-700 ">Password</label>
               </div>
               <Input
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 type="password"
                 placeholder="••••••••"
-                className="h-12 bg-white/50 dark:bg-slate-950/50 border-gray-200 dark:border-slate-800 focus:bg-white dark:focus:bg-slate-900"
+                className="h-12 bg-white/50  border-gray-200  focus:bg-white "
               />
             </div>
 
@@ -159,14 +158,14 @@ export default function Home() {
           </form>
 
           <div className="mt-8 text-center">
-            <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">
+            <div className="text-sm font-medium text-gray-500  mb-4">
               Don't have an account?{" "}
               <Link to="/register" className="font-bold text-primary hover:text-primary/80 transition-colors">
                 Create Student Account
               </Link>
             </div>
             
-            <p className="text-[11px] text-gray-400 dark:text-gray-500 font-medium leading-relaxed max-w-xs mx-auto">
+            <p className="text-[11px] text-gray-400  font-medium leading-relaxed max-w-xs mx-auto">
               Faculty and Admin users can sign in using credentials provided by the institution.
             </p>
           </div>

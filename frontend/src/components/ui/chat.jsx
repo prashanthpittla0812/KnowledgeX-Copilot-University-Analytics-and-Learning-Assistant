@@ -16,7 +16,7 @@ export function ChatBubble({ message, sources, isUser, isTyping = false }) {
       <div className={cn(
         "flex flex-col space-y-2 overflow-hidden px-4 py-3 rounded-2xl max-w-[85%]",
         isUser 
-          ? "bg-gradient-to-br from-[#6366F1] to-[#8B5CF6] text-white shadow-md rounded-br-sm" 
+          ? "bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-md rounded-br-sm" 
           : "bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] shadow-sm rounded-bl-sm"
       )}>
         <div className={cn("prose prose-sm max-w-none break-words font-medium", isUser ? "text-white" : "dark:prose-invert text-[var(--foreground)]")}>
@@ -52,7 +52,7 @@ export function ChatBubble({ message, sources, isUser, isTyping = false }) {
       </div>
 
       {isUser && (
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md shadow-sm bg-gradient-to-br from-[#6366F1] to-[#8B5CF6] text-white">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md shadow-sm bg-gradient-to-br from-amber-500 to-orange-500 text-white">
           <User className="h-5 w-5" />
         </div>
       )}
