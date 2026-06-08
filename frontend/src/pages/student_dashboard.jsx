@@ -8,7 +8,7 @@ import { StatCard } from "../components/ui/stat-card";
 import { AnalyticsCard } from "../components/ui/analytics-card";
 import { ChatBubble, ChatInput } from "../components/ui/chat";
 import { Button } from "../components/ui/button";
-import { BookOpen, AlertCircle, FileText, Calendar, CheckCircle, BarChart as BarChartIcon, GraduationCap, Target, Lightbulb, TrendingUp, X } from "lucide-react";
+import { BookOpen, AlertCircle, FileText, Calendar, CheckCircle, BarChart as BarChartIcon, GraduationCap, Target, Lightbulb, TrendingUp, X, Trash2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 
 export default function StudentDashboard() {
@@ -169,6 +169,16 @@ export default function StudentDashboard() {
     setSelectedChatId(newChat.id);
     setChatInput("");
     localStorage.setItem(`studentChats_${studentId || "default"}`, JSON.stringify(updated));
+  };
+
+  const handleDeleteChat = (e, chatId) => {
+    e.stopPropagation();
+    const updatedChats = previousChats.filter(c => c.id !== chatId);
+    setPreviousChats(updatedChats);
+    localStorage.setItem(`studentChats_${studentId || "default"}`, JSON.stringify(updatedChats));
+    if (selectedChatId === chatId) {
+      setSelectedChatId(updatedChats.length > 0 ? updatedChats[0].id : null);
+    }
   };
 
   const handleAttachFiles = (event) => {
@@ -464,12 +474,17 @@ export default function StudentDashboard() {
               <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2 custom-scrollbar">
                 <Button onClick={handleNewChat} variant="gradient" className="w-full mb-4 font-bold text-sm shadow-sm cursor-pointer">New Chat</Button>
                 {previousChats.map((chat) => (
-                  <button key={chat.id} onClick={() => setSelectedChatId(chat.id)} className={`w-full text-left p-3 rounded-xl text-sm transition-all cursor-pointer ${selectedChatId === chat.id ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold shadow-md shadow-orange-500/10" : "hover:bg-slate-100 text-slate-600 font-medium"}`}>
-                    <span className="block font-semibold truncate">{chat.title}</span>
-                    <span className={`block text-xs truncate mt-1 ${selectedChatId === chat.id ? "text-white/80" : "text-slate-400"}`}>
-                      {chat.messages?.at(-1)?.text || "New chat"}
-                    </span>
-                  </button>
+                  <div key={chat.id} className={`group relative w-full text-left p-3 rounded-xl text-sm transition-all cursor-pointer flex justify-between items-center ${selectedChatId === chat.id ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold shadow-md shadow-orange-500/10" : "hover:bg-slate-100 text-slate-600 font-medium"}`} onClick={() => setSelectedChatId(chat.id)}>
+                    <div className="overflow-hidden pr-2">
+                      <span className="block font-semibold truncate">{chat.title}</span>
+                      <span className={`block text-xs truncate mt-1 ${selectedChatId === chat.id ? "text-white/80" : "text-slate-400"}`}>
+                        {chat.messages?.at(-1)?.text || "New chat"}
+                      </span>
+                    </div>
+                    <button onClick={(e) => handleDeleteChat(e, chat.id)} className={`p-1.5 rounded-md transition-opacity opacity-0 group-hover:opacity-100 ${selectedChatId === chat.id ? "hover:bg-white/20 text-white" : "hover:bg-red-100 text-red-500"}`} title="Delete chat">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 ))}
               </div>
             </Card>
