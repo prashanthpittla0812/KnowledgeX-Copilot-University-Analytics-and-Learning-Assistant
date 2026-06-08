@@ -109,51 +109,51 @@ export default function Register() {
             Join Thousands of Students
           </div>
           <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">Create Account</h1>
-          <p className="text-gray-500 dark:text-gray-400 font-medium mt-2">Start your AI-powered academic journey</p>
+          <p className="text-gray-500  font-medium mt-2">Start your AI-powered academic journey</p>
         </div>
 
-        <div className="rounded-[2rem] border border-white/20 dark:border-white/10 bg-white/70 dark:bg-slate-900/70 p-6 sm:p-10 shadow-2xl shadow-black/5 backdrop-blur-xl">
+        <div className="rounded-[2rem] border border-white/20  bg-white/70  p-6 sm:p-10 shadow-2xl shadow-black/5 backdrop-blur-xl">
           <form onSubmit={handleRegister} className="space-y-5">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Full Name</label>
+              <label className="text-sm font-bold text-gray-700 ">Full Name</label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Alex Smith"
-                className="h-12 bg-white/50 dark:bg-slate-950/50 border-gray-200 dark:border-slate-800 focus:bg-white dark:focus:bg-slate-900"
+                className="h-12 bg-white/50  border-gray-200  focus:bg-white "
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Email Address</label>
+              <label className="text-sm font-bold text-gray-700 ">Email Address</label>
               <Input
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="alex@university.edu"
-                className="h-12 bg-white/50 dark:bg-slate-950/50 border-gray-200 dark:border-slate-800 focus:bg-white dark:focus:bg-slate-900"
+                className="h-12 bg-white/50  border-gray-200  focus:bg-white "
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Password</label>
+                <label className="text-sm font-bold text-gray-700 ">Password</label>
                 <Input
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   type="password"
                   placeholder="••••••••"
-                  className="h-12 bg-white/50 dark:bg-slate-950/50 border-gray-200 dark:border-slate-800 focus:bg-white dark:focus:bg-slate-900"
+                  className="h-12 bg-white/50  border-gray-200  focus:bg-white "
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Confirm</label>
+                <label className="text-sm font-bold text-gray-700 ">Confirm</label>
                 <Input
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   type="password"
                   placeholder="••••••••"
-                  className="h-12 bg-white/50 dark:bg-slate-950/50 border-gray-200 dark:border-slate-800 focus:bg-white dark:focus:bg-slate-900"
+                  className="h-12 bg-white/50  border-gray-200  focus:bg-white "
                 />
               </div>
             </div>
@@ -172,13 +172,13 @@ export default function Register() {
           {/* Info banner for Faculty/Admin restriction */}
           <div className="mt-8 p-4 rounded-xl bg-primary/5 border border-primary/10 flex items-start gap-3">
             <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-            <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed font-medium">
+            <p className="text-xs text-gray-600  leading-relaxed font-medium">
               Only student accounts can be self-registered.
               <strong className="block mt-1 text-primary">Faculty account is created by the admin.</strong>
             </p>
           </div>
 
-          <div className="mt-8 text-center text-sm font-medium text-gray-500 dark:text-gray-400">
+          <div className="mt-8 text-center text-sm font-medium text-gray-500 ">
             Already have an account?{" "}
             <Link to="/" className="font-bold text-primary hover:text-primary/80 transition-colors">
               Sign in

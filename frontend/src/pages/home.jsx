@@ -118,31 +118,31 @@ export default function Home() {
             KnowledgeX Copilot
           </div>
           <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">Welcome back</h1>
-          <p className="text-gray-500 dark:text-gray-400 font-medium mt-2">Sign in to your account to continue</p>
+          <p className="text-gray-500  font-medium mt-2">Sign in to your account to continue</p>
         </div>
 
-        <div className="rounded-[2rem] border border-white/20 dark:border-white/10 bg-white/70 dark:bg-slate-900/70 p-6 sm:p-10 shadow-2xl shadow-black/5 backdrop-blur-xl">
+        <div className="rounded-[2rem] border border-white/20  bg-white/70  p-6 sm:p-10 shadow-2xl shadow-black/5 backdrop-blur-xl">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Email Address</label>
+              <label className="text-sm font-bold text-gray-700 ">Email Address</label>
               <Input
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 placeholder="user@university.edu"
-                className="h-12 bg-white/50 dark:bg-slate-950/50 border-gray-200 dark:border-slate-800 focus:bg-white dark:focus:bg-slate-900"
+                className="h-12 bg-white/50  border-gray-200  focus:bg-white "
               />
             </div>
 
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Password</label>
+                <label className="text-sm font-bold text-gray-700 ">Password</label>
               </div>
               <Input
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 type="password"
                 placeholder="••••••••"
-                className="h-12 bg-white/50 dark:bg-slate-950/50 border-gray-200 dark:border-slate-800 focus:bg-white dark:focus:bg-slate-900"
+                className="h-12 bg-white/50  border-gray-200  focus:bg-white "
               />
             </div>
 
@@ -158,14 +158,14 @@ export default function Home() {
           </form>
 
           <div className="mt-8 text-center">
-            <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">
+            <div className="text-sm font-medium text-gray-500  mb-4">
               Don't have an account?{" "}
               <Link to="/register" className="font-bold text-primary hover:text-primary/80 transition-colors">
                 Create Student Account
               </Link>
             </div>
             
-            <p className="text-[11px] text-gray-400 dark:text-gray-500 font-medium leading-relaxed max-w-xs mx-auto">
+            <p className="text-[11px] text-gray-400  font-medium leading-relaxed max-w-xs mx-auto">
               Faculty and Admin users can sign in using credentials provided by the institution.
             </p>
           </div>
