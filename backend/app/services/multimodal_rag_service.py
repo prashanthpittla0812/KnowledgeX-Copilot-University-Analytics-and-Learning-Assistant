@@ -9,6 +9,7 @@ from app.services.audio_processor import AudioProcessor
 from app.services.video_processor import VideoProcessor
 from app.utils.chunking import split_text
 from app.utils.embeddings import get_vector_store
+from app.utils.pdf_loader import extract_text_from_pdf
 
 logger = logging.getLogger(__name__)
 
@@ -30,25 +31,49 @@ class MultimodalRAGService:
 
         # Determine source type and process
         if ext in [".pdf"]:
-            # Check if it's a scanned PDF vs Text PDF (for simplicity here, we assume it's scanned or has images if requested)
-            # In a real system we might detect if PyPDF extracts nothing, then fallback to OCR.
-            # Here we just run OCR on it as requested by Feature 1
             source_type = "PDF"
-            ocr_text = self.ocr_service.extract_text_from_scanned_pdf(file_path)
+            try:
+                transcript = extract_text_from_pdf(file_path)
+            except Exception as e:
+                logger.error(f"Failed to extract text from PDF via PyPDF: {e}")
             
+            # Try OCR as fallback or supplementary if transcript is very short
+            if len(transcript) < 100:
+                try:
+                    ocr_text = self.ocr_service.extract_text_from_scanned_pdf(file_path)
+                except Exception as e:
+                    logger.error(f"Failed to extract text from PDF via OCR: {e}")
+            
+        elif ext in [".txt", ".csv", ".md"]:
+            source_type = "DOCUMENT"
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    transcript = f.read()
+            except Exception as e:
+                logger.error(f"Failed to read document {file_path}: {e}")
+
         elif ext in [".jpg", ".jpeg", ".png"]:
             source_type = "IMAGE"
-            ocr_text = self.ocr_service.extract_text_from_image(file_path)
+            try:
+                ocr_text = self.ocr_service.extract_text_from_image(file_path)
+            except Exception as e:
+                logger.error(f"Failed to extract text from image via OCR: {e}")
             
         elif ext in [".mp3", ".wav", ".m4a", ".flac"]:
             source_type = "AUDIO"
-            transcript = self.audio_processor.transcribe_audio(file_path, provider=asr_provider)
+            try:
+                transcript = self.audio_processor.transcribe_audio(file_path, provider=asr_provider)
+            except Exception as e:
+                logger.error(f"Failed to transcribe audio: {e}")
             
         elif ext in [".mp4", ".avi", ".mov", ".mkv"]:
             source_type = "VIDEO"
-            results = self.video_processor.process_video(file_path, asr_provider=asr_provider)
-            transcript = results.get("transcript", "")
-            ocr_text = results.get("ocr_text", "")
+            try:
+                results = self.video_processor.process_video(file_path, asr_provider=asr_provider)
+                transcript = results.get("transcript", "")
+                ocr_text = results.get("ocr_text", "")
+            except Exception as e:
+                logger.error(f"Failed to process video: {e}")
             
         else:
             raise ValueError(f"Unsupported file format for multimodal processing: {ext}")
@@ -56,7 +81,7 @@ class MultimodalRAGService:
         # Combine text for vectorization
         combined_text = f"Source: {file_name}\n"
         if transcript:
-            combined_text += f"\n--- Audio Transcript ---\n{transcript}\n"
+            combined_text += f"\n--- Text/Transcript ---\n{transcript}\n"
         if ocr_text:
             combined_text += f"\n--- Visual OCR Text ---\n{ocr_text}\n"
 

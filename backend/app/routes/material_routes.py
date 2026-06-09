@@ -202,7 +202,7 @@ async def get_student_materials(
         bm = await db.scalar(
             select(MaterialBookmark).where(
                 MaterialBookmark.material_id == mat.id,
-                MaterialBookmark.student_id == current_user.id,
+                MaterialBookmark.user_id == current_user.id,
                 MaterialBookmark.is_active == True
             )
         )
@@ -269,7 +269,7 @@ async def bookmark(
     bm = await db.scalar(
         select(MaterialBookmark).where(
             MaterialBookmark.material_id == material_id,
-            MaterialBookmark.student_id == current_user.id
+            MaterialBookmark.user_id == current_user.id
         )
     )
 
@@ -277,7 +277,7 @@ async def bookmark(
         bm.is_active = not bm.is_active
     else:
         db.add(MaterialBookmark(
-            student_id=current_user.id,
+            user_id=current_user.id,
             material_id=material_id,
             is_active=True
         ))

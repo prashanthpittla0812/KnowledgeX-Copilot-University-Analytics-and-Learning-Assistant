@@ -11,7 +11,7 @@ def get_embeddings():
     if settings.AI_PROVIDER == "openai":
         return OpenAIEmbeddings(
             model="text-embedding-3-small", # Or "text-embedding-ada-002"
-            openai_api_key=settings.OPENAI_API_KEY,
+            api_key=settings.OPENAI_API_KEY,
         )
     elif settings.AI_PROVIDER == "azure":
         return AzureOpenAIEmbeddings(
