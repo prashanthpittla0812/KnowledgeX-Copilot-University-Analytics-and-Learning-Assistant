@@ -123,6 +123,7 @@ async def faculty_upload_document(
 @faculty_router.post("/generate-quiz", response_model=QuizGenerateResponse)
 async def faculty_generate_quiz(
     request: QuizGenerateRequest,
+    current_user: User = Depends(get_current_faculty),
     db: AsyncSession = Depends(get_db),
 ):
     service = TeacherQuizService(db)
@@ -132,6 +133,7 @@ async def faculty_generate_quiz(
         question_type=request.question_type,
         difficulty=request.difficulty,
         num_questions=request.num_questions,
+        teacher_id=current_user.id,
     )
 
     if result.get("status") == "error":

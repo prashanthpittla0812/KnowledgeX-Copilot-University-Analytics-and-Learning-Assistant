@@ -6,9 +6,8 @@ import { BookOpen, Upload, Link as LinkIcon, FileText, File, Video, Trash2, Eye,
 import toast from "react-hot-toast";
 
 export function LearningMaterialsTab() {
-  const [activeTab, setActiveTab] = useState("upload"); // 'upload' or 'my-materials' or 'analytics'
+  const [activeTab, setActiveTab] = useState("upload"); // 'upload' or 'my-materials'
   const [materials, setMaterials] = useState([]);
-  const [analytics, setAnalytics] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Upload Form State
@@ -36,18 +35,8 @@ export function LearningMaterialsTab() {
     }
   };
 
-  const fetchAnalytics = async () => {
-    try {
-      const res = await materialApi.getFacultyAnalytics();
-      setAnalytics(res.data);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
   useEffect(() => {
     if (activeTab === "my-materials") fetchMaterials();
-    if (activeTab === "analytics") fetchAnalytics();
   }, [activeTab]);
 
   const handleUpload = async (e) => {
@@ -144,7 +133,6 @@ export function LearningMaterialsTab() {
         <div className="flex bg-muted/50 p-1 rounded-xl">
           <button onClick={() => setActiveTab("upload")} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === "upload" ? "bg-white dark:bg-slate-800 shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"}`}>Upload</button>
           <button onClick={() => setActiveTab("my-materials")} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === "my-materials" ? "bg-white dark:bg-slate-800 shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"}`}>My Materials</button>
-          <button onClick={() => setActiveTab("analytics")} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === "analytics" ? "bg-white dark:bg-slate-800 shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"}`}>Analytics</button>
         </div>
       </div>
 
@@ -279,43 +267,7 @@ export function LearningMaterialsTab() {
         </div>
       )}
 
-      {activeTab === "analytics" && (
-        <div className="grid gap-6">
-          <div className="grid sm:grid-cols-3 gap-6">
-            <Card className="glass-card">
-              <CardContent className="p-6">
-                <h3 className="text-sm font-semibold text-muted-foreground mb-2">Total Uploads</h3>
-                <p className="text-4xl font-black">{analytics?.total_uploads || 0}</p>
-              </CardContent>
-            </Card>
-            <Card className="glass-card">
-              <CardContent className="p-6">
-                <h3 className="text-sm font-semibold text-muted-foreground mb-2">Total Views</h3>
-                <p className="text-4xl font-black text-primary">{analytics?.total_views || 0}</p>
-              </CardContent>
-            </Card>
-            <Card className="glass-card">
-              <CardContent className="p-6">
-                <h3 className="text-sm font-semibold text-muted-foreground mb-2">Total Downloads</h3>
-                <p className="text-4xl font-black text-blue-500">{analytics?.total_downloads || 0}</p>
-              </CardContent>
-            </Card>
-          </div>
-          
-          <Card className="glass-card">
-            <CardContent className="p-6">
-              <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-                <Eye className="w-5 h-5 text-primary" /> Most Viewed Material
-              </h3>
-              {analytics?.most_viewed ? (
-                <p className="text-xl font-medium">{analytics.most_viewed}</p>
-              ) : (
-                <p className="text-muted-foreground">Not enough data to determine.</p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
+
     </div>
   );
 }

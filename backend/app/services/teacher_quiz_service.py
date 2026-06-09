@@ -80,6 +80,7 @@ class TeacherQuizService:
         question_type: str,
         difficulty: str,
         num_questions: int,
+        teacher_id: int = None,
     ) -> dict:
         context = retrieve_context(topic_name, topic_name)
         if not context:
@@ -124,6 +125,7 @@ class TeacherQuizService:
 
         quiz = TeacherQuiz(
             teacher_name=faculty_name,
+            teacher_id=teacher_id,
             topic_name=topic_name,
             question_type=question_type,
             difficulty=difficulty,

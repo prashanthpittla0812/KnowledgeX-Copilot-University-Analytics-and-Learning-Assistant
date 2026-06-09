@@ -36,11 +36,12 @@ async def get_performance(
 
 @router.get("/learning-gaps", response_model=LearningGapsResponse)
 async def get_learning_gaps(
+    quiz_id: int | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_faculty),
 ):
     analytics = AnalyticsService(db)
-    return await analytics.get_learning_gaps()
+    return await analytics.get_learning_gaps(quiz_id)
 
 
 @router.get("/teacher/performance")

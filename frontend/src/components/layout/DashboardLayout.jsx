@@ -96,7 +96,6 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
 
   const studentLinks = [
     { name: "Dashboard", icon: LayoutDashboard },
-    { name: "Chatbot", icon: MessageSquare },
     { name: "Attendance", icon: Calendar },
     { name: "Quizzes", icon: CheckCircle },
     { name: "Learning Resources", icon: BookOpen },
