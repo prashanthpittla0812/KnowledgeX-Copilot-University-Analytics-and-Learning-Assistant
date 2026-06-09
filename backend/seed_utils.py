@@ -28,16 +28,18 @@ def load_env() -> None:
 def get_database_url() -> str:
     load_env()
     direct = os.getenv("DATABASE_URL") or os.getenv("SQLALCHEMY_DATABASE_URL")
-    if direct:
-        return direct
-
-    user = os.getenv("MYSQL_USER") or os.getenv("DB_USER") or "root"
-    password = os.getenv("MYSQL_PASSWORD") or os.getenv("DB_PASSWORD") or ""
-    host = os.getenv("MYSQL_HOST") or os.getenv("DB_HOST") or "localhost"
-    port = os.getenv("MYSQL_PORT") or os.getenv("DB_PORT") or "3306"
-    database = os.getenv("MYSQL_DATABASE") or os.getenv("DB_NAME") or "knowledgex"
+    user = os.getenv("POSTGRES_USER") or os.getenv("DB_USER") or "postgres"
+    password = os.getenv("POSTGRES_PASSWORD") or os.getenv("DB_PASSWORD") or "password"
+    host = os.getenv("POSTGRES_HOST") or os.getenv("DB_HOST") or "localhost"
+    port = os.getenv("POSTGRES_PORT") or os.getenv("DB_PORT") or "5432"
+    database = os.getenv("POSTGRES_DB") or os.getenv("DB_NAME") or "postgres"
     auth = f"{user}:{password}" if password else user
-    return f"mysql+pymysql://{auth}@{host}:{port}/{database}"
+    fallback = f"postgresql://{auth}@{host}:{port}/{database}"
+    
+    url = direct or fallback
+    if url.startswith("postgresql+asyncpg://"):
+        url = url.replace("postgresql+asyncpg://", "postgresql://")
+    return url
 
 
 def get_engine() -> Engine:

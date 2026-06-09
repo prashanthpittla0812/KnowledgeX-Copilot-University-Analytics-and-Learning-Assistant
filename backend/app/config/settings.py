@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
 
     # Database
-    DATABASE_URL: str = "mysql+pymysql://root:password@localhost:3306/knowledgex"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:password@localhost:5432/postgres"
 
     # JWT
     JWT_SECRET_KEY: str = "change-this-secret-key-in-production"
