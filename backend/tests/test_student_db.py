@@ -1,3 +1,4 @@
+from app.config.settings import settings
 import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy import select, desc
@@ -6,7 +7,7 @@ from app.schemas.material_schema import MaterialResponse
 import traceback
 
 async def main():
-    engine = create_async_engine('mysql+aiomysql://root:139202021%40Mittu@localhost:3306/knowledgex')
+    engine = create_async_engine(settings.DATABASE_URL)
     try:
         async with AsyncSession(engine) as db:
             current_user_id = 1

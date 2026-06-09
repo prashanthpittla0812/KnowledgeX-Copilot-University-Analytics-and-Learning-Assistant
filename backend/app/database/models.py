@@ -375,3 +375,14 @@ class ProcessedContent(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     user = relationship("User")
+
+class SecurityLog(Base):
+    __tablename__ = "security_logs"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
+    event_type = Column(String(100), nullable=False) # e.g., "PROMPT_INJECTION", "PII_DETECTED", "PROFANITY", "UNAUTHORIZED_ACCESS"
+    violation_reason = Column(Text, nullable=False)
+    prompt_snippet = Column(Text, nullable=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    user = relationship("User")
