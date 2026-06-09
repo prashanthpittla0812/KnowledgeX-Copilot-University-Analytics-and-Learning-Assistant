@@ -1,10 +1,11 @@
+from app.config.settings import settings
 import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy import text
 import traceback
 
 async def main():
-    engine = create_async_engine('mysql+aiomysql://root:139202021%40Mittu@localhost:3306/knowledgex')
+    engine = create_async_engine(settings.DATABASE_URL)
     try:
         async with AsyncSession(engine) as session:
             await session.execute(text("ALTER TABLE material_bookmarks ADD COLUMN is_active BOOLEAN DEFAULT 1"))
