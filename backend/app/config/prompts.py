@@ -28,24 +28,24 @@ Answer:"""
 
 
 QUIZ_GENERATION_PROMPT_TEMPLATE = """You are an expert university professor creating a quiz.
-Generate {number_of_questions} multiple-choice questions on the topic "{topic}" at "{difficulty}" difficulty.
+Generate EXACTLY {number_of_questions} multiple-choice questions on the topic "{topic}" at "{difficulty}" difficulty.
 
 Return ONLY valid JSON in this exact format:
 {{
   "quiz": [
     {{
-      "question": "What is...?",
-      "options": ["A", "B", "C", "D"],
-      "correct_answer": "A",
-      "explanation": "Brief explanation of why A is correct."
+      "question": "What is the capital of France?",
+      "options": ["London", "Paris", "Berlin", "Madrid"],
+      "correct_answer": "Paris",
+      "explanation": "Paris is the capital and most populous city of France."
     }}
   ]
 }}
 
 Requirements:
-- Exactly {number_of_questions} questions.
-- 4 options per question.
-- One clearly correct answer.
+- You MUST generate EXACTLY {number_of_questions} questions. Do not generate more or less.
+- 4 options per question. The options MUST be the actual text of the answers, NOT just "A", "B", "C", "D".
+- One clearly correct answer. The correct_answer MUST be the exact text of the correct option.
 - Educational explanations.
 - Difficulty: {difficulty}.
 
@@ -98,8 +98,9 @@ Return ONLY valid JSON in this exact format:
   "recommended_materials": [
     {{
       "topic": "Topic",
-      "resource": "Recommended resource",
-      "reason": "Why this is recommended"
+      "resource": "Title of the resource ONLY (Do NOT include the URL here)",
+      "reason": "Why this is recommended",
+      "url": "A working URL. To avoid broken links, provide a YouTube search link (e.g., https://www.youtube.com/results?search_query=...) or a Google PDF search link (e.g., https://www.google.com/search?q=...+filetype:pdf)"
     }}
   ],
   "suggested_quizzes": [
@@ -112,7 +113,14 @@ Return ONLY valid JSON in this exact format:
   "overall_advice": "General advice for the student"
 }}
 
-CRITICAL INSTRUCTION: Output ONLY raw JSON. Do NOT wrap the JSON in markdown blocks (e.g., ```json or ```). Do not include any conversational text before or after the JSON."""
+CRITICAL INSTRUCTIONS:
+1. Output ONLY raw JSON. Do NOT wrap the JSON in markdown blocks (e.g., ```json or ```). Do not include any conversational text before or after the JSON.
+2. In `recommended_materials`, you MUST provide at least one item for EVERY single topic listed in `Weak Areas`. If there are no weak areas, provide materials based on their most recent `Previous Quizzes`.
+3. Across your recommendations, provide a diverse mix of:
+   - Course/Platform links
+   - YouTube Video search links
+   - Notes/PDF document search links
+4. NEVER include the `http` URL inside the `resource` name field. Put it ONLY in the `url` field."""
 
 TEACHER_MCQ_PROMPT_TEMPLATE = """You are an academic quiz generator.
 

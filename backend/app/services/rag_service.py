@@ -24,7 +24,7 @@ class RAGService:
                 model_provider="openai",
                 api_key=settings.OPENAI_API_KEY,
                 temperature=0.3,
-                max_tokens=4000,
+                max_tokens=4096,
             )
         elif settings.AI_PROVIDER == "azure":
             return init_chat_model(
@@ -34,7 +34,7 @@ class RAGService:
                 azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
                 api_version=settings.AZURE_OPENAI_API_VERSION,
                 temperature=0.3,
-                max_tokens=4000,
+                max_tokens=4096,
             )
         elif settings.AI_PROVIDER == "groq":
             return init_chat_model(
@@ -42,7 +42,7 @@ class RAGService:
                 model_provider="groq",
                 api_key=settings.GROQ_API_KEY,
                 temperature=0.3,
-                max_tokens=4000,
+                max_tokens=4096,
             )
         else:
             return init_chat_model(
@@ -50,7 +50,7 @@ class RAGService:
                 model_provider="ollama",
                 base_url=settings.OLLAMA_BASE_URL,
                 temperature=0.3,
-                max_tokens=4000,
+                max_tokens=4096,
             )
 
     def load_and_index_pdf(self, file_path: str) -> int:

@@ -25,9 +25,17 @@ class RecommendationService:
         quizzes = await self._get_student_quizzes(student_id)
         study_plans = await self._get_student_plans(student_id)
 
-        weak_areas = self._identify_weak_areas(quizzes)
+        # Focus recommendations ONLY on the most recent quiz taken
+        recent_quiz = quizzes[0] if quizzes else None
+        
+        weak_areas = []
+        quiz_history = []
+        if recent_quiz and recent_quiz.score is not None:
+            if recent_quiz.score < 60:
+                weak_areas = [recent_quiz.topic]
+            quiz_history = [{"topic": recent_quiz.topic, "score": recent_quiz.score}]
+
         performance_data = self._build_performance_summary(quizzes, study_plans)
-        quiz_history = [{"topic": q.topic, "score": q.score} for q in quizzes if q.score is not None]
 
         prompt = RECOMMENDATION_PROMPT_TEMPLATE.format(
             performance_data=performance_data,

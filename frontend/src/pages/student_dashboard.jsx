@@ -8,7 +8,7 @@ import { StatCard } from "../components/ui/stat-card";
 import { AnalyticsCard } from "../components/ui/analytics-card";
 import { ChatBubble, ChatInput } from "../components/ui/chat";
 import { Button } from "../components/ui/button";
-import { BookOpen, AlertCircle, FileText, Calendar, CheckCircle, BarChart as BarChartIcon, GraduationCap, Target, Lightbulb, TrendingUp, X, Trash2 } from "lucide-react";
+import { BookOpen, AlertCircle, FileText, Calendar, CheckCircle, BarChart as BarChartIcon, GraduationCap, Target, Lightbulb, TrendingUp, X, Trash2, PanelLeftClose, PanelLeftOpen, Maximize, Minus } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import CopilotFloatingButton from "./CopilotFloatingButton";
 
@@ -38,11 +38,13 @@ export default function StudentDashboard() {
     ];
   });
   const [selectedChatId, setSelectedChatId] = useState(previousChats[0]?.id || null);
-
+  const [isChatHistoryOpen, setIsChatHistoryOpen] = useState(true);
+  const [isChatbotVisible, setIsChatbotVisible] = useState(false);
+  const [chatbotMode, setChatbotMode] = useState("minimized");
   // Quiz States
   const [quizTopic, setQuizTopic] = useState("");
   const [quizDifficulty, setQuizDifficulty] = useState("medium");
-  const [quizNumQuestions, setQuizNumQuestions] = useState(5);
+  const [quizNumQuestions, setQuizNumQuestions] = useState(25);
   const [activeQuiz, setActiveQuiz] = useState(null);
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [quizResult, setQuizResult] = useState(null);
@@ -69,14 +71,6 @@ export default function StudentDashboard() {
   // Analytics States
   const [analytics, setAnalytics] = useState(null);
   const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false);
-
-  // Attendance State
-  const [attendanceData] = useState([
-    { subject: "Math", present: 18, total: 20 },
-    { subject: "Physics", present: 16, total: 20 },
-    { subject: "Computer Science", present: 19, total: 20 },
-    { subject: "English", present: 17, total: 20 },
-  ]);
 
   useEffect(() => {
     const stored = localStorage.getItem("currentUser");
@@ -400,7 +394,6 @@ export default function StudentDashboard() {
               <StatCard title="Quizzes Taken" value="12" icon={CheckCircle} description="Across 3 subjects" />
               <StatCard title="Average Score" value="82%" icon={Target} trend="↑ 4%" trendColor="text-emerald-500" description="since last week" />
               <StatCard title="Study Streak" value="5 days" icon={TrendingUp} description="Keep it up!" />
-              <StatCard title="Total Attendance" value="88%" icon={Calendar} trendColor="text-primary" description="Good standing" />
             </div>
 
             <div className="grid gap-6 lg:grid-cols-2">
@@ -420,25 +413,6 @@ export default function StudentDashboard() {
                     </div>
                     <Button size="sm" onClick={() => setActiveItem("Quizzes")}>Practice</Button>
                   </div>
-                </div>
-              </AnalyticsCard>
-
-              <AnalyticsCard title="Attendance Summary" className="min-h-[300px]">
-                <div className="space-y-4">
-                  {attendanceData.map((item, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-xl hover:bg-muted transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center font-bold text-muted-foreground">
-                          {item.subject.charAt(0)}
-                        </div>
-                        <p className="font-bold">{item.subject}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-black text-lg">{((item.present / item.total) * 100).toFixed(0)}%</p>
-                        <p className="text-xs text-muted-foreground">{item.present}/{item.total} classes</p>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               </AnalyticsCard>
             </div>
@@ -466,78 +440,6 @@ export default function StudentDashboard() {
                 </Button>
               </div>
             </AnalyticsCard>
-          </div>
-        ) : activeItem === "Chatbot" ? (
-          <div className="grid h-full min-h-[500px] gap-6 xl:grid-cols-[280px_1fr]">
-            <Card className="flex flex-col hidden xl:flex glass-card border-none">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-bold text-foreground">Chat History</CardTitle>
-              </CardHeader>
-              <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2 custom-scrollbar">
-                <Button onClick={handleNewChat} variant="gradient" className="w-full mb-4 font-bold text-sm shadow-sm cursor-pointer">New Chat</Button>
-                {previousChats.map((chat) => (
-                  <div key={chat.id} className={`group relative w-full text-left p-3 rounded-xl text-sm transition-all cursor-pointer flex justify-between items-center ${selectedChatId === chat.id ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold shadow-md shadow-orange-500/10" : "hover:bg-slate-100 text-slate-600 font-medium"}`} onClick={() => setSelectedChatId(chat.id)}>
-                    <div className="overflow-hidden pr-2">
-                      <span className="block font-semibold truncate">{chat.title}</span>
-                      <span className={`block text-xs truncate mt-1 ${selectedChatId === chat.id ? "text-white/80" : "text-slate-400"}`}>
-                        {chat.messages?.at(-1)?.text || "New chat"}
-                      </span>
-                    </div>
-                    <button onClick={(e) => handleDeleteChat(e, chat.id)} className={`p-1.5 rounded-md transition-opacity opacity-0 group-hover:opacity-100 ${selectedChatId === chat.id ? "hover:bg-white/20 text-white" : "hover:bg-red-100 text-red-500"}`} title="Delete chat">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            <Card className="flex flex-col overflow-hidden relative glass-card border-none">
-              <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar bg-slate-50/50">
-                {selectedMessages.length > 0 ? (
-                  selectedMessages.map((msg, i) => (
-                    <ChatBubble key={i} message={msg.text} sources={msg.sources} isUser={msg.isUser} />
-                  ))
-                ) : (
-                  <div className="flex h-full flex-col items-center justify-center text-center max-w-md mx-auto">
-                    <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-500 flex items-center justify-center mb-6 shadow-sm border border-amber-200/50">
-                      <Lightbulb className="w-8 h-8" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-foreground mb-2">KnowledgeX AI Tutor</h2>
-                    <p className="text-muted-foreground">Ask questions, clarify doubts, or request explanations on any academic topic.</p>
-                  </div>
-                )}
-                {isChatSending && <ChatBubble message="" isUser={false} isTyping={true} />}
-              </div>
-              <div className="p-4 bg-white/90 backdrop-blur-md border-t border-[var(--border)] shrink-0">
-                {attachedFiles.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {attachedFiles.map((file, idx) => (
-                      <div key={idx} className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-medium">
-                        <span className="truncate max-w-[150px]">{file.name}</span>
-                        <button onClick={() => setAttachedFiles(attachedFiles.filter((_, i) => i !== idx))} className="hover:text-red-500 rounded-full p-0.5">
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <input
-                  ref={pdfInputRef}
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png,.mp3,.wav,.m4a,.flac,.mp4,.avi,.mov,.mkv"
-                  multiple
-                  onChange={handleAttachFiles}
-                  className="hidden"
-                />
-                <ChatInput
-                  input={chatInput}
-                  setInput={setChatInput}
-                  onSubmit={handleSendChat}
-                  isSending={isChatSending}
-                  onAttachClick={() => pdfInputRef.current?.click()}
-                />
-              </div>
-            </Card>
           </div>
         ) : activeItem === "Quizzes" ? (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -648,7 +550,7 @@ export default function StudentDashboard() {
                       </div>
                       <div>
                         <label className="text-sm font-semibold mb-1 block">Questions</label>
-                        <input type="number" value={quizNumQuestions} onChange={e => setQuizNumQuestions(Number(e.target.value))} min="1" max="20" className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none" />
+                        <input type="number" value={quizNumQuestions} onChange={e => setQuizNumQuestions(Number(e.target.value))} min="1" max="25" className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none" />
                       </div>
                     </div>
                     <Button onClick={handleGenerateQuiz} disabled={isLoading} className="w-full h-11">{isLoading ? "Generating..." : "Generate AI Quiz"}</Button>
@@ -839,9 +741,9 @@ export default function StudentDashboard() {
                   </AnalyticsCard>
                 </div>
 
-                <div className="space-y-8">
-                  <AnalyticsCard title="Recommended Materials">
-                    <ul className="space-y-3">
+                <div className="space-y-8 lg:space-y-0 lg:h-full lg:flex lg:flex-col">
+                  <AnalyticsCard title="Recommended Materials" className="lg:flex-1 lg:flex lg:flex-col lg:min-h-0">
+                    <ul className="space-y-3 max-h-[450px] lg:max-h-none lg:absolute lg:inset-6 overflow-y-auto custom-scrollbar pr-2">
                       {recommendations.recommended_materials?.map((mat, i) => (
                         <li key={i} className="flex flex-col gap-1 p-3 rounded-lg bg-[var(--background)] border border-[var(--border)]">
                           <div className="flex items-center gap-2">
@@ -850,15 +752,14 @@ export default function StudentDashboard() {
                           </div>
                           <p className="text-xs text-muted-foreground ml-6">For: {mat.topic}</p>
                           <p className="text-xs text-muted-foreground ml-6">{mat.reason}</p>
+                          {mat.url && (
+                            <a href={mat.url} target="_blank" rel="noopener noreferrer" className="ml-6 mt-1 text-xs text-blue-500 hover:underline flex items-center gap-1">
+                              Go to Course →
+                            </a>
+                          )}
                         </li>
                       ))}
                     </ul>
-                  </AnalyticsCard>
-
-                  <AnalyticsCard title="Overall Advice">
-                    <div className="p-5 rounded-xl bg-primary/5 border border-primary/20 text-foreground leading-relaxed">
-                      {recommendations.overall_advice}
-                    </div>
                   </AnalyticsCard>
                 </div>
               </div>
@@ -930,61 +831,10 @@ export default function StudentDashboard() {
                         )}
                       </div>
                     </AnalyticsCard>
-
-                    <AnalyticsCard title="Attendance Overview">
-                      <div className="h-[300px] mt-4">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={attendanceData.map(d => ({ subject: d.subject, percentage: Math.round((d.present / d.total) * 100) }))} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                            <XAxis dataKey="subject" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
-                            <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} />
-                            <Tooltip
-                              cursor={{ fill: 'var(--muted)' }}
-                              contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '8px' }}
-                              formatter={(value) => [`${value}%`, 'Attendance']}
-                            />
-                            <Bar dataKey="percentage" fill="#F59E0B" radius={[4, 4, 0, 0]} maxBarSize={50} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </AnalyticsCard>
                   </div>
                 </>
               );
             })()}
-          </div>
-        ) : activeItem === "Attendance" ? (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-              <h1 className="text-3xl font-black tracking-tight">Attendance Tracking</h1>
-              <p className="text-muted-foreground mt-1">Review your subject-wise attendance and requirements.</p>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              {attendanceData.map((item, i) => {
-                const percentage = ((item.present / item.total) * 100).toFixed(0);
-                const isWarning = percentage < 75;
-                return (
-                  <AnalyticsCard key={i} title={item.subject}>
-                    <div className="flex items-center justify-between p-4 bg-[var(--background)] rounded-xl border border-[var(--border)]">
-                      <div>
-                        <p className="text-sm font-semibold text-muted-foreground mb-1">Classes Attended</p>
-                        <p className="text-2xl font-black">{item.present} <span className="text-sm font-medium text-muted-foreground">/ {item.total}</span></p>
-                      </div>
-                      <div className={`w-20 h-20 rounded-full flex items-center justify-center border-4 ${isWarning ? 'border-red-500 text-red-500 bg-red-500/10' : 'border-emerald-500 text-emerald-500 bg-emerald-500/10'}`}>
-                        <span className="text-xl font-bold">{percentage}%</span>
-                      </div>
-                    </div>
-                    {isWarning && (
-                      <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex gap-2 items-center text-red-600 dark:text-red-400 text-sm">
-                        <AlertCircle className="w-4 h-4 shrink-0" />
-                        <p>Attendance is below 75%. You need to attend the next few classes!</p>
-                      </div>
-                    )}
-                  </AnalyticsCard>
-                );
-              })}
-            </div>
           </div>
         ) : (
           <div className="flex h-full flex-col items-center justify-center text-center animate-in fade-in duration-500">
