@@ -8,7 +8,7 @@ import { StatCard } from "../components/ui/stat-card";
 import { AnalyticsCard } from "../components/ui/analytics-card";
 import { ChatBubble, ChatInput } from "../components/ui/chat";
 import { Button } from "../components/ui/button";
-import { BookOpen, AlertCircle, FileText, Calendar, CheckCircle, BarChart as BarChartIcon, GraduationCap, Target, Lightbulb, TrendingUp, X, Trash2 } from "lucide-react";
+import { BookOpen, AlertCircle, FileText, Calendar, CheckCircle, BarChart as BarChartIcon, GraduationCap, Target, Lightbulb, TrendingUp, X, Trash2, PanelLeftClose, PanelLeftOpen, Maximize, Minus } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import CopilotFloatingButton from "./CopilotFloatingButton";
 
@@ -38,7 +38,9 @@ export default function StudentDashboard() {
     ];
   });
   const [selectedChatId, setSelectedChatId] = useState(previousChats[0]?.id || null);
-
+  const [isChatHistoryOpen, setIsChatHistoryOpen] = useState(true);
+  const [isChatbotVisible, setIsChatbotVisible] = useState(false);
+  const [chatbotMode, setChatbotMode] = useState("minimized");
   // Quiz States
   const [quizTopic, setQuizTopic] = useState("");
   const [quizDifficulty, setQuizDifficulty] = useState("medium");
@@ -439,78 +441,6 @@ export default function StudentDashboard() {
               </div>
             </AnalyticsCard>
           </div>
-        ) : activeItem === "Chatbot" ? (
-          <div className="grid h-full min-h-[500px] gap-6 xl:grid-cols-[280px_1fr]">
-            <Card className="flex flex-col hidden xl:flex glass-card border-none">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-bold text-foreground">Chat History</CardTitle>
-              </CardHeader>
-              <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2 custom-scrollbar">
-                <Button onClick={handleNewChat} variant="gradient" className="w-full mb-4 font-bold text-sm shadow-sm cursor-pointer">New Chat</Button>
-                {previousChats.map((chat) => (
-                  <div key={chat.id} className={`group relative w-full text-left p-3 rounded-xl text-sm transition-all cursor-pointer flex justify-between items-center ${selectedChatId === chat.id ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold shadow-md shadow-orange-500/10" : "hover:bg-slate-100 text-slate-600 font-medium"}`} onClick={() => setSelectedChatId(chat.id)}>
-                    <div className="overflow-hidden pr-2">
-                      <span className="block font-semibold truncate">{chat.title}</span>
-                      <span className={`block text-xs truncate mt-1 ${selectedChatId === chat.id ? "text-white/80" : "text-slate-400"}`}>
-                        {chat.messages?.at(-1)?.text || "New chat"}
-                      </span>
-                    </div>
-                    <button onClick={(e) => handleDeleteChat(e, chat.id)} className={`p-1.5 rounded-md transition-opacity opacity-0 group-hover:opacity-100 ${selectedChatId === chat.id ? "hover:bg-white/20 text-white" : "hover:bg-red-100 text-red-500"}`} title="Delete chat">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            <Card className="flex flex-col overflow-hidden relative glass-card border-none">
-              <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar bg-slate-50/50">
-                {selectedMessages.length > 0 ? (
-                  selectedMessages.map((msg, i) => (
-                    <ChatBubble key={i} message={msg.text} sources={msg.sources} isUser={msg.isUser} />
-                  ))
-                ) : (
-                  <div className="flex h-full flex-col items-center justify-center text-center max-w-md mx-auto">
-                    <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-500 flex items-center justify-center mb-6 shadow-sm border border-amber-200/50">
-                      <Lightbulb className="w-8 h-8" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-foreground mb-2">KnowledgeX AI Tutor</h2>
-                    <p className="text-muted-foreground">Ask questions, clarify doubts, or request explanations on any academic topic.</p>
-                  </div>
-                )}
-                {isChatSending && <ChatBubble message="" isUser={false} isTyping={true} />}
-              </div>
-              <div className="p-4 bg-white/90 backdrop-blur-md border-t border-[var(--border)] shrink-0">
-                {attachedFiles.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {attachedFiles.map((file, idx) => (
-                      <div key={idx} className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-medium">
-                        <span className="truncate max-w-[150px]">{file.name}</span>
-                        <button onClick={() => setAttachedFiles(attachedFiles.filter((_, i) => i !== idx))} className="hover:text-red-500 rounded-full p-0.5">
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <input
-                  ref={pdfInputRef}
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png,.mp3,.wav,.m4a,.flac,.mp4,.avi,.mov,.mkv"
-                  multiple
-                  onChange={handleAttachFiles}
-                  className="hidden"
-                />
-                <ChatInput
-                  input={chatInput}
-                  setInput={setChatInput}
-                  onSubmit={handleSendChat}
-                  isSending={isChatSending}
-                  onAttachClick={() => pdfInputRef.current?.click()}
-                />
-              </div>
-            </Card>
-          </div>
         ) : activeItem === "Quizzes" ? (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {quizResult ? (
@@ -811,9 +741,9 @@ export default function StudentDashboard() {
                   </AnalyticsCard>
                 </div>
 
-                <div className="space-y-8">
-                  <AnalyticsCard title="Recommended Materials">
-                    <ul className="space-y-3">
+                <div className="space-y-8 lg:space-y-0 lg:h-full lg:flex lg:flex-col">
+                  <AnalyticsCard title="Recommended Materials" className="lg:flex-1 lg:flex lg:flex-col lg:min-h-0">
+                    <ul className="space-y-3 max-h-[450px] lg:max-h-none lg:absolute lg:inset-6 overflow-y-auto custom-scrollbar pr-2">
                       {recommendations.recommended_materials?.map((mat, i) => (
                         <li key={i} className="flex flex-col gap-1 p-3 rounded-lg bg-[var(--background)] border border-[var(--border)]">
                           <div className="flex items-center gap-2">
@@ -822,15 +752,14 @@ export default function StudentDashboard() {
                           </div>
                           <p className="text-xs text-muted-foreground ml-6">For: {mat.topic}</p>
                           <p className="text-xs text-muted-foreground ml-6">{mat.reason}</p>
+                          {mat.url && (
+                            <a href={mat.url} target="_blank" rel="noopener noreferrer" className="ml-6 mt-1 text-xs text-blue-500 hover:underline flex items-center gap-1">
+                              Go to Course →
+                            </a>
+                          )}
                         </li>
                       ))}
                     </ul>
-                  </AnalyticsCard>
-
-                  <AnalyticsCard title="Overall Advice">
-                    <div className="p-5 rounded-xl bg-primary/5 border border-primary/20 text-foreground leading-relaxed">
-                      {recommendations.overall_advice}
-                    </div>
                   </AnalyticsCard>
                 </div>
               </div>
@@ -913,7 +842,7 @@ export default function StudentDashboard() {
           </div>
         )}
       </div>
-      {activeItem !== "Quizzes" && <CopilotFloatingButton onClick={() => setActiveItem("Chatbot")} />}
+      <CopilotFloatingButton onClick={() => setActiveItem("Chatbot")} />
     </DashboardLayout>
   );
 }
