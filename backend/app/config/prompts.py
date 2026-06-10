@@ -28,24 +28,24 @@ Answer:"""
 
 
 QUIZ_GENERATION_PROMPT_TEMPLATE = """You are an expert university professor creating a quiz.
-Generate {number_of_questions} multiple-choice questions on the topic "{topic}" at "{difficulty}" difficulty.
+Generate EXACTLY {number_of_questions} multiple-choice questions on the topic "{topic}" at "{difficulty}" difficulty.
 
 Return ONLY valid JSON in this exact format:
 {{
   "quiz": [
     {{
-      "question": "What is...?",
-      "options": ["A", "B", "C", "D"],
-      "correct_answer": "A",
-      "explanation": "Brief explanation of why A is correct."
+      "question": "What is the capital of France?",
+      "options": ["London", "Paris", "Berlin", "Madrid"],
+      "correct_answer": "Paris",
+      "explanation": "Paris is the capital and most populous city of France."
     }}
   ]
 }}
 
 Requirements:
-- Exactly {number_of_questions} questions.
-- 4 options per question.
-- One clearly correct answer.
+- You MUST generate EXACTLY {number_of_questions} questions. Do not generate more or less.
+- 4 options per question. The options MUST be the actual text of the answers, NOT just "A", "B", "C", "D".
+- One clearly correct answer. The correct_answer MUST be the exact text of the correct option.
 - Educational explanations.
 - Difficulty: {difficulty}.
 

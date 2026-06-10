@@ -33,7 +33,7 @@ export default function FacultyDashboard() {
   const [quizTopic, setQuizTopic] = useState("");
   const [quizType, setQuizType] = useState("MCQ");
   const [quizDifficulty, setQuizDifficulty] = useState("medium");
-  const [quizCount, setQuizCount] = useState(5);
+  const [quizCount, setQuizCount] = useState(25);
 
   // Quiz Results State
   const [quizzes, setQuizzes] = useState([]);
@@ -48,11 +48,7 @@ export default function FacultyDashboard() {
   // Recommendations State
   const [dashboardStats, setDashboardStats] = useState(null);
 
-  // Attendance States
-  const [attendanceData, setAttendanceData] = useState([]);
-  const [studentStats, setStudentStats] = useState([]);
-  const [attendanceSummary, setAttendanceSummary] = useState(null);
-  const [atRiskStudents, setAtRiskStudents] = useState([]);
+
 
   useEffect(() => {
     const stored = localStorage.getItem("currentUser");
@@ -117,28 +113,7 @@ export default function FacultyDashboard() {
     }
   };
 
-  const fetchAttendanceData = async () => {
-    try {
-      setIsLoading(true);
-      const [trends, riskRes] = await Promise.all([
-        facultyApi.getAttendance(),
-        facultyApi.getAtRiskStudents()
-      ]);
-      if (trends.data?.trends) {
-        setAttendanceData(trends.data.trends);
-      }
-      if (trends.data?.summary) {
-        setAttendanceSummary(trends.data.summary);
-      }
-      if (riskRes.data?.at_risk) {
-        setStudentStats(riskRes.data.at_risk);
-      }
-    } catch (error) {
-      console.error("Failed to fetch attendance:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+
 
   useEffect(() => {
     if (activeItem === "Quizzes") {
@@ -147,8 +122,6 @@ export default function FacultyDashboard() {
       fetchQuizzes();
       fetchLearningGaps(analyticsQuiz);
       fetchDashboardStats();
-    } else if (activeItem === "Attendance") {
-      fetchAttendanceData();
     }
   }, [activeItem]);
 
@@ -220,18 +193,9 @@ export default function FacultyDashboard() {
               <StatCard title="Active Courses" value="4" icon={BookOpen} description="CS101, PHY204..." />
               <StatCard title="Total Students" value="120" icon={Users} trend="↑ 5" trendColor="text-emerald-500" description="enrolled recently" />
               <StatCard title="Generated Quizzes" value="18" icon={FileText} description="Across all courses" />
-              <StatCard title="Avg Attendance" value="85%" icon={AlertCircle} trend="↓ 2%" trendColor="text-red-500" description="this week" />
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-2">
-              <AnalyticsCard title="Recent Alerts" className="min-h-[300px]">
-                <div className="space-y-4">
-                  <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20">
-                    <p className="font-bold text-destructive mb-1 flex items-center gap-2"><AlertCircle className="w-4 h-4"/> Low Attendance Alert</p>
-                    <p className="text-sm text-foreground">5 students in CS101 have dropped below 75% attendance this week.</p>
-                  </div>
-                </div>
-              </AnalyticsCard>
+            <div className="grid gap-6 lg:grid-cols-1">
 
               <AnalyticsCard title="AI Recommendations" className="min-h-[300px]">
                 <div className="space-y-4">
@@ -447,59 +411,6 @@ export default function FacultyDashboard() {
               </div>
             ) : (
               <p className="text-muted-foreground mt-8 text-center bg-muted/20 py-8 rounded-xl border border-dashed border-muted">No analytics data available or backend is still loading.</p>
-            )}
-          </div>
-        ) : activeItem === "Attendance" ? (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-              <h1 className="text-3xl font-black tracking-tight">Attendance</h1>
-              <p className="text-muted-foreground">Track participation and at-risk students.</p>
-            </div>
-            
-            {isLoading ? <p className="text-muted-foreground">Loading Attendance...</p> : (
-              <div className="space-y-8">
-                {attendanceSummary && (
-                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                    <StatCard title="Today's Present" value={attendanceSummary.today_present || 0} icon={CheckCircle} trendColor="text-emerald-500" description="Present today" />
-                    <StatCard title="Today's Absent" value={attendanceSummary.today_absent || 0} icon={AlertCircle} trendColor="text-red-500" description="Absent today" />
-                    <StatCard title="Avg Attendance" value={`${attendanceSummary.average_attendance_percentage || 0}%`} icon={BarChartIcon} description="Class average" />
-                    <StatCard title="Total Records" value={attendanceSummary.total_records || 0} icon={Users} description="Total tracked days" />
-                  </div>
-                )}
-                
-                <div className="grid lg:grid-cols-3 gap-8">
-                  <AnalyticsCard title="Class Attendance Trends" className="lg:col-span-2 min-h-[400px]">
-                  <div className="h-[300px] mt-4">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={attendanceData}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
-                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: 'var(--muted-foreground)'}} tickFormatter={(val) => new Date(val).toLocaleDateString()} />
-                        <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: 'var(--muted-foreground)'}} domain={[0, 100]} />
-                        <Tooltip contentStyle={{backgroundColor: 'var(--background)', borderRadius: '12px', border: '1px solid var(--border)'}} />
-                        <Line type="monotone" dataKey="present_count" stroke="var(--primary)" strokeWidth={3} dot={{fill: 'var(--primary)', strokeWidth: 2, r: 4}} activeDot={{r: 6}} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </AnalyticsCard>
-                
-                <AnalyticsCard title="Student Attendance Records" className="border-border bg-[var(--background)]">
-                  <div className="flex-1 overflow-y-auto space-y-3 mt-4 custom-scrollbar">
-                    {studentStats.length === 0 && <p className="text-sm text-muted-foreground">No students found.</p>}
-                    {studentStats.map((s, i) => {
-                      const isRisk = s.attendance_percentage < 75;
-                      return (
-                      <div key={i} className={`p-4 rounded-xl border flex justify-between items-center ${isRisk ? 'border-red-500/20 bg-red-500/5' : 'border-border bg-muted/30'}`}>
-                        <div>
-                          <p className={`font-bold ${isRisk ? 'text-red-600 dark:text-red-400' : 'text-foreground'}`}>{s.student_name}</p>
-                          <p className="text-xs text-muted-foreground font-semibold mt-0.5">Present: {s.present_days} | Absent: {s.absent_days}</p>
-                        </div>
-                        <span className={`font-black text-lg ${isRisk ? 'text-red-500' : 'text-primary'}`}>{s.attendance_percentage.toFixed(0)}%</span>
-                      </div>
-                    )})}
-                  </div>
-                </AnalyticsCard>
-              </div>
-              </div>
             )}
           </div>
         ) : (
