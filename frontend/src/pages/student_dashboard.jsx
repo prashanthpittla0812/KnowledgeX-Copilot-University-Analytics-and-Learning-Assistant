@@ -8,7 +8,7 @@ import { StatCard } from "../components/ui/stat-card";
 import { AnalyticsCard } from "../components/ui/analytics-card";
 import { ChatBubble, ChatInput } from "../components/ui/chat";
 import { Button } from "../components/ui/button";
-import { BookOpen, AlertCircle, FileText, Calendar, CheckCircle, BarChart as BarChartIcon, GraduationCap, Target, Lightbulb, TrendingUp, X, Trash2 } from "lucide-react";
+import { BookOpen, AlertCircle, FileText, Calendar, CheckCircle, BarChart as BarChartIcon, GraduationCap, Target, Lightbulb, TrendingUp, X, Trash2, PanelLeftClose, PanelLeftOpen, Maximize, Minus } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import CopilotFloatingButton from "./CopilotFloatingButton";
 
@@ -38,7 +38,9 @@ export default function StudentDashboard() {
     ];
   });
   const [selectedChatId, setSelectedChatId] = useState(previousChats[0]?.id || null);
-
+  const [isChatHistoryOpen, setIsChatHistoryOpen] = useState(true);
+  const [isChatbotVisible, setIsChatbotVisible] = useState(false);
+  const [chatbotMode, setChatbotMode] = useState("minimized");
   // Quiz States
   const [quizTopic, setQuizTopic] = useState("");
   const [quizDifficulty, setQuizDifficulty] = useState("medium");
@@ -467,78 +469,6 @@ export default function StudentDashboard() {
               </div>
             </AnalyticsCard>
           </div>
-        ) : activeItem === "Chatbot" ? (
-          <div className="grid h-full min-h-[500px] gap-6 xl:grid-cols-[280px_1fr]">
-            <Card className="flex flex-col hidden xl:flex glass-card border-none">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-bold text-foreground">Chat History</CardTitle>
-              </CardHeader>
-              <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2 custom-scrollbar">
-                <Button onClick={handleNewChat} variant="gradient" className="w-full mb-4 font-bold text-sm shadow-sm cursor-pointer">New Chat</Button>
-                {previousChats.map((chat) => (
-                  <div key={chat.id} className={`group relative w-full text-left p-3 rounded-xl text-sm transition-all cursor-pointer flex justify-between items-center ${selectedChatId === chat.id ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold shadow-md shadow-orange-500/10" : "hover:bg-slate-100 text-slate-600 font-medium"}`} onClick={() => setSelectedChatId(chat.id)}>
-                    <div className="overflow-hidden pr-2">
-                      <span className="block font-semibold truncate">{chat.title}</span>
-                      <span className={`block text-xs truncate mt-1 ${selectedChatId === chat.id ? "text-white/80" : "text-slate-400"}`}>
-                        {chat.messages?.at(-1)?.text || "New chat"}
-                      </span>
-                    </div>
-                    <button onClick={(e) => handleDeleteChat(e, chat.id)} className={`p-1.5 rounded-md transition-opacity opacity-0 group-hover:opacity-100 ${selectedChatId === chat.id ? "hover:bg-white/20 text-white" : "hover:bg-red-100 text-red-500"}`} title="Delete chat">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            <Card className="flex flex-col overflow-hidden relative glass-card border-none">
-              <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar bg-slate-50/50">
-                {selectedMessages.length > 0 ? (
-                  selectedMessages.map((msg, i) => (
-                    <ChatBubble key={i} message={msg.text} sources={msg.sources} isUser={msg.isUser} />
-                  ))
-                ) : (
-                  <div className="flex h-full flex-col items-center justify-center text-center max-w-md mx-auto">
-                    <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-500 flex items-center justify-center mb-6 shadow-sm border border-amber-200/50">
-                      <Lightbulb className="w-8 h-8" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-foreground mb-2">KnowledgeX AI Tutor</h2>
-                    <p className="text-muted-foreground">Ask questions, clarify doubts, or request explanations on any academic topic.</p>
-                  </div>
-                )}
-                {isChatSending && <ChatBubble message="" isUser={false} isTyping={true} />}
-              </div>
-              <div className="p-4 bg-white/90 backdrop-blur-md border-t border-[var(--border)] shrink-0">
-                {attachedFiles.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {attachedFiles.map((file, idx) => (
-                      <div key={idx} className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-medium">
-                        <span className="truncate max-w-[150px]">{file.name}</span>
-                        <button onClick={() => setAttachedFiles(attachedFiles.filter((_, i) => i !== idx))} className="hover:text-red-500 rounded-full p-0.5">
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <input
-                  ref={pdfInputRef}
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png,.mp3,.wav,.m4a,.flac,.mp4,.avi,.mov,.mkv"
-                  multiple
-                  onChange={handleAttachFiles}
-                  className="hidden"
-                />
-                <ChatInput
-                  input={chatInput}
-                  setInput={setChatInput}
-                  onSubmit={handleSendChat}
-                  isSending={isChatSending}
-                  onAttachClick={() => pdfInputRef.current?.click()}
-                />
-              </div>
-            </Card>
-          </div>
         ) : activeItem === "Quizzes" ? (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {quizResult ? (
@@ -839,9 +769,9 @@ export default function StudentDashboard() {
                   </AnalyticsCard>
                 </div>
 
-                <div className="space-y-8">
-                  <AnalyticsCard title="Recommended Materials">
-                    <ul className="space-y-3">
+                <div className="space-y-8 lg:space-y-0 lg:h-full lg:flex lg:flex-col">
+                  <AnalyticsCard title="Recommended Materials" className="lg:flex-1 lg:flex lg:flex-col lg:min-h-0">
+                    <ul className="space-y-3 max-h-[450px] lg:max-h-none lg:absolute lg:inset-6 overflow-y-auto custom-scrollbar pr-2">
                       {recommendations.recommended_materials?.map((mat, i) => (
                         <li key={i} className="flex flex-col gap-1 p-3 rounded-lg bg-[var(--background)] border border-[var(--border)]">
                           <div className="flex items-center gap-2">
@@ -850,15 +780,14 @@ export default function StudentDashboard() {
                           </div>
                           <p className="text-xs text-muted-foreground ml-6">For: {mat.topic}</p>
                           <p className="text-xs text-muted-foreground ml-6">{mat.reason}</p>
+                          {mat.url && (
+                            <a href={mat.url} target="_blank" rel="noopener noreferrer" className="ml-6 mt-1 text-xs text-blue-500 hover:underline flex items-center gap-1">
+                              Go to Course →
+                            </a>
+                          )}
                         </li>
                       ))}
                     </ul>
-                  </AnalyticsCard>
-
-                  <AnalyticsCard title="Overall Advice">
-                    <div className="p-5 rounded-xl bg-primary/5 border border-primary/20 text-foreground leading-relaxed">
-                      {recommendations.overall_advice}
-                    </div>
                   </AnalyticsCard>
                 </div>
               </div>
@@ -992,7 +921,125 @@ export default function StudentDashboard() {
           </div>
         )}
       </div>
-      <CopilotFloatingButton onClick={() => setActiveItem("Chatbot")} />
+      {!isChatbotVisible && <CopilotFloatingButton onClick={() => { setIsChatbotVisible(true); setChatbotMode("minimized"); }} />}
+      
+      {isChatbotVisible && (
+        <div className={`fixed z-[1000] flex flex-col shadow-2xl overflow-hidden bg-background border border-border transition-all duration-300 ease-in-out ${chatbotMode === "maximized" ? "inset-0 rounded-none" : "bottom-6 right-6 w-[350px] sm:w-[380px] h-[550px] max-h-[80vh] rounded-2xl"}`}>
+          {/* Chatbot Header */}
+          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white shrink-0">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center overflow-hidden">
+                <img src="/kx-robot.png" alt="KnowledgeX Copilot" className="w-full h-full object-cover" />
+              </div>
+              <span className="font-bold">KnowledgeX Assistant</span>
+            </div>
+            <div className="flex items-center gap-1">
+              {chatbotMode === "maximized" ? (
+                <button onClick={() => setChatbotMode("minimized")} className="p-1.5 hover:bg-white/20 rounded-md transition-colors" title="Minimize">
+                  <Minus className="w-4 h-4 text-white" />
+                </button>
+              ) : (
+                <button onClick={() => setChatbotMode("maximized")} className="p-1.5 hover:bg-white/20 rounded-md transition-colors" title="Maximize">
+                  <Maximize className="w-4 h-4 text-white" />
+                </button>
+              )}
+              <button onClick={() => setIsChatbotVisible(false)} className="p-1.5 hover:bg-white/20 rounded-md transition-colors" title="Close">
+                <X className="w-4 h-4 text-white" />
+              </button>
+            </div>
+          </div>
+
+          {/* Chatbot Body */}
+          <div className={`flex-1 flex overflow-hidden bg-slate-50 ${chatbotMode === "maximized" && isChatHistoryOpen ? "flex-row" : "flex-col"}`}>
+            
+            {/* Chat History Sidebar (Only in Maximized Mode) */}
+            {chatbotMode === "maximized" && isChatHistoryOpen && (
+              <div className="w-[280px] border-r border-border bg-white flex flex-col shrink-0">
+                <div className="p-4 border-b border-border flex justify-between items-center">
+                  <span className="font-bold text-foreground">Chat History</span>
+                  <button onClick={() => setIsChatHistoryOpen(false)} className="p-1.5 hover:bg-slate-100 rounded-md text-slate-500">
+                    <PanelLeftClose className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2 custom-scrollbar">
+                  <Button onClick={handleNewChat} variant="gradient" className="w-full mb-4 font-bold text-sm shadow-sm cursor-pointer">New Chat</Button>
+                  {previousChats.map((chat) => (
+                    <div key={chat.id} className={`group relative w-full text-left p-3 rounded-xl text-sm transition-all cursor-pointer flex justify-between items-center ${selectedChatId === chat.id ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold shadow-md shadow-orange-500/10" : "hover:bg-slate-100 text-slate-600 font-medium"}`} onClick={() => setSelectedChatId(chat.id)}>
+                      <div className="overflow-hidden pr-2">
+                        <span className="block font-semibold truncate">{chat.title}</span>
+                        <span className={`block text-xs truncate mt-1 ${selectedChatId === chat.id ? "text-white/80" : "text-slate-400"}`}>
+                          {chat.messages?.at(-1)?.text || "New chat"}
+                        </span>
+                      </div>
+                      <button onClick={(e) => handleDeleteChat(e, chat.id)} className={`p-1.5 rounded-md transition-opacity opacity-0 group-hover:opacity-100 ${selectedChatId === chat.id ? "hover:bg-white/20 text-white" : "hover:bg-red-100 text-red-500"}`} title="Delete chat">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Main Chat Area */}
+            <div className="flex-1 flex flex-col relative overflow-hidden bg-slate-50/50">
+              {chatbotMode === "maximized" && !isChatHistoryOpen && (
+                <div className="absolute top-2 left-2 z-10 md:top-4 md:left-4">
+                  <Button variant="ghost" size="icon" onClick={() => setIsChatHistoryOpen(true)} className="h-8 w-8 rounded-md bg-white/60 backdrop-blur border border-slate-200 shadow-sm hover:bg-white/90" title="Open sidebar">
+                    <PanelLeftOpen className="w-4 h-4 text-slate-700" />
+                  </Button>
+                </div>
+              )}
+              
+              <div className={`flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar ${chatbotMode === "maximized" && !isChatHistoryOpen ? 'pt-12 md:pt-14' : ''}`}>
+                {selectedMessages.length > 0 ? (
+                  selectedMessages.map((msg, i) => (
+                    <ChatBubble key={i} message={msg.text} sources={msg.sources} isUser={msg.isUser} />
+                  ))
+                ) : (
+                  <div className="flex h-full flex-col items-center justify-center text-center max-w-md mx-auto">
+                    <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center mb-6 shadow-sm border border-slate-200 overflow-hidden">
+                      <img src="/kx-robot.png" alt="KnowledgeX Copilot" className="w-full h-full object-cover" />
+                    </div>
+                    <h2 className="text-xl font-bold text-foreground mb-2">How can I assist you?</h2>
+                    <p className="text-sm text-muted-foreground">Ask questions or request explanations.</p>
+                  </div>
+                )}
+                {isChatSending && <ChatBubble message="" isUser={false} isTyping={true} />}
+              </div>
+              
+              <div className="p-3 bg-white/90 backdrop-blur-md border-t border-border shrink-0">
+                {attachedFiles.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {attachedFiles.map((file, idx) => (
+                      <div key={idx} className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-medium">
+                        <span className="truncate max-w-[150px]">{file.name}</span>
+                        <button onClick={() => setAttachedFiles(attachedFiles.filter((_, i) => i !== idx))} className="hover:text-red-500 rounded-full p-0.5">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <input
+                  ref={pdfInputRef}
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.mp3,.wav,.m4a,.flac,.mp4,.avi,.mov,.mkv"
+                  multiple
+                  onChange={handleAttachFiles}
+                  className="hidden"
+                />
+                <ChatInput
+                  input={chatInput}
+                  setInput={setChatInput}
+                  onSubmit={handleSendChat}
+                  isSending={isChatSending}
+                  onAttachClick={() => pdfInputRef.current?.click()}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

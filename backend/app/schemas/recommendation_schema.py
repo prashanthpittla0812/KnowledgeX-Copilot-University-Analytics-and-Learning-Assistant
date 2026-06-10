@@ -7,6 +7,7 @@ class RecommendedMaterial(BaseModel):
     topic: str
     resource: str
     reason: str
+    url: str | None = None
 
 
 class SuggestedQuiz(BaseModel):
