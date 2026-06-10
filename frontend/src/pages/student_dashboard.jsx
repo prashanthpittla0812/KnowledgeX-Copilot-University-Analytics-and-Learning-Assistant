@@ -8,7 +8,7 @@ import { StatCard } from "../components/ui/stat-card";
 import { AnalyticsCard } from "../components/ui/analytics-card";
 import { ChatBubble, ChatInput } from "../components/ui/chat";
 import { Button } from "../components/ui/button";
-import { BookOpen, AlertCircle, FileText, Calendar, CheckCircle, BarChart as BarChartIcon, GraduationCap, Target, Lightbulb, TrendingUp, X, Trash2, PanelLeftClose, PanelLeftOpen, Maximize, Minus } from "lucide-react";
+import { BookOpen, AlertCircle, FileText, Calendar, CheckCircle, BarChart as BarChartIcon, GraduationCap, Target, Lightbulb, TrendingUp, X, Trash2, PanelLeftClose, PanelLeftOpen, Maximize, Minus, Plus, Bot, Paperclip, SquarePen, Search, MessageSquare } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import CopilotFloatingButton from "./CopilotFloatingButton";
 
@@ -39,6 +39,7 @@ export default function StudentDashboard() {
   });
   const [selectedChatId, setSelectedChatId] = useState(previousChats[0]?.id || null);
   const [isChatHistoryOpen, setIsChatHistoryOpen] = useState(true);
+  const [activeMiniPopover, setActiveMiniPopover] = useState(null);
   const [isChatbotVisible, setIsChatbotVisible] = useState(false);
   const [chatbotMode, setChatbotMode] = useState("minimized");
   // Quiz States
@@ -836,13 +837,288 @@ export default function StudentDashboard() {
               );
             })()}
           </div>
+        ) : activeItem === "Chatbot" ? (
+          <div className="flex h-full overflow-hidden animate-in fade-in duration-500 rounded-xl border border-border shadow-sm mt-4">
+            {/* Sidebar for chat history */}
+            <div className="w-1/4 min-w-[250px] border-r border-border bg-card/50 flex flex-col">
+              <div className="p-4 border-b border-border flex justify-between items-center bg-card">
+                <h3 className="font-bold text-foreground">Chat History</h3>
+                <Button onClick={handleNewChat} size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-full hover:bg-primary/10 hover:text-primary"><Plus className="h-4 w-4" /></Button>
+              </div>
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
+                {previousChats.map(chat => (
+                  <div 
+                    key={chat.id} 
+                    onClick={() => setSelectedChatId(chat.id)}
+                    className={`group p-3 rounded-xl cursor-pointer flex justify-between items-center transition-all ${selectedChatId === chat.id ? 'bg-primary text-primary-foreground shadow-md' : 'hover:bg-muted bg-background border border-border/50 text-foreground'}`}
+                  >
+                    <div className="truncate text-sm font-medium pr-2">
+                      {chat.title || "New chat"}
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className={`h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity ${selectedChatId === chat.id ? 'text-primary-foreground hover:bg-primary-foreground/20' : 'text-muted-foreground hover:text-red-500 hover:bg-red-500/10'}`}
+                      onClick={(e) => handleDeleteChat(e, chat.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Main Chat Area */}
+            <div className="flex-1 flex flex-col bg-background/50 relative">
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-4 pb-32">
+                {selectedMessages.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center opacity-70">
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                      <Bot className="w-8 h-8 text-primary" />
+                    </div>
+                    <h2 className="text-xl font-bold text-foreground">How can I help you learn today?</h2>
+                    <p className="text-sm mt-2 max-w-md text-muted-foreground">Ask me to summarize uploaded documents, explain complex topics, or generate practice questions.</p>
+                  </div>
+                ) : (
+                  selectedMessages.map((msg, i) => (
+                    <ChatBubble 
+                      key={i} 
+                      message={msg.text} 
+                      isUser={msg.isUser} 
+                      sources={msg.sources} 
+                    />
+                  ))
+                )}
+                {isChatSending && (
+                   <ChatBubble message="" isUser={false} isTyping={true} />
+                )}
+              </div>
+              
+              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent pt-10">
+                <div className="max-w-4xl mx-auto flex flex-col gap-2">
+                  {attachedFiles.length > 0 && (
+                    <div className="flex flex-wrap gap-2 px-2">
+                      {attachedFiles.map((f, i) => (
+                        <div key={i} className="px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full border border-primary/20 flex items-center gap-1">
+                          <Paperclip className="w-3 h-3" />
+                          <span className="truncate max-w-[150px]">{f.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-end gap-2 w-full">
+                    <ChatInput 
+                      input={chatInput} 
+                      setInput={setChatInput} 
+                      onSubmit={handleSendChat} 
+                      isSending={isChatSending} 
+                      onAttachClick={() => document.getElementById('chat-file-upload').click()}
+                    />
+                    <input 
+                      type="file" 
+                      id="chat-file-upload" 
+                      multiple 
+                      className="hidden" 
+                      onChange={handleAttachFiles} 
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         ) : (
           <div className="flex h-full flex-col items-center justify-center text-center animate-in fade-in duration-500">
             <h2 className="text-2xl font-bold text-muted-foreground">Under Construction</h2>
           </div>
         )}
       </div>
-      <CopilotFloatingButton onClick={() => setActiveItem("Chatbot")} />
+      
+      {activeItem !== "Quizzes" && isChatbotVisible && (
+        <div className={`fixed z-[9999] bg-card border border-border shadow-2xl transition-all duration-300 flex flex-col overflow-hidden ${
+          chatbotMode === "maximized" 
+            ? "inset-4 rounded-xl" 
+            : "bottom-24 right-8 w-[450px] h-[550px] rounded-2xl"
+        }`}>
+          {/* Header */}
+          <div className="bg-[#0F172A] text-white px-4 py-3 flex justify-between items-center shrink-0 z-10 shadow-sm">
+            <div className="font-bold flex items-center gap-2">
+              <img src="/kx-robot.png" alt="KnowledgeX Copilot" className="w-6 h-6 object-contain" />
+              KnowledgeX Copilot
+            </div>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/20 rounded-full" onClick={() => setIsChatbotVisible(false)} title="Minimize">
+                <Minus className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/20 rounded-full" onClick={() => {setChatbotMode(chatbotMode === "maximized" ? "normal" : "maximized"); setIsChatHistoryOpen(true);}} title="Maximize">
+                <Maximize className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/20 rounded-full" onClick={() => setIsChatbotVisible(false)} title="Close">
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+          
+          <div className="flex-1 flex overflow-hidden bg-background">
+            {/* Sidebar */}
+            {chatbotMode === "maximized" && (
+              <div className={`${isChatHistoryOpen ? 'w-64' : 'w-[60px]'} border-r border-border bg-card/80 flex flex-col shrink-0 transition-all duration-300 ${isChatHistoryOpen ? 'overflow-hidden' : 'overflow-visible'}`}>
+                {isChatHistoryOpen ? (
+                  <>
+                    <div className="p-4 border-b border-border/50 flex items-center justify-between gap-2">
+                      <Button onClick={handleNewChat} variant="outline" className="flex-1 justify-center shadow-sm bg-orange-100 hover:bg-orange-200 text-orange-800 border-orange-200 hover:border-orange-300 transition-all font-semibold">
+                        New chat
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => setIsChatHistoryOpen(false)} title="Close Sidebar" className="h-9 w-9 shrink-0 text-muted-foreground hover:text-foreground">
+                        <PanelLeftClose className="w-5 h-5" />
+                      </Button>
+                    </div>
+                    <div className="px-4 pt-4 pb-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      Recents
+                    </div>
+                    <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-1 custom-scrollbar">
+                      {previousChats.map(chat => (
+                        <div 
+                          key={chat.id} 
+                          onClick={() => setSelectedChatId(chat.id)}
+                          className={`group px-3 py-2.5 rounded-xl cursor-pointer flex justify-between items-center transition-all ${selectedChatId === chat.id ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted text-foreground'}`}
+                        >
+                          <span className="truncate text-sm pr-2">{chat.title || "New chat"}</span>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className={`h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity ${selectedChatId === chat.id ? 'text-primary hover:text-red-500 hover:bg-red-500/10' : 'text-muted-foreground hover:text-red-500 hover:bg-red-500/10'}`}
+                            onClick={(e) => handleDeleteChat(e, chat.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center py-4 space-y-4">
+                    <div className="relative group">
+                      <Button variant="ghost" size="icon" onClick={() => setIsChatHistoryOpen(true)} className="w-10 h-10 rounded-xl text-muted-foreground hover:text-foreground">
+                        <PanelLeftOpen className="w-5 h-5" />
+                      </Button>
+                      <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-foreground text-background text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity font-medium">Open sidebar</div>
+                    </div>
+                    
+                    <div className="relative group">
+                      <Button variant="ghost" size="icon" onClick={handleNewChat} className="w-10 h-10 rounded-xl text-orange-600 hover:bg-orange-100 transition-colors">
+                        <SquarePen className="w-5 h-5" />
+                      </Button>
+                      <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-foreground text-background text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity font-medium">New chat</div>
+                    </div>
+
+                    <div className="relative group">
+                      <Button variant="ghost" size="icon" className="w-10 h-10 rounded-xl text-muted-foreground hover:bg-muted transition-colors" onClick={() => setActiveMiniPopover(activeMiniPopover === 'search' ? null : 'search')}>
+                        <Search className="w-5 h-5" />
+                      </Button>
+                      <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-foreground text-background text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity font-medium">Search</div>
+                      
+                      {activeMiniPopover === 'search' && (
+                        <div className="absolute left-full top-[-50px] ml-4 w-80 bg-card border border-border shadow-2xl rounded-2xl p-3 z-50 flex flex-col animate-in fade-in zoom-in-95 duration-200">
+                          <input type="text" placeholder="Search chats..." className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm mb-4 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary shadow-sm" />
+                          <div className="text-xs font-semibold text-muted-foreground mb-2 px-1">Today</div>
+                          <div className="flex flex-col gap-0.5 max-h-[300px] overflow-y-auto custom-scrollbar">
+                            {previousChats.map(chat => (
+                              <div key={chat.id} className="text-sm truncate px-3 py-2 hover:bg-muted rounded-lg cursor-pointer flex items-center gap-3 transition-colors" onClick={() => {setSelectedChatId(chat.id); setActiveMiniPopover(null);}}>
+                                <MessageSquare className="w-4 h-4 text-muted-foreground shrink-0" />
+                                {chat.title}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="relative group">
+                      <Button variant="ghost" size="icon" className="w-10 h-10 rounded-xl text-muted-foreground hover:bg-muted transition-colors" onClick={() => setActiveMiniPopover(activeMiniPopover === 'recents' ? null : 'recents')}>
+                        <MessageSquare className="w-5 h-5" />
+                      </Button>
+                      <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-foreground text-background text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity font-medium">Recents</div>
+
+                      {activeMiniPopover === 'recents' && (
+                        <div className="absolute left-full top-[-50px] ml-4 w-72 bg-card border border-border shadow-2xl rounded-2xl p-2 z-50 flex flex-col max-h-[400px] overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-200">
+                          <div className="text-[13px] font-bold mb-2 px-3 pt-2 text-foreground tracking-wide">Recents</div>
+                          <div className="flex flex-col gap-0.5">
+                            {previousChats.map(chat => (
+                              <div key={chat.id} className="text-sm truncate px-3 py-2.5 hover:bg-muted rounded-lg cursor-pointer transition-colors" onClick={() => {setSelectedChatId(chat.id); setActiveMiniPopover(null);}}>
+                                {chat.title}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Main Chat Area */}
+            <div className="flex-1 flex flex-col relative bg-background/50">
+              <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 pb-32 custom-scrollbar">
+                {selectedMessages.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center opacity-70">
+                    <Bot className="w-12 h-12 text-primary mb-3 opacity-50" />
+                    <h3 className="font-bold text-foreground">Hi there! How can I be of help to you?</h3>
+                  </div>
+                ) : (
+                  selectedMessages.map((msg, i) => (
+                    <ChatBubble 
+                      key={i} 
+                      message={msg.text} 
+                      isUser={msg.isUser} 
+                      sources={msg.sources} 
+                    />
+                  ))
+                )}
+                {isChatSending && (
+                   <ChatBubble message="" isUser={false} isTyping={true} />
+                )}
+              </div>
+              
+              {/* Input Area */}
+              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent pt-10 pointer-events-none">
+                <div className="max-w-4xl mx-auto flex flex-col gap-2 pointer-events-auto bg-background/80 backdrop-blur-sm rounded-3xl p-1 shadow-sm border border-border">
+                  {attachedFiles.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-1 px-3 pt-2">
+                      {attachedFiles.map((f, i) => (
+                        <div key={i} className="px-2 py-1 bg-primary/10 text-primary text-[10px] font-semibold rounded-full border border-primary/20 flex items-center gap-1">
+                          <Paperclip className="w-3 h-3" />
+                          <span className="truncate max-w-[100px]">{f.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-end gap-2 w-full">
+                    <ChatInput 
+                      input={chatInput} 
+                      setInput={setChatInput} 
+                      onSubmit={handleSendChat} 
+                      isSending={isChatSending} 
+                      onAttachClick={() => document.getElementById('popup-chat-file-upload').click()}
+                    />
+                    <input 
+                      type="file" 
+                      id="popup-chat-file-upload" 
+                      multiple 
+                      className="hidden" 
+                      onChange={handleAttachFiles} 
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeItem !== "Quizzes" && (
+        <CopilotFloatingButton onClick={() => { setIsChatbotVisible(!isChatbotVisible); setChatbotMode("normal"); }} />
+      )}
     </DashboardLayout>
   );
 }

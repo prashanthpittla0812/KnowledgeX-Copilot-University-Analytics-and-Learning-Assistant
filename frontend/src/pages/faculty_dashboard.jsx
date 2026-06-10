@@ -195,18 +195,6 @@ export default function FacultyDashboard() {
               <StatCard title="Generated Quizzes" value="18" icon={FileText} description="Across all courses" />
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-1">
-
-              <AnalyticsCard title="AI Recommendations" className="min-h-[300px]">
-                <div className="space-y-4">
-                  <div className="p-4 rounded-xl bg-primary/10 border border-primary/20">
-                    <p className="font-bold text-primary mb-1">Suggest Study Plan: Data Structures</p>
-                    <p className="text-sm text-foreground mb-3">Class average for Graph Theory was 65%. Would you like to generate a targeted study guide?</p>
-                    <Button variant="default" size="sm" onClick={() => setActiveItem("Chatbot")}>Draft with Copilot</Button>
-                  </div>
-                </div>
-              </AnalyticsCard>
-            </div>
           </div>
         ) : activeItem === "Learning Materials" ? (
           <LearningMaterialsTab />
