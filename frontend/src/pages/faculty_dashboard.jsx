@@ -396,7 +396,7 @@ export default function FacultyDashboard() {
               </select>
             </div>
             
-            {isLoading ? <p className="text-muted-foreground">Loading Analytics...</p> : learningGaps && (
+            {isLoading ? <p className="text-muted-foreground">Loading Analytics...</p> : learningGaps ? (
               <div className="grid lg:grid-cols-2 gap-8">
                 <AnalyticsCard title="Student Performance" className="min-h-[400px]">
                   <div className="flex flex-wrap gap-2 mt-4 mb-6">
@@ -445,6 +445,8 @@ export default function FacultyDashboard() {
                   </AnalyticsCard>
                 </div>
               </div>
+            ) : (
+              <p className="text-muted-foreground mt-8 text-center bg-muted/20 py-8 rounded-xl border border-dashed border-muted">No analytics data available or backend is still loading.</p>
             )}
           </div>
         ) : activeItem === "Attendance" ? (

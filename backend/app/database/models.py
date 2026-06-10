@@ -342,12 +342,12 @@ class MaterialBookmark(Base):
     __tablename__ = "material_bookmarks"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     material_id = Column(Integer, ForeignKey("learning_materials.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     is_active = Column(Boolean, default=True)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     material = relationship("LearningMaterial", back_populates="bookmarks")
-    user = relationship("User")
+    student = relationship("User")
 
 class Notification(Base):
     __tablename__ = "notifications"
