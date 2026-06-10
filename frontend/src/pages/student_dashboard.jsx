@@ -10,6 +10,7 @@ import { ChatBubble, ChatInput } from "../components/ui/chat";
 import { Button } from "../components/ui/button";
 import { BookOpen, AlertCircle, FileText, Calendar, CheckCircle, BarChart as BarChartIcon, GraduationCap, Target, Lightbulb, TrendingUp, X, Trash2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
+import CopilotFloatingButton from "./CopilotFloatingButton";
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
@@ -198,7 +199,7 @@ export default function StudentDashboard() {
     try {
       let uploadedIds = [];
       const fileNamesList = attachedFiles.map(f => f.name).join(", ");
-      
+
       // Represent the user's message in the chat immediately
       const displayMessage = message ? message : `Uploaded files: ${fileNamesList}`;
       const userText = fileNamesList && message ? `[Attached: ${fileNamesList}]\n\n${message}` : displayMessage;
@@ -206,10 +207,10 @@ export default function StudentDashboard() {
       currentChats = currentChats.map((chat) => {
         if (chat.id !== selectedChatId) return chat;
         const messages = chat.messages || [];
-        return { 
-          ...chat, 
-          title: messages.length === 0 ? (displayMessage.length > 30 ? displayMessage.slice(0, 30) + "..." : displayMessage) : chat.title, 
-          messages: [...messages, { text: userText, isUser: true }] 
+        return {
+          ...chat,
+          title: messages.length === 0 ? (displayMessage.length > 30 ? displayMessage.slice(0, 30) + "..." : displayMessage) : chat.title,
+          messages: [...messages, { text: userText, isUser: true }]
         };
       });
 
@@ -222,8 +223,8 @@ export default function StudentDashboard() {
         attachedFiles.forEach(file => {
           formData.append("files", file);
         });
-        formData.append("asr_provider", "Whisper"); 
-        
+        formData.append("asr_provider", "Whisper");
+
         const uploadRes = await documentApi.uploadMultimodalBatch(formData);
         if (uploadRes && uploadRes.uploaded) {
           uploadedIds = uploadRes.uploaded.map(doc => doc.id);
@@ -238,13 +239,13 @@ export default function StudentDashboard() {
           const summaryRes = await chatbotApi.summarizeBatch(uploadedIds, "Short Summary");
           currentChats = currentChats.map((chat) => {
             if (chat.id !== selectedChatId) return chat;
-            return { 
-              ...chat, 
-              messages: [...(chat.messages || []), { 
-                text: `**Summary of uploaded documents:**\n\n${summaryRes.summary}`, 
+            return {
+              ...chat,
+              messages: [...(chat.messages || []), {
+                text: `**Summary of uploaded documents:**\n\n${summaryRes.summary}`,
                 sources: [],
-                isUser: false 
-              }] 
+                isUser: false
+              }]
             };
           });
           setPreviousChats(currentChats);
@@ -258,13 +259,13 @@ export default function StudentDashboard() {
           const response = await chatbotApi.askQuestion(message, uploadedIds);
           currentChats = currentChats.map((chat) => {
             if (chat.id !== selectedChatId) return chat;
-            return { 
-              ...chat, 
-              messages: [...(chat.messages || []), { 
-                text: response.answer || response.data?.answer || "Sorry, I could not process that.", 
+            return {
+              ...chat,
+              messages: [...(chat.messages || []), {
+                text: response.answer || response.data?.answer || "Sorry, I could not process that.",
                 sources: response.sources || response.data?.sources || [],
-                isUser: false 
-              }] 
+                isUser: false
+              }]
             };
           });
           setPreviousChats(currentChats);
@@ -282,7 +283,7 @@ export default function StudentDashboard() {
     }
   };
 
-    const handleGenerateQuiz = async () => {
+  const handleGenerateQuiz = async () => {
     if (!quizTopic.trim()) return alert("Enter a topic");
     setIsLoading(true);
     try {
@@ -344,6 +345,7 @@ export default function StudentDashboard() {
           answers: ansArray
         });
         alert("Quiz submitted successfully! Your teacher will review your performance.");
+        fetchAssignedQuizzes();
       } else {
         response = await studentApi.submitQuiz({ quiz_id: activeQuiz.id, answers: ansArray });
         setQuizResult(response.data);
@@ -519,13 +521,13 @@ export default function StudentDashboard() {
                     ))}
                   </div>
                 )}
-                <input 
-                  ref={pdfInputRef} 
-                  type="file" 
-                  accept=".pdf,.jpg,.jpeg,.png,.mp3,.wav,.m4a,.flac,.mp4,.avi,.mov,.mkv" 
+                <input
+                  ref={pdfInputRef}
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.mp3,.wav,.m4a,.flac,.mp4,.avi,.mov,.mkv"
                   multiple
-                  onChange={handleAttachFiles} 
-                  className="hidden" 
+                  onChange={handleAttachFiles}
+                  className="hidden"
                 />
                 <ChatInput
                   input={chatInput}
@@ -665,9 +667,16 @@ export default function StudentDashboard() {
                           <CardContent className="p-6">
                             <h4 className="text-lg font-bold truncate">{q.topic_name}</h4>
                             <p className="text-xs text-muted-foreground mt-1 mb-4">By {q.teacher_name} • {q.num_questions} Questions</p>
-                            <Button onClick={() => handleTakeAssignedQuiz(q)} className="w-full" disabled={isLoading}>
-                              Take Quiz
-                            </Button>
+                            {q.is_completed ? (
+                              <Button className="w-full bg-emerald-600 hover:bg-emerald-600 text-white cursor-not-allowed" disabled>
+                                <CheckCircle className="w-4 h-4 mr-2" />
+                                Quiz Taken
+                              </Button>
+                            ) : (
+                              <Button onClick={() => handleTakeAssignedQuiz(q)} className="w-full" disabled={isLoading}>
+                                Take Quiz
+                              </Button>
+                            )}
                           </CardContent>
                         </Card>
                       ))}
@@ -681,8 +690,8 @@ export default function StudentDashboard() {
                     <Card key={i} className="glass-card hover:border-primary/50 transition-colors">
                       <CardContent className="p-6">
                         <h4 className="text-lg font-bold truncate">{q.topic}</h4>
-                        <p className="text-xs text-muted-foreground mt-1 mb-4">{new Date(q.timestamp).toLocaleDateString()}</p>
-                        <div className="text-2xl font-black text-primary">{q.score}/{q.total_questions}</div>
+                        <p className="text-xs text-muted-foreground mt-1 mb-4">{new Date(q.created_at || q.timestamp).toLocaleDateString()}</p>
+                        <div className="text-2xl font-black text-primary">{q.score !== null ? `${Math.round(q.score)}%` : "Not Attempted"}</div>
                       </CardContent>
                     </Card>
                   ))}
@@ -731,7 +740,7 @@ export default function StudentDashboard() {
                         return (
                           <div className="space-y-6">
                             {plan.overview && (
-                              <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 text-primary-foreground/90 leading-relaxed">
+                              <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 text-foreground/90 leading-relaxed">
                                 {plan.overview}
                               </div>
                             )}
@@ -983,6 +992,7 @@ export default function StudentDashboard() {
           </div>
         )}
       </div>
+      <CopilotFloatingButton onClick={() => setActiveItem("Chatbot")} />
     </DashboardLayout>
   );
 }

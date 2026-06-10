@@ -15,6 +15,9 @@ export default function Home() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  // Safely references your public directory asset
+  const motivityLogoPath = "/motivity.webp";
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!identifier.trim() || !password) {
@@ -61,95 +64,113 @@ export default function Home() {
   };
 
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center bg-background overflow-hidden p-4">
-      {/* Absolute Header with Theme Toggle */}
+    <div className="relative min-h-screen w-full flex items-center justify-center bg-background overflow-hidden p-4 sm:p-6">
+      
+      {/* Absolute Positioned Header containing Theme Toggle */}
       <div className="absolute top-4 right-4 sm:top-8 sm:right-8 z-50">
         <ThemeToggle />
       </div>
 
-      {/* Animated Mesh Gradient Background */}
+      {/* Dynamic Animated Mesh Gradient Backdrop Canvas Layer */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div 
           animate={{ 
-            scale: [1, 1.2, 1],
-            rotate: [0, 90, 0],
-            opacity: [0.3, 0.5, 0.3]
+            scale: [1, 1.15, 1],
+            rotate: [0, 45, 0],
+            opacity: [0.3, 0.45, 0.3]
           }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vw] max-w-[800px] max-h-[800px] rounded-full bg-primary/20 blur-[120px]"
+          transition={{ duration: 22, repeat: Infinity, ease: "linear" }}
+          className="absolute top-[-15%] left-[-10%] w-[75vw] h-[75vw] max-w-[800px] max-h-[800px] rounded-full bg-primary/15 blur-[120px]"
         />
         <motion.div 
           animate={{ 
-            scale: [1, 1.5, 1],
-            rotate: [0, -90, 0],
-            opacity: [0.3, 0.4, 0.3]
+            scale: [1, 1.3, 1],
+            rotate: [0, -45, 0],
+            opacity: [0.25, 0.35, 0.25]
           }}
-          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute bottom-[-20%] right-[-10%] w-[60vw] h-[60vw] max-w-[600px] max-h-[600px] rounded-full bg-orange-500/20 blur-[100px]"
-        />
-        <motion.div 
-          animate={{ 
-            y: [0, -50, 0],
-            opacity: [0.2, 0.5, 0.2]
-          }}
-          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[20%] left-[40%] w-[40vw] h-[40vw] max-w-[400px] max-h-[400px] rounded-full bg-amber-500/10 blur-[80px]"
+          transition={{ duration: 28, repeat: Infinity, ease: "linear" }}
+          className="absolute bottom-[-15%] right-[-10%] w-[65vw] h-[65vw] max-w-[650px] max-h-[650px] rounded-full bg-orange-500/15 blur-[110px]"
         />
       </div>
 
-      {/* Centered Glassmorphism Card */}
+      {/* Main Interactive Presentation Module Wrapper */}
       <motion.div 
-        initial={{ opacity: 0, y: 30 }}
+        initial={{ opacity: 0, y: 25 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="relative z-10 w-full max-w-md"
+        className="relative z-10 w-full max-w-md flex flex-col items-center"
       >
-        <div className="mb-8 text-center">
+        
+        {/* BRAND IDENTITY STACK: Motivity Logo, Orange Icon & Badge */}
+        <div className="w-full flex flex-col items-center mb-6 text-center">
+          
+          {/* 1. Motivity Labs Brand Asset Layer */}
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.1, duration: 0.4 }}
+            className="mb-5 flex justify-center max-w-[220px]"
+          >
+            <img 
+              src={motivityLogoPath}
+              alt="Motivity Labs" 
+              className="h-10 sm:h-12 w-auto object-contain"
+            />
+          </motion.div>
+
+          {/* 2. Custom KnowledgeX Bold Block Icon 'K' */}
           <motion.div 
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.2 }}
-            className="mx-auto flex w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 items-center justify-center text-white font-black text-3xl shadow-2xl shadow-orange-500/30 mb-6"
+            initial={{ scale: 0, rotate: -15 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 220, damping: 18, delay: 0.25 }}
+            className="flex w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 items-center justify-center text-white font-black text-2xl shadow-xl shadow-orange-500/20 mb-4"
           >
             K
           </motion.div>
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary font-bold text-xs mb-4 border border-primary/20 backdrop-blur-md">
-            <Sparkles className="w-3.5 h-3.5" /> 
+
+          {/* 3. Copilot Highlight Label Pill Block */}
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary dark:text-orange-400 font-bold text-xs mb-2 border border-primary/20 dark:border-orange-500/20 backdrop-blur-md shadow-sm">
+            <Sparkles className="w-3.5 h-3.5 text-orange-500" /> 
             KnowledgeX Copilot
           </div>
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">Welcome back</h1>
-          <p className="text-gray-500  font-medium mt-2">Sign in to your account to continue</p>
+
+          <h1 className="text-3xl font-black tracking-tight text-foreground mt-2">Welcome back</h1>
+          <p className="text-gray-500 dark:text-slate-400 font-medium text-sm mt-1">Sign in to your account to continue</p>
         </div>
 
-        <div className="rounded-[2rem] border border-white/20  bg-white/70  p-6 sm:p-10 shadow-2xl shadow-black/5 backdrop-blur-xl">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        {/* GLASSMORPHISM WORKSPACE CONTROL LAYER CARD */}
+        <div className="w-full rounded-[2rem] border border-white/20 dark:border-slate-800/40 bg-white/70 dark:bg-slate-900/60 p-6 sm:p-10 shadow-2xl shadow-black/5 backdrop-blur-xl">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            
+            {/* Email Form Field Context */}
             <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-700 ">Email Address</label>
+              <label className="text-sm font-bold text-gray-700 dark:text-slate-300">Email Address</label>
               <Input
+                type="email"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 placeholder="user@university.edu"
-                className="h-12 bg-white/50  border-gray-200  focus:bg-white "
+                className="h-12 bg-white/50 dark:bg-slate-950/40 border-gray-200 dark:border-slate-800 focus:bg-white dark:focus:bg-slate-950 rounded-xl"
               />
             </div>
 
+            {/* Password Form Field Context */}
             <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <label className="text-sm font-bold text-gray-700 ">Password</label>
-              </div>
+              <label className="text-sm font-bold text-gray-700 dark:text-slate-300">Password</label>
               <Input
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 type="password"
                 placeholder="••••••••"
-                className="h-12 bg-white/50  border-gray-200  focus:bg-white "
+                className="h-12 bg-white/50 dark:bg-slate-950/40 border-gray-200 dark:border-slate-800 focus:bg-white dark:focus:bg-slate-950 rounded-xl"
               />
             </div>
 
+            {/* Form Validation Submission Dispatch Button */}
             <Button 
               type="submit" 
               variant="gradient" 
-              className="w-full h-12 text-base font-bold shadow-lg shadow-primary/25 mt-2 group"
+              className="w-full h-12 text-base font-bold shadow-lg shadow-primary/25 mt-4 group rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white transition-all duration-200"
               disabled={isLoading}
             >
               {isLoading ? "Signing in..." : "Sign In"}
@@ -157,18 +178,20 @@ export default function Home() {
             </Button>
           </form>
 
-          <div className="mt-8 text-center">
-            <div className="text-sm font-medium text-gray-500  mb-4">
+          {/* Registration Redirect Layout Block */}
+          <div className="mt-6 text-center">
+            <div className="text-sm font-medium text-gray-500 dark:text-slate-400 mb-3">
               Don't have an account?{" "}
-              <Link to="/register" className="font-bold text-primary hover:text-primary/80 transition-colors">
+              <Link to="/register" className="font-bold text-orange-500 hover:text-orange-600 transition-colors">
                 Create Student Account
               </Link>
             </div>
             
-            <p className="text-[11px] text-gray-400  font-medium leading-relaxed max-w-xs mx-auto">
+            <p className="text-[11px] text-gray-400 dark:text-slate-500 font-medium leading-relaxed max-w-xs mx-auto border-t border-gray-200/60 dark:border-slate-800/60 pt-3">
               Faculty and Admin users can sign in using credentials provided by the institution.
             </p>
           </div>
+
         </div>
       </motion.div>
     </div>

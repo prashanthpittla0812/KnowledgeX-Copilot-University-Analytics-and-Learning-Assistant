@@ -7,6 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.permissions import get_current_admin, get_current_faculty, get_current_student
+from app.routes.material_routes import notify_students
 from app.config.settings import settings
 from app.database.db import get_db
 from app.database.models import Document, Quiz, QuizAttempt, User
@@ -123,6 +124,7 @@ async def faculty_upload_document(
 @faculty_router.post("/generate-quiz", response_model=QuizGenerateResponse)
 async def faculty_generate_quiz(
     request: QuizGenerateRequest,
+    current_user: User = Depends(get_current_faculty),
     db: AsyncSession = Depends(get_db),
 ):
     service = TeacherQuizService(db)
@@ -132,6 +134,7 @@ async def faculty_generate_quiz(
         question_type=request.question_type,
         difficulty=request.difficulty,
         num_questions=request.num_questions,
+        teacher_id=current_user.id,
     )
 
     if result.get("status") == "error":
@@ -139,6 +142,13 @@ async def faculty_generate_quiz(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=result.get("message", "Quiz generation failed"),
         )
+
+    await notify_students(
+        db,
+        "New Quiz Available",
+        f"A new quiz on '{request.topic_name}' has been generated.",
+        link="Quizzes"
+    )
 
     return QuizGenerateResponse(**result)
 

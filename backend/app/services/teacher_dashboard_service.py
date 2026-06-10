@@ -1,4 +1,4 @@
-from sqlalchemy import func, select
+from sqlalchemy import func, select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.models import FacultyDocument, QuizAttempt, TeacherQuiz, User
@@ -11,11 +11,21 @@ class TeacherDashboardService:
         self.gap_service = LearningGapService(db)
 
     async def get_teacher_quizzes(self, teacher_id: int) -> list[dict]:
-        result = await self.db.execute(
-            select(TeacherQuiz)
-            .where(TeacherQuiz.teacher_id == teacher_id)
-            .order_by(TeacherQuiz.created_at.desc())
-        )
+        user_res = await self.db.execute(select(User.name).where(User.id == teacher_id))
+        teacher_name = user_res.scalar_one_or_none()
+
+        query = select(TeacherQuiz)
+        if teacher_name:
+            query = query.where(
+                or_(
+                    TeacherQuiz.teacher_id == teacher_id,
+                    (TeacherQuiz.teacher_id.is_(None)) & (TeacherQuiz.teacher_name == teacher_name)
+                )
+            )
+        else:
+            query = query.where(TeacherQuiz.teacher_id == teacher_id)
+
+        result = await self.db.execute(query.order_by(TeacherQuiz.created_at.desc()))
         quizzes = result.scalars().all()
         return [
             {
@@ -48,9 +58,21 @@ class TeacherDashboardService:
         ]
 
     async def get_all_quiz_performance(self, teacher_id: int) -> dict:
-        quiz_result = await self.db.execute(
-            select(TeacherQuiz).where(TeacherQuiz.teacher_id == teacher_id)
-        )
+        user_res = await self.db.execute(select(User.name).where(User.id == teacher_id))
+        teacher_name = user_res.scalar_one_or_none()
+
+        query = select(TeacherQuiz)
+        if teacher_name:
+            query = query.where(
+                or_(
+                    TeacherQuiz.teacher_id == teacher_id,
+                    (TeacherQuiz.teacher_id.is_(None)) & (TeacherQuiz.teacher_name == teacher_name)
+                )
+            )
+        else:
+            query = query.where(TeacherQuiz.teacher_id == teacher_id)
+
+        quiz_result = await self.db.execute(query)
         quizzes = quiz_result.scalars().all()
         quiz_ids = [q.id for q in quizzes]
 

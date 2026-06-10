@@ -43,6 +43,7 @@ export default function FacultyDashboard() {
   // Analyze Results State
   const [learningGaps, setLearningGaps] = useState(null);
   const [selectedQuizGaps, setSelectedQuizGaps] = useState(null);
+  const [analyticsQuiz, setAnalyticsQuiz] = useState("");
 
   // Recommendations State
   const [dashboardStats, setDashboardStats] = useState(null);
@@ -92,10 +93,10 @@ export default function FacultyDashboard() {
     }
   };
 
-  const fetchLearningGaps = async () => {
+  const fetchLearningGaps = async (quizId = "") => {
     try {
       setIsLoading(true);
-      const res = await facultyApi.getLearningGaps();
+      const res = await facultyApi.getLearningGaps(quizId || undefined);
       setLearningGaps(res.data);
     } catch (e) {
       console.error(e);
@@ -143,7 +144,8 @@ export default function FacultyDashboard() {
     if (activeItem === "Quizzes") {
       fetchQuizzes();
     } else if (activeItem === "Analytics") {
-      fetchLearningGaps();
+      fetchQuizzes();
+      fetchLearningGaps(analyticsQuiz);
       fetchDashboardStats();
     } else if (activeItem === "Attendance") {
       fetchAttendanceData();
@@ -295,7 +297,7 @@ export default function FacultyDashboard() {
                           </select>
                         </div>
                       </div>
-                      <Button onClick={handleGenerateQuiz} disabled={isLoading} className="w-full h-11" variant="secondary">{isLoading ? "Generating..." : "Generate AI Quiz"}</Button>
+                      <Button onClick={handleGenerateQuiz} disabled={isLoading} className="w-full h-11">{isLoading ? "Generating..." : "Generate AI Quiz"}</Button>
                     </div>
                   </AnalyticsCard>
                 </div>
@@ -374,12 +376,27 @@ export default function FacultyDashboard() {
           </div>
         ) : activeItem === "Analytics" ? (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-              <h1 className="text-3xl font-black tracking-tight">Analytics</h1>
-              <p className="text-muted-foreground">Learning gaps and topic performance.</p>
+            <div className="flex justify-between items-start">
+              <div>
+                <h1 className="text-3xl font-black tracking-tight">Analytics</h1>
+                <p className="text-muted-foreground">Learning gaps and topic performance.</p>
+              </div>
+              <select
+                value={analyticsQuiz}
+                onChange={(e) => {
+                  setAnalyticsQuiz(e.target.value);
+                  fetchLearningGaps(e.target.value);
+                }}
+                className="rounded-xl border border-input bg-background px-4 py-2 text-sm focus:ring-1 focus:ring-primary outline-none max-w-xs"
+              >
+                  <option value="" >All Quizzes</option>
+                  {quizzes.map(q => (
+                    <option key={q.id} value={q.id}>{q.topic_name} - {new Date(q.created_at).toLocaleDateString()}</option>
+                  ))}
+              </select>
             </div>
             
-            {isLoading ? <p className="text-muted-foreground">Loading Analytics...</p> : learningGaps && (
+            {isLoading ? <p className="text-muted-foreground">Loading Analytics...</p> : learningGaps ? (
               <div className="grid lg:grid-cols-2 gap-8">
                 <AnalyticsCard title="Student Performance" className="min-h-[400px]">
                   <div className="flex flex-wrap gap-2 mt-4 mb-6">
@@ -428,6 +445,8 @@ export default function FacultyDashboard() {
                   </AnalyticsCard>
                 </div>
               </div>
+            ) : (
+              <p className="text-muted-foreground mt-8 text-center bg-muted/20 py-8 rounded-xl border border-dashed border-muted">No analytics data available or backend is still loading.</p>
             )}
           </div>
         ) : activeItem === "Attendance" ? (
