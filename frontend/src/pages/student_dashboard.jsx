@@ -41,6 +41,7 @@ export default function StudentDashboard() {
   const [isChatHistoryOpen, setIsChatHistoryOpen] = useState(true);
   const [isChatbotVisible, setIsChatbotVisible] = useState(false);
   const [chatbotMode, setChatbotMode] = useState("minimized");
+  const [chatHistoryCollapsed, setChatHistoryCollapsed] = useState(false);
   // Quiz States
   const [quizTopic, setQuizTopic] = useState("");
   const [quizDifficulty, setQuizDifficulty] = useState("medium");
@@ -835,6 +836,103 @@ export default function StudentDashboard() {
                 </>
               );
             })()}
+          </div>
+        ) : activeItem === "Chatbot" ? (
+          <div className="flex h-full animate-in fade-in zoom-in-95 duration-500">
+            <div className={`flex-1 min-h-0 grid gap-6 ${chatHistoryCollapsed ? "xl:grid-cols-[80px_1fr]" : "xl:grid-cols-[300px_1fr]"}`}>
+              <section className="min-h-0 rounded-3xl border border-primary/20 bg-card/50 backdrop-blur p-5 shadow-lg transition-all flex flex-col glass-card">
+                <div className="mb-6 flex items-center justify-between">
+                  {!chatHistoryCollapsed && <h2 className="text-lg font-bold text-foreground">Chat History</h2>}
+                  <button onClick={() => setChatHistoryCollapsed(!chatHistoryCollapsed)} className="grid h-10 w-10 place-items-center rounded-full border border-primary/30 bg-background text-primary hover:bg-primary hover:text-primary-foreground transition-colors shadow-sm">{chatHistoryCollapsed ? ">" : "<"}</button>
+                </div>
+                {!chatHistoryCollapsed && (
+                  <>
+                    <button onClick={handleNewChat} className="mb-6 w-full rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground transition-all hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/30 active:scale-95">+ New Conversation</button>
+                    <div className="space-y-3 overflow-y-auto flex-1 pr-2">
+                      {previousChats.map((chat) => (
+                        <button key={chat.id} onClick={() => setSelectedChatId(chat.id)} className={`w-full rounded-2xl px-4 py-3 text-left transition-all ${selectedChatId === chat.id ? "bg-gradient-to-r from-primary to-orange-400 text-primary-foreground shadow-md shadow-primary/20" : "bg-card text-card-foreground hover:bg-primary/10 border border-border"}`}>
+                          <span className="block truncate font-bold text-sm">{chat.title}</span>
+                          <span className={`mt-1.5 block truncate text-xs font-medium ${selectedChatId === chat.id ? "text-primary-foreground/80" : "text-muted-foreground"}`}>{chat.messages?.at(-1)?.text || "Empty chat"}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </section>
+              <section className="min-h-0 flex flex-col justify-between rounded-3xl border border-primary/20 bg-card/80 backdrop-blur p-6 shadow-xl glass-card relative overflow-hidden">
+                <div className="absolute top-0 right-0 h-64 w-64 -mr-20 -mt-20 rounded-full bg-primary/10 blur-3xl opacity-50 pointer-events-none"></div>
+                <div className="absolute bottom-0 left-0 h-64 w-64 -ml-20 -mb-20 rounded-full bg-blue-500/10 blur-3xl opacity-50 pointer-events-none"></div>
+                
+                <div className="flex-1 overflow-y-auto mb-6 pr-4 space-y-6 relative z-10">
+                  {selectedChat ? (
+                    <>
+                      <div className="sticky top-0 bg-card/90 backdrop-blur-md pb-4 border-b border-border z-10 pt-2">
+                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary mb-1">KnowledgeX Copilot</p>
+                        <h2 className="text-2xl font-black text-foreground">{selectedChat.title}</h2>
+                      </div>
+                      {selectedMessages.length > 0 ? (
+                        selectedMessages.map((msg, idx) => (
+                          <div key={idx} className={`flex ${msg.isUser || msg.sender === "user" ? "justify-end" : "justify-start"}`}>
+                            <div className={`max-w-[80%] rounded-3xl px-5 py-4 shadow-sm ${msg.isUser || msg.sender === "user" ? "bg-gradient-to-br from-primary to-orange-600 text-primary-foreground rounded-tr-sm" : "bg-muted text-foreground border border-border rounded-tl-sm"}`}>
+                              <p className="text-sm leading-relaxed whitespace-pre-wrap font-medium">{msg.text}</p>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="flex h-full flex-col items-center justify-center text-center opacity-50 mt-10">
+                          <div className="text-6xl mb-4">👋</div>
+                          <h2 className="text-2xl font-bold text-foreground">Start a conversation!</h2>
+                        </div>
+                      )}
+                      {isLoading && (
+                        <div className="flex justify-start">
+                          <div className="bg-muted text-muted-foreground rounded-3xl rounded-tl-sm px-6 py-4 border border-border flex gap-2 items-center shadow-sm">
+                            <div className="w-2 h-2 rounded-full bg-primary animate-bounce"></div>
+                            <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{animationDelay: "0.1s"}}></div>
+                            <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{animationDelay: "0.2s"}}></div>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex h-full flex-col items-center justify-center text-center opacity-50 mt-10">
+                      <div className="text-6xl mb-4">✨</div>
+                      <h2 className="text-2xl font-bold text-foreground">What can KnowledgeX do for you?</h2>
+                    </div>
+                  )}
+                </div>
+                <div className="relative z-10 mt-2">
+                  {attachedFiles.length > 0 && (
+                    <div className="flex gap-2 mb-3 px-2 overflow-x-auto">
+                      {attachedFiles.map((f, i) => (
+                        <div key={i} className="flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap">
+                          <FileText className="w-3 h-3" />
+                          <span className="truncate max-w-[150px]">{f.name}</span>
+                          <button onClick={() => setAttachedFiles(attachedFiles.filter((_, idx) => idx !== i))} className="hover:text-red-500 transition-colors ml-1">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-primary/20 to-orange-300/20 opacity-50 blur"></div>
+                  <div className="relative flex items-center gap-3 rounded-full border border-border bg-background px-3 py-2 shadow-lg">
+                    <button onClick={() => pdfInputRef.current?.click()} className="grid h-10 w-10 place-items-center rounded-full bg-muted text-muted-foreground hover:bg-primary/20 hover:text-primary transition-colors">
+                      <span className="text-xl font-bold">+</span>
+                    </button>
+                    <input ref={pdfInputRef} type="file" multiple onChange={(e) => {
+                      if (e.target.files) {
+                        setAttachedFiles([...attachedFiles, ...Array.from(e.target.files)]);
+                      }
+                    }} className="hidden" />
+                    <input value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSendChat()} className="min-w-0 flex-1 bg-transparent px-2 text-sm font-medium text-foreground placeholder-muted-foreground outline-none" placeholder="Message KnowledgeX Copilot..." />
+                    <button onClick={handleSendChat} disabled={isLoading} className="grid h-10 px-6 place-items-center rounded-full bg-primary text-sm font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-all shadow-md">
+                      Send
+                    </button>
+                  </div>
+                </div>
+              </section>
+            </div>
           </div>
         ) : (
           <div className="flex h-full flex-col items-center justify-center text-center animate-in fade-in duration-500">
