@@ -18,10 +18,7 @@ import {
   Bell,
   Search,
   Check,
-  Trash2,
-  GraduationCap,
-  Users,
-  History
+  Trash2
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
@@ -37,7 +34,7 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
   // --- Notification Functional State Management ---
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const notificationRef = useRef(null);
-
+  
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
@@ -105,6 +102,7 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
 
   const studentLinks = [
     { name: "Dashboard", icon: LayoutDashboard },
+    { name: "Attendance", icon: Calendar },
     { name: "Quizzes", icon: CheckCircle },
     { name: "Learning Resources", icon: BookOpen },
     { name: "Study Plan", icon: BookOpen },
@@ -114,19 +112,13 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
 
   const facultyLinks = [
     { name: "Dashboard", icon: LayoutDashboard },
+    { name: "Attendance", icon: Calendar },
     { name: "Learning Materials", icon: BookOpen },
     { name: "Quizzes", icon: CheckCircle },
     { name: "Analytics", icon: PieChart },
   ];
 
-  const adminLinks = [
-    { name: "Dashboard", icon: LayoutDashboard },
-    { name: "Students", icon: GraduationCap },
-    { name: "Faculty", icon: Users },
-    { name: "Audit Logs", icon: History },
-  ];
-
-  const links = role === "admin" ? adminLinks : role === "faculty" ? facultyLinks : studentLinks;
+  const links = role === "faculty" ? facultyLinks : studentLinks;
   const motivityLogoPath = "/motivity.webp";
 
   return (
@@ -138,25 +130,9 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
         animate={{ width: sidebarOpen ? 280 : 80 }}
         className="hidden md:flex flex-col h-full border-r border-slate-800 bg-sidebar shadow-lg z-20 text-slate-300 animate-none"
       >
-        {/* Brand Container with Motivity Labs Logo stacked exactly on top */}
+        {/* Brand Container */}
         <div className="flex flex-col shrink-0 border-b border-slate-800 bg-[#0b1329] px-6 py-5 relative group">
-
-          {/* Motivity Labs Logo Container */}
-          {sidebarOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center mb-5 w-full"
-            >
-              <img
-                src={motivityLogoPath}
-                alt="Motivity Labs"
-                className="h-12 w-auto object-contain"
-              />
-            </motion.div>
-          )}
-
+          
           {/* KnowledgeX Logo Row */}
           <div className="flex items-center h-10 justify-start gap-3 w-full">
             <div className="w-9 h-9 rounded-xl bg-[#ff9f43] flex items-center justify-center text-white font-bold shrink-0 shadow-md">
@@ -164,15 +140,15 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
             </div>
             {sidebarOpen && (
               <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
                 exit={{ opacity: 0 }}
                 className="font-bold text-2xl tracking-tight truncate whitespace-nowrap text-white"
               >
                 KnowledgeX
               </motion.span>
             )}
-
+            
             {/* Sidebar Toggle Arrow Button */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -222,6 +198,16 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
               </div>
             </div>
           )}
+          {sidebarOpen && (
+            <div className="flex flex-col items-center justify-center mb-4 w-full">
+              <span className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold mb-1">Powered by</span>
+              <img 
+                src={motivityLogoPath}
+                alt="Motivity Labs" 
+                className="h-8 w-auto object-contain opacity-80 hover:opacity-100 transition-opacity"
+              />
+            </div>
+          )}
           <Button variant="ghost" onClick={handleLogout} className={cn("w-full text-red-400 hover:bg-red-950/30 hover:text-red-300 cursor-pointer", !sidebarOpen && "justify-center px-0")}>
             <LogOut className="w-5 h-5" />
             {sidebarOpen && <span className="ml-3 font-medium">Log out</span>}
@@ -233,7 +219,7 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
       <main className="flex-1 flex flex-col h-full min-w-0 bg-background">
         {/* Navbar Header */}
         <header className="h-16 flex items-center justify-between px-4 lg:px-8 border-b border-slate-100 bg-white/90 backdrop-blur-md shadow-sm z-30 shrink-0 sticky top-0">
-
+          
           {/* Left Layout Section */}
           <div className="flex items-center gap-3">
             <button
@@ -248,110 +234,110 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
 
           {/* Center/Right Layout Section */}
           <div className="flex items-center gap-4 lg:gap-6">
-
+            
 
 
             {/* 2. Notification Overlay Drawer Dropdown Node Context */}
             {role !== "faculty" && (
               <div className="relative" ref={notificationRef}>
-                <button
-                  onClick={() => setNotificationsOpen(!notificationsOpen)}
-                  className={cn(
-                    "p-2 rounded-full text-slate-600 relative transition-colors cursor-pointer",
-                    notificationsOpen ? "bg-slate-100" : "hover:bg-slate-100"
-                  )}
-                >
-                  <Bell className="w-5 h-5" />
-                  {unreadCount > 0 && (
-                    <span className="absolute top-1 right-1 min-w-[16px] h-4 rounded-full bg-orange-500 text-[10px] font-bold text-white flex items-center justify-center px-1 border border-white animate-pulse">
-                      {unreadCount}
-                    </span>
-                  )}
-                </button>
+              <button 
+                onClick={() => setNotificationsOpen(!notificationsOpen)}
+                className={cn(
+                  "p-2 rounded-full text-slate-600 relative transition-colors cursor-pointer",
+                  notificationsOpen ? "bg-slate-100" : "hover:bg-slate-100"
+                )}
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[16px] h-4 rounded-full bg-orange-500 text-[10px] font-bold text-white flex items-center justify-center px-1 border border-white animate-pulse">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
 
-                {/* Notification Overlay Popover Menu Layer */}
-                <AnimatePresence>
-                  {notificationsOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 15, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 15, scale: 0.95 }}
-                      transition={{ duration: 0.15, ease: "easeOut" }}
-                      className="absolute right-0 mt-2.5 w-80 sm:w-96 rounded-2xl border border-slate-100 bg-white shadow-2xl shadow-slate-900/10 overflow-hidden text-slate-800 z-50"
-                    >
-                      {/* Header Controls Banner */}
-                      <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-100">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-sm text-slate-900">Notifications</span>
-                          {unreadCount > 0 && (
-                            <span className="bg-orange-100 text-orange-600 text-xs px-2 py-0.5 rounded-full font-bold">
-                              {unreadCount} New
-                            </span>
-                          )}
-                        </div>
+              {/* Notification Overlay Popover Menu Layer */}
+              <AnimatePresence>
+                {notificationsOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 15, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 15, scale: 0.95 }}
+                    transition={{ duration: 0.15, ease: "easeOut" }}
+                    className="absolute right-0 mt-2.5 w-80 sm:w-96 rounded-2xl border border-slate-100 bg-white shadow-2xl shadow-slate-900/10 overflow-hidden text-slate-800 z-50"
+                  >
+                    {/* Header Controls Banner */}
+                    <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-100">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm text-slate-900">Notifications</span>
                         {unreadCount > 0 && (
-                          <button
-                            onClick={markAllAsRead}
-                            className="text-xs text-orange-500 hover:text-orange-600 font-semibold flex items-center gap-1 cursor-pointer"
+                          <span className="bg-orange-100 text-orange-600 text-xs px-2 py-0.5 rounded-full font-bold">
+                            {unreadCount} New
+                          </span>
+                        )}
+                      </div>
+                      {unreadCount > 0 && (
+                        <button 
+                          onClick={markAllAsRead}
+                          className="text-xs text-orange-500 hover:text-orange-600 font-semibold flex items-center gap-1 cursor-pointer"
+                        >
+                          <Check className="w-3 h-3" /> Mark all read
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Messages Dynamic Listing Row */}
+                    <div className="max-h-[320px] overflow-y-auto divide-y divide-slate-50 custom-scrollbar">
+                      {notifications.length > 0 ? (
+                        notifications.map((item) => (
+                          <div 
+                            key={item.id}
+                            onClick={() => handleNotificationClick(item)}
+                            className={cn(
+                              "p-4 flex gap-3 transition-colors relative group/item cursor-pointer",
+                              item.isUnread ? "bg-orange-50/30 hover:bg-orange-50/60" : "hover:bg-slate-50"
+                            )}
                           >
-                            <Check className="w-3 h-3" /> Mark all read
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Messages Dynamic Listing Row */}
-                      <div className="max-h-[320px] overflow-y-auto divide-y divide-slate-50 custom-scrollbar">
-                        {notifications.length > 0 ? (
-                          notifications.map((item) => (
-                            <div
-                              key={item.id}
-                              onClick={() => handleNotificationClick(item)}
-                              className={cn(
-                                "p-4 flex gap-3 transition-colors relative group/item cursor-pointer",
-                                item.isUnread ? "bg-orange-50/30 hover:bg-orange-50/60" : "hover:bg-slate-50"
-                              )}
-                            >
-                              {/* Visual Status Indicator Node Dot */}
-                              {item.isUnread && (
-                                <span className="absolute top-5 left-2 w-1.5 h-1.5 rounded-full bg-orange-500" />
-                              )}
-
-                              <div className="flex-1 min-w-0 pl-1">
-                                <div className="flex justify-between items-start gap-2">
-                                  <p className={cn("text-xs font-semibold truncate", item.isUnread ? "text-slate-900" : "text-slate-700")}>
-                                    {item.title}
-                                  </p>
-                                  <span className="text-[10px] text-slate-400 whitespace-nowrap shrink-0">{item.time}</span>
-                                </div>
-                                <p className="text-xs text-slate-500 mt-1 leading-normal line-clamp-2">
-                                  {item.description}
+                            {/* Visual Status Indicator Node Dot */}
+                            {item.isUnread && (
+                              <span className="absolute top-5 left-2 w-1.5 h-1.5 rounded-full bg-orange-500" />
+                            )}
+                            
+                            <div className="flex-1 min-w-0 pl-1">
+                              <div className="flex justify-between items-start gap-2">
+                                <p className={cn("text-xs font-semibold truncate", item.isUnread ? "text-slate-900" : "text-slate-700")}>
+                                  {item.title}
                                 </p>
+                                <span className="text-[10px] text-slate-400 whitespace-nowrap shrink-0">{item.time}</span>
                               </div>
+                              <p className="text-xs text-slate-500 mt-1 leading-normal line-clamp-2">
+                                {item.description}
+                              </p>
+                            </div>
 
-                              {/* Clear Specific Single Event Row Control */}
-                              <button
-                                onClick={(e) => deleteNotification(item.id, e)}
-                                className="opacity-0 group-hover/item:opacity-100 p-1 rounded hover:bg-slate-200/60 text-slate-400 hover:text-red-500 transition-all self-center shrink-0 cursor-pointer"
-                                title="Delete notification"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="py-12 flex flex-col items-center justify-center text-center px-4">
-                            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
-                              <Bell className="w-5 h-5" />
-                            </div>
-                            <p className="text-xs font-semibold text-slate-700">All caught up!</p>
-                            <p className="text-[11px] text-slate-400 mt-0.5">No new alerts or system messages found.</p>
+                            {/* Clear Specific Single Event Row Control */}
+                            <button
+                              onClick={(e) => deleteNotification(item.id, e)}
+                              className="opacity-0 group-hover/item:opacity-100 p-1 rounded hover:bg-slate-200/60 text-slate-400 hover:text-red-500 transition-all self-center shrink-0 cursor-pointer"
+                              title="Delete notification"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                        ))
+                      ) : (
+                        <div className="py-12 flex flex-col items-center justify-center text-center px-4">
+                          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
+                            <Bell className="w-5 h-5" />
+                          </div>
+                          <p className="text-xs font-semibold text-slate-700">All caught up!</p>
+                          <p className="text-[11px] text-slate-400 mt-0.5">No new alerts or system messages found.</p>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
             )}
           </div>
         </header>
@@ -392,16 +378,7 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
             >
               {/* Mobile Sidebar Header Layout */}
               <div className="flex flex-col shrink-0 border-b border-slate-800 bg-[#0b1329] px-6 py-5 relative">
-
-                {/* Mobile Motivity Labs Brand Logo Image */}
-                <div className="flex flex-col items-center justify-center mb-5 w-full">
-                  <img
-                    src={motivityLogoPath}
-                    alt="Motivity Labs"
-                    className="h-12 w-auto object-contain"
-                  />
-                </div>
-
+                
                 {/* Mobile Identity / Navigation Toggle Row */}
                 <div className="flex items-center h-10 justify-between w-full">
                   <div className="flex items-center gap-3">
