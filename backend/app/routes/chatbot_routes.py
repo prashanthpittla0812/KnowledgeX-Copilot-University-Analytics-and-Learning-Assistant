@@ -1,6 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+import os
+import tempfile
+import json
 
 from app.auth.permissions import require_role
 from app.database.db import get_db
@@ -8,6 +11,7 @@ from app.database.models import User, ProcessedContent, LearningMaterial
 from app.schemas.chatbot_schema import ChatRequest, ChatResponse, SummaryRequest, SummaryBatchRequest, SummaryResponse
 from app.services.rag_service import RAGService
 from app.services.security_service import SecurityService
+from app.services.audio_processor import AudioProcessor
 
 router = APIRouter(prefix="/chat", tags=["Chatbot"])
 
@@ -33,18 +37,15 @@ async def chat(
             sources=[]
         )
 
-    # 2. Role-based Document Access Filter
+    # 2. Document Access Filter
+    # We allow the student to query the content IDs explicitly requested by the frontend,
+    # as the frontend has already filtered the accessible learning materials.
     allowed_content_ids = request.content_ids
-    if request.content_ids and current_user.role == "student":
-        # Students can query their own uploads, or materials linked to them
-        query = select(ProcessedContent.id).where(
-            ProcessedContent.id.in_(request.content_ids),
-            ProcessedContent.uploaded_by == current_user.id
-        )
+    if request.content_ids:
+        # Verify the contents actually exist in the DB
+        query = select(ProcessedContent.id).where(ProcessedContent.id.in_(request.content_ids))
         res = await db.execute(query)
         allowed_content_ids = res.scalars().all()
-        # Note: If no allowed content is found, we can still let them query general knowledge
-        # Or we fallback to letting the LLM answer without context.
 
     rag = RAGService()
     result = rag.generate_answer(question=request.question, content_ids=allowed_content_ids)
@@ -111,3 +112,75 @@ async def summarize_batch(
     summary = rag.summarize_content(text_to_summarize, request.summary_type)
     return SummaryResponse(summary=summary)
 
+@router.post("/audio", response_model=ChatResponse)
+async def chat_audio(
+    file: UploadFile = File(...),
+    content_ids: str = Form(""),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("student", "faculty")),
+):
+    """
+    Process an audio question from the user, transcribe it via ASR,
+    and then process it through the RAG chat pipeline.
+    """
+    # 1. Save uploaded audio temporarily
+    temp_fd, temp_path = tempfile.mkstemp(suffix=f"_{file.filename}")
+    try:
+        with os.fdopen(temp_fd, "wb") as f:
+            f.write(await file.read())
+            
+        # 2. Transcribe Audio
+        audio_processor = AudioProcessor()
+        transcript = audio_processor.transcribe_audio(temp_path)
+        
+        if not transcript:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Could not transcribe audio or audio was empty.",
+            )
+            
+        # 3. Security Check on Transcript
+        is_violation, reason = SecurityService.evaluate_prompt(transcript)
+        if is_violation:
+            await SecurityService.log_security_event(db, current_user.id, reason, "Policy Violation", transcript)
+            return ChatResponse(
+                answer="I am programmed to be a helpful and harmless academic assistant. My safety guidelines strictly prohibit me from answering this request or engaging with this content.",
+                sources=[]
+            )
+
+        # 4. Parse content_ids
+        allowed_content_ids = []
+        if content_ids.strip():
+            try:
+                if content_ids.startswith("["):
+                    allowed_content_ids = json.loads(content_ids)
+                else:
+                    allowed_content_ids = [int(cid.strip()) for cid in content_ids.split(",") if cid.strip()]
+            except ValueError:
+                pass
+                
+        if allowed_content_ids:
+            query = select(ProcessedContent.id).where(ProcessedContent.id.in_(allowed_content_ids))
+            res = await db.execute(query)
+            allowed_content_ids = res.scalars().all()
+
+        # 5. Generate Answer
+        rag = RAGService()
+        result = rag.generate_answer(question=transcript, content_ids=allowed_content_ids)
+        
+        # 6. Output Moderation
+        is_violation, reason = SecurityService.evaluate_prompt(result["answer"])
+        if is_violation:
+            await SecurityService.log_security_event(db, current_user.id, reason, "Output Moderation Triggered", result["answer"][:200])
+            return ChatResponse(
+                answer="I apologize, but my safety guidelines prevent me from generating a response to this query.",
+                sources=[]
+            )
+            
+        return ChatResponse(
+            answer=result["answer"],
+            sources=result["sources"],
+        )
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
