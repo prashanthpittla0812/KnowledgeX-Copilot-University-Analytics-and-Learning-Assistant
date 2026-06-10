@@ -1,0 +1,8 @@
+last 2 versions
+not dead
+not < 0.2%
+supports es6-module
+Edge >= 88
+Chrome >= 90
+Firefox >= 88
+Safari >= 14
