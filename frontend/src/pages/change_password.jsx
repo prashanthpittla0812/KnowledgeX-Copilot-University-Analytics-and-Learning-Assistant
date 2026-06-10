@@ -27,7 +27,7 @@ export default function ChangePassword() {
 
     setIsLoading(true);
     try {
-      await api.put("/auth/change-password", {
+      await api.put("/api/v1/auth/change-password", {
         current_password: currentPassword,
         new_password: newPassword,
       });

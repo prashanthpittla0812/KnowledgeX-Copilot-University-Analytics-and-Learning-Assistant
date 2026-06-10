@@ -27,7 +27,7 @@ export default function StudentsTab() {
 
   const handleApprove = async (id) => {
     try {
-      await api.put(`/admin/students/${id}/approve`);
+      await api.put(`/api/v1/admin/students/${id}/approve`);
       toast.success("Student approved");
       fetchStudents();
     } catch (error) {
@@ -37,7 +37,7 @@ export default function StudentsTab() {
 
   const handleReject = async (id) => {
     try {
-      await api.put(`/admin/students/${id}/reject`);
+      await api.put(`/api/v1/admin/students/${id}/reject`);
       toast.success("Student rejected");
       fetchStudents();
     } catch (error) {

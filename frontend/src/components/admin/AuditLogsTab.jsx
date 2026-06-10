@@ -14,7 +14,7 @@ export default function AuditLogsTab() {
   const fetchLogs = async () => {
     setIsLoading(true);
     try {
-      const response = await api.get("/admin/audit-logs");
+      const response = await api.get("/api/v1/admin/audit-logs");
       setLogs(response.data);
     } catch (error) {
       toast.error("Failed to load audit logs.");

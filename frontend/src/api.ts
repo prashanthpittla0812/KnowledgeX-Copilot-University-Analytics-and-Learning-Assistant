@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1";
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 export const TOKEN_STORAGE_KEY = "knowledgex_token";
 export const USER_STORAGE_KEY = "knowledgex_user";
@@ -50,12 +50,12 @@ export type QuizSubmitPayload = {
 
 export const authApi = {
   async register(payload: { name: string; email: string; password: string; role?: string }) {
-    const response = await api.post("/auth/register", payload);
+    const response = await api.post("/api/v1/auth/register", payload);
     return response.data;
   },
 
   async login(payload: LoginPayload) {
-    const response = await api.post("/auth/login", payload);
+    const response = await api.post("/api/v1/auth/login", payload);
     const token =
       response.data?.access_token ||
       response.data?.token ||
@@ -68,7 +68,7 @@ export const authApi = {
 
     let user = response.data?.user;
     if (!user && token) {
-      const meResponse = await api.get("/auth/me");
+      const meResponse = await api.get("/api/v1/auth/me");
       user = meResponse.data;
     }
 
@@ -98,112 +98,112 @@ export const authApi = {
 
 export const facultyApi = {
   uploadDocument(formData: FormData, topicName: string) {
-    return api.post("/faculty/upload", formData, {
+    return api.post("/api/v1/faculty/upload", formData, {
       params: { topic_name: topicName }
     });
   },
 
   generateQuiz(payload: QuizGenerationPayload) {
-    return api.post("/faculty/generate-quiz", payload);
+    return api.post("/api/v1/faculty/generate-quiz", payload);
   },
 
   getUploadedDocuments() {
-    return api.get("/dashboard/teacher/documents");
+    return api.get("/api/v1/dashboard/teacher/documents");
   },
 
   getGeneratedQuizzes() {
-    return api.get("/dashboard/teacher/quizzes");
+    return api.get("/api/v1/dashboard/teacher/quizzes");
   },
 
   getQuizResults(quizId: string | number) {
-    return api.get(`/assessment/class-performance/${quizId}`);
+    return api.get(`/api/v1/assessment/class-performance/${quizId}`);
   },
 
   getLearningGaps(quizId?: string | number) {
-    if (quizId) return api.get(`/assessment/learning-gaps/${quizId}`);
-    return api.get("/dashboard/learning-gaps");
+    if (quizId) return api.get(`/api/v1/assessment/learning-gaps/${quizId}`);
+    return api.get("/api/v1/dashboard/learning-gaps");
   },
 
   getClassInsights(quizId: string | number) {
-    return api.get(`/assessment/class-insights/${quizId}`);
+    return api.get(`/api/v1/assessment/class-insights/${quizId}`);
   },
 
   getDashboard() {
-    return api.get("/faculty/dashboard");
+    return api.get("/api/v1/faculty/dashboard");
   },
   
   getAttendance() {
-    return api.get("/attendance/class");
+    return api.get("/api/v1/attendance/class");
   },
 
   getAtRiskStudents() {
-    return api.get("/attendance/at-risk");
+    return api.get("/api/v1/attendance/at-risk");
   }
 };
 
 export const studentApi = {
   generateQuiz(payload: { topic: string; difficulty: string; number_of_questions: number }) {
-    return api.post("/quiz/generate", payload);
+    return api.post("/api/v1/quiz/generate", payload);
   },
 
   submitQuiz(payload: { quiz_id: number; answers: string[] }) {
-    return api.post("/quiz/submit", payload);
+    return api.post("/api/v1/quiz/submit", payload);
   },
 
   getQuizHistory() {
-    return api.get("/quiz/history");
+    return api.get("/api/v1/quiz/history");
   },
 
   getAssignedQuizzes() {
-    return api.get("/student/assigned-quizzes");
+    return api.get("/api/v1/student/assigned-quizzes");
   },
 
   getAssignedQuiz(quizId: number | string) {
-    return api.get(`/student/quiz/${quizId}`);
+    return api.get(`/api/v1/student/quiz/${quizId}`);
   },
 
   submitAssignedQuiz(payload: { quiz_id: number; answers: { question_id: number; selected_answer: string }[] }) {
-    return api.post("/assessment/attempt", payload);
+    return api.post("/api/v1/assessment/attempt", payload);
   },
 
   generateStudyPlan(payload: { subjects: string[]; exam_date: string; daily_hours: number }) {
-    return api.post("/studyplan/generate", payload);
+    return api.post("/api/v1/studyplan/generate", payload);
   },
 
   getStudyPlanHistory() {
-    return api.get("/studyplan/history");
+    return api.get("/api/v1/studyplan/history");
   },
 
   getRecommendations(studentId: number) {
-    return api.get(`/recommendations/${studentId}`);
+    return api.get(`/api/v1/recommendations/${studentId}`);
   },
 
   getRecommendationHistory(studentId: number) {
-    return api.get(`/recommendations/${studentId}/history`);
+    return api.get(`/api/v1/recommendations/${studentId}/history`);
   },
 
   getDashboard(refreshKey?: number) {
-    return api.get("/student/dashboard", {
+    return api.get("/api/v1/student/dashboard", {
       params: refreshKey ? { refresh: refreshKey } : undefined,
     });
   },
 
   getAttendance() {
-    return api.get("/attendance/student/me");
+    return api.get("/api/v1/attendance/student/me");
   }
 };
 
 export const chatbotApi = {
   async askQuestion(question: string, content_ids: number[] = []) {
-    const response = await api.post("/chat/", { question, content_ids });
+    const response = await api.post("/api/v1/chat/", { question, content_ids });
     return response.data;
   },
   async summarize(content_id: number, summary_type: string = "Short Summary") {
-    const response = await api.post("/chat/summarize", { content_id, summary_type });
+    const response = await api.post("/api/v1/chat/summarize", { content_id, summary_type });
     return response.data;
   },
   async summarizeBatch(content_ids: number[], summary_type: string = "Short Summary") {
-    const response = await api.post("/chat/summarize-batch", { content_ids, summary_type });
+    const response = await api.post("/api/v1/chat/summarize-batch", { content_ids, summary_type });
     return response.data;
   }
 };
@@ -212,71 +212,71 @@ export const documentApi = {
   async uploadPdf(file: File) {
     const formData = new FormData();
     formData.append("file", file);
-    const response = await api.post("/documents/upload", formData);
+    const response = await api.post("/api/v1/documents/upload", formData);
     return response.data;
   },
 
   async uploadMultimodal(formData: FormData) {
-    const response = await api.post("/documents/multimodal/upload", formData);
+    const response = await api.post("/api/v1/documents/multimodal/upload", formData);
     return response.data;
   },
 
   async uploadMultimodalBatch(formData: FormData) {
-    const response = await api.post("/documents/multimodal/upload-batch", formData);
+    const response = await api.post("/api/v1/documents/multimodal/upload-batch", formData);
     return response.data;
   },
 
   getDocuments() {
-    return api.get("/documents");
+    return api.get("/api/v1/documents");
   },
 };
 
 export const adminApi = {
   getDashboard() {
-    return api.get("/admin/dashboard");
+    return api.get("/api/v1/admin/dashboard");
   },
 
   getSystemStats() {
-    return api.get("/admin/stats");
+    return api.get("/api/v1/admin/stats");
   },
 };
 
 export const materialApi = {
   // Faculty
   async uploadMaterial(formData: FormData) {
-    const response = await api.post("/materials/faculty", formData);
+    const response = await api.post("/api/v1/materials/faculty", formData);
     return response.data;
   },
   getFacultyMaterials() {
-    return api.get("/materials/faculty");
+    return api.get("/api/v1/materials/faculty");
   },
   deleteMaterial(id: number) {
-    return api.delete(`/materials/faculty/${id}`);
+    return api.delete(`/api/v1/materials/faculty/${id}`);
   },
   getFacultyAnalytics() {
-    return api.get("/materials/faculty/analytics");
+    return api.get("/api/v1/materials/faculty/analytics");
   },
 
   // Student
   getStudentMaterials(params?: any) {
-    return api.get("/materials/student", { params });
+    return api.get("/api/v1/materials/student", { params });
   },
   getRecentMaterials() {
-    return api.get("/materials/student/recent");
+    return api.get("/api/v1/materials/student/recent");
   },
   trackAction(id: number, action_type: "VIEW" | "DOWNLOAD") {
-    return api.post(`/materials/student/${id}/action`, { action_type });
+    return api.post(`/api/v1/materials/student/${id}/action`, { action_type });
   },
   toggleBookmark(id: number) {
-    return api.post(`/materials/student/${id}/bookmark`);
+    return api.post(`/api/v1/materials/student/${id}/bookmark`);
   },
 
   // Notifications
   getNotifications() {
-    return api.get("/materials/notifications");
+    return api.get("/api/v1/materials/notifications");
   },
   markNotificationsRead() {
-    return api.post("/materials/notifications/read");
+    return api.post("/api/v1/materials/notifications/read");
   }
 };
 

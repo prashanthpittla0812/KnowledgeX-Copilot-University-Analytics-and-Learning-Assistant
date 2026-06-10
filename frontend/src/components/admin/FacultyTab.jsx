@@ -17,7 +17,7 @@ export default function FacultyTab() {
   const fetchFaculty = async () => {
     setIsLoading(true);
     try {
-      const response = await api.get("/admin/faculty");
+      const response = await api.get("/api/v1/admin/faculty");
       setFaculty(response.data);
     } catch (error) {
       toast.error("Failed to load faculty.");
@@ -29,7 +29,7 @@ export default function FacultyTab() {
   const handleCreateFaculty = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.post("/admin/faculty", newFaculty);
+      const response = await api.post("/api/v1/admin/faculty", newFaculty);
       toast.success(`Faculty created! Temp password: ${response.data.temporary_password}`, { duration: 10000 });
       setIsModalOpen(false);
       setNewFaculty({ name: "", email: "", department: "", designation: "" });
@@ -42,7 +42,7 @@ export default function FacultyTab() {
   const handleResetPassword = async (id) => {
     if (!confirm("Are you sure you want to reset this faculty's password?")) return;
     try {
-      const response = await api.put(`/admin/faculty/${id}/reset-password`);
+      const response = await api.put(`/api/v1/admin/faculty/${id}/reset-password`);
       toast.success(`Password reset! New password: ${response.data.new_password}`, { duration: 10000 });
     } catch (error) {
       toast.error("Failed to reset password");
@@ -52,7 +52,7 @@ export default function FacultyTab() {
   const handleDeactivate = async (id) => {
     if (!confirm("Are you sure you want to deactivate this faculty account?")) return;
     try {
-      await api.delete(`/admin/faculty/${id}`);
+      await api.delete(`/api/v1/admin/faculty/${id}`);
       toast.success("Faculty deactivated");
       fetchFaculty();
     } catch (error) {

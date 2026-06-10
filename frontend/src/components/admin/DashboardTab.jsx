@@ -13,7 +13,7 @@ export default function DashboardTab() {
 
   const fetchAnalytics = async () => {
     try {
-      const response = await api.get("/admin/analytics");
+      const response = await api.get("/api/v1/admin/analytics");
       setData(response.data);
     } catch (error) {
       console.error(error);

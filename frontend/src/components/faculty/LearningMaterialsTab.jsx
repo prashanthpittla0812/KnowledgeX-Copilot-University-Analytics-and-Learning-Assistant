@@ -127,7 +127,7 @@ export function LearningMaterialsTab() {
   const getFullUrl = (url) => {
     if (!url) return "";
     if (url.startsWith("http")) return url;
-    let baseUrl = API_BASE_URL.replace("/api/v1", "");
+    let baseUrl = API_BASE_URL;
     if (!baseUrl || !baseUrl.startsWith("http")) {
       baseUrl = "http://localhost:8000";
     }
