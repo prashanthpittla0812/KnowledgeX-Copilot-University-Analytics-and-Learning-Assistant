@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.db import get_db
+from app.auth.permissions import get_current_student
+from app.database.models import User
 from app.schemas.teacher_schema import (
     StudentQuizEvalRequest,
     StudentQuizEvalResponse,
@@ -18,9 +20,12 @@ router = APIRouter(prefix="/student", tags=["Student"])
 
 
 @router.get("/assigned-quizzes")
-async def get_assigned_quizzes(db: AsyncSession = Depends(get_db)):
+async def get_assigned_quizzes(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_student),
+):
     service = StudentQuizService(db)
-    quizzes = await service.get_all_quizzes()
+    quizzes = await service.get_all_quizzes(student_id=current_user.id)
     return {"quizzes": quizzes}
 
 

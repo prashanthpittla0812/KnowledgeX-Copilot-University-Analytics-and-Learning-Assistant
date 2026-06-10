@@ -64,19 +64,23 @@ class AnalyticsService:
             })
         return metrics
 
-    async def get_learning_gaps(self) -> dict:
-        student_query = await self.db.execute(
-            select(User.name, func.avg(QuizAttempt.percentage).label("avg_score"))
+    async def get_learning_gaps(self, quiz_id: int | None = None) -> dict:
+        student_query_stmt = select(User.name, func.avg(QuizAttempt.percentage).label("avg_score")) \
             .join(QuizAttempt, User.id == QuizAttempt.student_id)
-            .group_by(User.name)
-        )
-        student_scores = student_query.all()
+        
+        if quiz_id:
+            student_query_stmt = student_query_stmt.where(QuizAttempt.quiz_id == quiz_id)
+            
+        student_query_stmt = student_query_stmt.group_by(User.name)
+        student_scores = (await self.db.execute(student_query_stmt)).all()
 
-        topic_query = await self.db.execute(
-            select(TopicPerformance.topic, func.avg(TopicPerformance.accuracy).label("avg_acc"))
-            .group_by(TopicPerformance.topic)
-        )
-        topic_scores = topic_query.all()
+        topic_query_stmt = select(TopicPerformance.topic, func.avg(TopicPerformance.accuracy).label("avg_acc"))
+        if quiz_id:
+            topic_query_stmt = topic_query_stmt.join(QuizAttempt, TopicPerformance.attempt_id == QuizAttempt.id) \
+                                               .where(QuizAttempt.quiz_id == quiz_id)
+        topic_query_stmt = topic_query_stmt.group_by(TopicPerformance.topic)
+        
+        topic_scores = (await self.db.execute(topic_query_stmt)).all()
 
         student_performance = [
             {"student_name": row.name, "average_score": round(float(row.avg_score), 2)}

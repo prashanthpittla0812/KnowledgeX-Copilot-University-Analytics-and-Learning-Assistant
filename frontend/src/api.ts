@@ -120,8 +120,7 @@ export const facultyApi = {
   },
 
   getLearningGaps(quizId?: string | number) {
-    if (quizId) return api.get(`/assessment/learning-gaps/${quizId}`);
-    return api.get("/dashboard/learning-gaps");
+    return api.get("/dashboard/learning-gaps", quizId ? { params: { quiz_id: quizId } } : undefined);
   },
 
   getClassInsights(quizId: string | number) {

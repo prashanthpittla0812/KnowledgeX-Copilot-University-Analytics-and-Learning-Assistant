@@ -108,20 +108,7 @@ export default function AdminDashboard() {
           <div>
             <h1 className="text-lg md:text-xl font-bold text-foreground tracking-tight">{activeTab}</h1>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <div className="flex items-center gap-2 justify-end">
-                <p className="text-sm font-bold text-foreground leading-none">{currentUser?.name}</p>
-                <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  Admin
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">System Administrator</p>
-            </div>
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold shadow-sm border border-primary/20">
-              {currentUser?.name?.charAt(0).toUpperCase()}
-            </div>
-          </div>
+
         </header>
 
         {/* Content Area */}

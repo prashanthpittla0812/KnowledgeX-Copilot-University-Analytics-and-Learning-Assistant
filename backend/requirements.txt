@@ -24,6 +24,7 @@ python-dotenv>=1.0.0
 
 # AI & LangChain
 langchain>=0.3.0,<1.0.0
+
 langchain-community>=0.3.0,<1.0.0
 langchain-openai>=0.3.0,<1.0.0
 langchain-groq>=0.2.4

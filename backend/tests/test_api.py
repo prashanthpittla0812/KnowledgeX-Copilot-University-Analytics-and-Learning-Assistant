@@ -1,5 +1,15 @@
-import requests
-res = requests.post('http://localhost:8000/api/v1/auth/login', data={'username': 'akshaya', 'password': 'password123'})
-token = res.json().get('access_token')
-print("At risk:", requests.get('http://localhost:8000/api/v1/attendance/at-risk', headers={'Authorization': f'Bearer {token}'}).json())
-print("Class trends:", requests.get('http://localhost:8000/api/v1/attendance/class', headers={'Authorization': f'Bearer {token}'}).json())
+import asyncio
+from httpx import AsyncClient
+
+async def main():
+    async with AsyncClient() as client:
+        # We need a valid token. Or we can just use the internal TeacherDashboardService.
+        from app.database.db import async_session_factory
+        from app.services.teacher_dashboard_service import TeacherDashboardService
+        
+        async with async_session_factory() as db:
+            service = TeacherDashboardService(db)
+            quizzes = await service.get_teacher_quizzes(5)
+            print("Quizzes:", quizzes)
+
+asyncio.run(main())

@@ -16,6 +16,9 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  // Safely references your public directory asset
+  const motivityLogoPath = "/motivity.webp";
+
   const handleRegister = async (e) => {
     e.preventDefault();
     if (!name.trim() || !email.trim() || !password || !confirmPassword) {
@@ -52,13 +55,14 @@ export default function Register() {
   };
 
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center bg-background overflow-hidden p-4">
-      {/* Absolute Header with Theme Toggle */}
+    <div className="relative min-h-screen w-full flex items-center justify-center bg-background overflow-hidden p-4 sm:p-6">
+      
+      {/* Absolute Positioned Header with Theme Toggle */}
       <div className="absolute top-4 right-4 sm:top-8 sm:right-8 z-50">
         <ThemeToggle />
       </div>
 
-      {/* Animated Mesh Gradient Background */}
+      {/* Dynamic Animated Mesh Gradient Backdrop Canvas Layer */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div 
           animate={{ 
@@ -78,82 +82,98 @@ export default function Register() {
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
           className="absolute bottom-[-20%] left-[-10%] w-[60vw] h-[60vw] max-w-[600px] max-h-[600px] rounded-full bg-orange-500/20 blur-[100px]"
         />
-        <motion.div 
-          animate={{ 
-            y: [0, 50, 0],
-            opacity: [0.2, 0.5, 0.2]
-          }}
-          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[30%] left-[20%] w-[40vw] h-[40vw] max-w-[400px] max-h-[400px] rounded-full bg-amber-500/10 blur-[80px]"
-        />
       </div>
 
-      {/* Centered Glassmorphism Card */}
+      {/* Main Interactive Presentation Module Wrapper */}
       <motion.div 
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="relative z-10 w-full max-w-md my-12"
+        className="relative z-10 w-full max-w-md my-12 flex flex-col items-center"
       >
-        <div className="mb-8 text-center">
+        
+        {/* BRAND IDENTITY STACK: Motivity Logo, Orange Icon & Badge */}
+        <div className="w-full flex flex-col items-center mb-6 text-center">
+          
+          {/* 1. Motivity Labs Brand Asset Layer */}
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.1, duration: 0.4 }}
+            className="mb-5 flex justify-center max-w-[220px]"
+          >
+            <img 
+              src={motivityLogoPath}
+              alt="Motivity Labs" 
+              className="h-10 sm:h-12 w-auto object-contain"
+            />
+          </motion.div>
+
+          {/* 2. Custom KnowledgeX Bold Block Icon 'K' */}
           <motion.div 
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.2 }}
-            className="mx-auto flex w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 items-center justify-center text-white font-black text-3xl shadow-2xl shadow-orange-500/30 mb-6"
+            initial={{ scale: 0, rotate: -15 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 220, damping: 18, delay: 0.25 }}
+            className="flex w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 items-center justify-center text-white font-black text-2xl shadow-xl shadow-orange-500/20 mb-4"
           >
             K
           </motion.div>
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary font-bold text-xs mb-4 border border-primary/20 backdrop-blur-md">
-            <Sparkles className="w-3.5 h-3.5" /> 
+
+          {/* 3. Copilot Highlight Label Pill Block */}
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary dark:text-orange-400 font-bold text-xs mb-2 border border-primary/20 dark:border-orange-500/20 backdrop-blur-md shadow-sm">
+            <Sparkles className="w-3.5 h-3.5 text-orange-500" /> 
             Join Thousands of Students
           </div>
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">Create Account</h1>
-          <p className="text-gray-500  font-medium mt-2">Start your AI-powered academic journey</p>
+
+          <h1 className="text-3xl font-black tracking-tight text-foreground mt-2">Create Account</h1>
+          <p className="text-gray-500 dark:text-slate-400 font-medium text-sm mt-1">Start your AI-powered academic journey</p>
         </div>
 
-        <div className="rounded-[2rem] border border-white/20  bg-white/70  p-6 sm:p-10 shadow-2xl shadow-black/5 backdrop-blur-xl">
+        {/* GLASSMORPHISM WORKSPACE CONTROL LAYER CARD */}
+        <div className="w-full rounded-[2rem] border border-white/20 dark:border-slate-800/40 bg-white/70 dark:bg-slate-900/60 p-6 sm:p-10 shadow-2xl shadow-black/5 backdrop-blur-xl">
           <form onSubmit={handleRegister} className="space-y-5">
+            
             <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-700 ">Full Name</label>
+              <label className="text-sm font-bold text-gray-700 dark:text-slate-300">Full Name</label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Alex Smith"
-                className="h-12 bg-white/50  border-gray-200  focus:bg-white "
+                className="h-12 bg-white/50 dark:bg-slate-950/40 border-gray-200 dark:border-slate-800 focus:bg-white dark:focus:bg-slate-950 rounded-xl"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-700 ">Email Address</label>
+              <label className="text-sm font-bold text-gray-700 dark:text-slate-300">Email Address</label>
               <Input
+                type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="alex@university.edu"
-                className="h-12 bg-white/50  border-gray-200  focus:bg-white "
+                className="h-12 bg-white/50 dark:bg-slate-950/40 border-gray-200 dark:border-slate-800 focus:bg-white dark:focus:bg-slate-950 rounded-xl"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700 ">Password</label>
+                <label className="text-sm font-bold text-gray-700 dark:text-slate-300">Password</label>
                 <Input
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   type="password"
                   placeholder="••••••••"
-                  className="h-12 bg-white/50  border-gray-200  focus:bg-white "
+                  className="h-12 bg-white/50 dark:bg-slate-950/40 border-gray-200 dark:border-slate-800 focus:bg-white dark:focus:bg-slate-950 rounded-xl"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700 ">Confirm</label>
+                <label className="text-sm font-bold text-gray-700 dark:text-slate-300">Confirm</label>
                 <Input
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   type="password"
                   placeholder="••••••••"
-                  className="h-12 bg-white/50  border-gray-200  focus:bg-white "
+                  className="h-12 bg-white/50 dark:bg-slate-950/40 border-gray-200 dark:border-slate-800 focus:bg-white dark:focus:bg-slate-950 rounded-xl"
                 />
               </div>
             </div>
@@ -161,7 +181,7 @@ export default function Register() {
             <Button 
               type="submit" 
               variant="gradient" 
-              className="w-full h-12 text-base font-bold shadow-lg shadow-primary/25 mt-4 group"
+              className="w-full h-12 text-base font-bold shadow-lg shadow-primary/25 mt-4 group rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white transition-all duration-200"
               disabled={isLoading}
             >
               {isLoading ? "Creating Account..." : "Create Account"}
@@ -170,17 +190,17 @@ export default function Register() {
           </form>
 
           {/* Info banner for Faculty/Admin restriction */}
-          <div className="mt-8 p-4 rounded-xl bg-primary/5 border border-primary/10 flex items-start gap-3">
-            <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-            <p className="text-xs text-gray-600  leading-relaxed font-medium">
+          <div className="mt-8 p-4 rounded-xl bg-primary/5 border border-primary/10 dark:border-orange-500/10 flex items-start gap-3">
+            <Info className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
+            <p className="text-xs text-gray-600 dark:text-slate-400 leading-relaxed font-medium">
               Only student accounts can be self-registered.
-              <strong className="block mt-1 text-primary">Faculty account is created by the admin.</strong>
+              <strong className="block mt-1 text-orange-500">Faculty account is created by the admin.</strong>
             </p>
           </div>
 
-          <div className="mt-8 text-center text-sm font-medium text-gray-500 ">
+          <div className="mt-8 text-center text-sm font-medium text-gray-500 dark:text-slate-400">
             Already have an account?{" "}
-            <Link to="/" className="font-bold text-primary hover:text-primary/80 transition-colors">
+            <Link to="/" className="font-bold text-orange-500 hover:text-orange-600 transition-colors">
               Sign in
             </Link>
           </div>

@@ -10,11 +10,20 @@ class StudentQuizService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_all_quizzes(self) -> list:
+    async def get_all_quizzes(self, student_id: int = None) -> list:
         result = await self.db.execute(
             select(TeacherQuiz).order_by(TeacherQuiz.created_at.desc())
         )
         quizzes = result.scalars().all()
+
+        attempted_quiz_ids = set()
+        if student_id:
+            from app.database.models import QuizAttempt
+            attempts_result = await self.db.execute(
+                select(QuizAttempt.quiz_id).where(QuizAttempt.student_id == student_id)
+            )
+            attempted_quiz_ids = set(attempts_result.scalars().all())
+
         return [
             {
                 "id": q.id,
@@ -24,6 +33,7 @@ class StudentQuizService:
                 "difficulty": q.difficulty,
                 "num_questions": q.num_questions,
                 "created_at": q.created_at.isoformat() if q.created_at else None,
+                "is_completed": q.id in attempted_quiz_ids,
             }
             for q in quizzes
         ]
