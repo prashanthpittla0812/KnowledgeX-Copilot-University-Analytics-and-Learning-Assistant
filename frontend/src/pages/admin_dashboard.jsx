@@ -91,6 +91,15 @@ export default function AdminDashboard() {
               </div>
             </div>
           )}
+          {/* Motivity Labs Logo Container */}
+          <div className="flex flex-col items-center justify-center mb-4 w-full">
+            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold mb-1">Powered by</span>
+            <img 
+              src="/motivity.webp"
+              alt="Motivity Labs" 
+              className="h-8 w-auto object-contain opacity-80 hover:opacity-100 transition-opacity"
+            />
+          </div>
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-red-400 hover:bg-red-950/30 hover:text-red-300 rounded-xl transition-colors cursor-pointer"
