@@ -102,7 +102,6 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
 
   const studentLinks = [
     { name: "Dashboard", icon: LayoutDashboard },
-    { name: "Attendance", icon: Calendar },
     { name: "Quizzes", icon: CheckCircle },
     { name: "Learning Resources", icon: BookOpen },
     { name: "Study Plan", icon: BookOpen },
@@ -112,7 +111,6 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
 
   const facultyLinks = [
     { name: "Dashboard", icon: LayoutDashboard },
-    { name: "Attendance", icon: Calendar },
     { name: "Learning Materials", icon: BookOpen },
     { name: "Quizzes", icon: CheckCircle },
     { name: "Analytics", icon: PieChart },

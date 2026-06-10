@@ -42,7 +42,7 @@ export default function StudentDashboard() {
   // Quiz States
   const [quizTopic, setQuizTopic] = useState("");
   const [quizDifficulty, setQuizDifficulty] = useState("medium");
-  const [quizNumQuestions, setQuizNumQuestions] = useState(5);
+  const [quizNumQuestions, setQuizNumQuestions] = useState(25);
   const [activeQuiz, setActiveQuiz] = useState(null);
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [quizResult, setQuizResult] = useState(null);
@@ -69,14 +69,6 @@ export default function StudentDashboard() {
   // Analytics States
   const [analytics, setAnalytics] = useState(null);
   const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false);
-
-  // Attendance State
-  const [attendanceData] = useState([
-    { subject: "Math", present: 18, total: 20 },
-    { subject: "Physics", present: 16, total: 20 },
-    { subject: "Computer Science", present: 19, total: 20 },
-    { subject: "English", present: 17, total: 20 },
-  ]);
 
   useEffect(() => {
     const stored = localStorage.getItem("currentUser");
@@ -400,7 +392,6 @@ export default function StudentDashboard() {
               <StatCard title="Quizzes Taken" value="12" icon={CheckCircle} description="Across 3 subjects" />
               <StatCard title="Average Score" value="82%" icon={Target} trend="↑ 4%" trendColor="text-emerald-500" description="since last week" />
               <StatCard title="Study Streak" value="5 days" icon={TrendingUp} description="Keep it up!" />
-              <StatCard title="Total Attendance" value="88%" icon={Calendar} trendColor="text-primary" description="Good standing" />
             </div>
 
             <div className="grid gap-6 lg:grid-cols-2">
@@ -420,25 +411,6 @@ export default function StudentDashboard() {
                     </div>
                     <Button size="sm" onClick={() => setActiveItem("Quizzes")}>Practice</Button>
                   </div>
-                </div>
-              </AnalyticsCard>
-
-              <AnalyticsCard title="Attendance Summary" className="min-h-[300px]">
-                <div className="space-y-4">
-                  {attendanceData.map((item, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-xl hover:bg-muted transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center font-bold text-muted-foreground">
-                          {item.subject.charAt(0)}
-                        </div>
-                        <p className="font-bold">{item.subject}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-black text-lg">{((item.present / item.total) * 100).toFixed(0)}%</p>
-                        <p className="text-xs text-muted-foreground">{item.present}/{item.total} classes</p>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               </AnalyticsCard>
             </div>
@@ -648,7 +620,7 @@ export default function StudentDashboard() {
                       </div>
                       <div>
                         <label className="text-sm font-semibold mb-1 block">Questions</label>
-                        <input type="number" value={quizNumQuestions} onChange={e => setQuizNumQuestions(Number(e.target.value))} min="1" max="20" className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none" />
+                        <input type="number" value={quizNumQuestions} onChange={e => setQuizNumQuestions(Number(e.target.value))} min="1" max="25" className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none" />
                       </div>
                     </div>
                     <Button onClick={handleGenerateQuiz} disabled={isLoading} className="w-full h-11">{isLoading ? "Generating..." : "Generate AI Quiz"}</Button>
@@ -930,61 +902,10 @@ export default function StudentDashboard() {
                         )}
                       </div>
                     </AnalyticsCard>
-
-                    <AnalyticsCard title="Attendance Overview">
-                      <div className="h-[300px] mt-4">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={attendanceData.map(d => ({ subject: d.subject, percentage: Math.round((d.present / d.total) * 100) }))} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                            <XAxis dataKey="subject" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
-                            <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} />
-                            <Tooltip
-                              cursor={{ fill: 'var(--muted)' }}
-                              contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '8px' }}
-                              formatter={(value) => [`${value}%`, 'Attendance']}
-                            />
-                            <Bar dataKey="percentage" fill="#F59E0B" radius={[4, 4, 0, 0]} maxBarSize={50} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </AnalyticsCard>
                   </div>
                 </>
               );
             })()}
-          </div>
-        ) : activeItem === "Attendance" ? (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-              <h1 className="text-3xl font-black tracking-tight">Attendance Tracking</h1>
-              <p className="text-muted-foreground mt-1">Review your subject-wise attendance and requirements.</p>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              {attendanceData.map((item, i) => {
-                const percentage = ((item.present / item.total) * 100).toFixed(0);
-                const isWarning = percentage < 75;
-                return (
-                  <AnalyticsCard key={i} title={item.subject}>
-                    <div className="flex items-center justify-between p-4 bg-[var(--background)] rounded-xl border border-[var(--border)]">
-                      <div>
-                        <p className="text-sm font-semibold text-muted-foreground mb-1">Classes Attended</p>
-                        <p className="text-2xl font-black">{item.present} <span className="text-sm font-medium text-muted-foreground">/ {item.total}</span></p>
-                      </div>
-                      <div className={`w-20 h-20 rounded-full flex items-center justify-center border-4 ${isWarning ? 'border-red-500 text-red-500 bg-red-500/10' : 'border-emerald-500 text-emerald-500 bg-emerald-500/10'}`}>
-                        <span className="text-xl font-bold">{percentage}%</span>
-                      </div>
-                    </div>
-                    {isWarning && (
-                      <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex gap-2 items-center text-red-600 dark:text-red-400 text-sm">
-                        <AlertCircle className="w-4 h-4 shrink-0" />
-                        <p>Attendance is below 75%. You need to attend the next few classes!</p>
-                      </div>
-                    )}
-                  </AnalyticsCard>
-                );
-              })}
-            </div>
           </div>
         ) : (
           <div className="flex h-full flex-col items-center justify-center text-center animate-in fade-in duration-500">
@@ -992,7 +913,7 @@ export default function StudentDashboard() {
           </div>
         )}
       </div>
-      <CopilotFloatingButton onClick={() => setActiveItem("Chatbot")} />
+      {activeItem !== "Quizzes" && <CopilotFloatingButton onClick={() => setActiveItem("Chatbot")} />}
     </DashboardLayout>
   );
 }
