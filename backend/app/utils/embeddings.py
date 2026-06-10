@@ -2,10 +2,12 @@ from langchain_chroma import Chroma
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_openai import AzureOpenAIEmbeddings, OpenAIEmbeddings
 from langchain_community.embeddings import HuggingFaceEmbeddings # Optional fallback
+from functools import lru_cache
 
 from app.config.settings import settings
 
 
+@lru_cache(maxsize=1)
 def get_embeddings():
     # If provider is openai or groq (but using openai standard model as a paid bridge)
     if settings.AI_PROVIDER == "openai":

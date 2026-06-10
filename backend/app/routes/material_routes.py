@@ -27,16 +27,21 @@ def model_to_dict(obj):
 
 
 async def check_role(current_user: User, allowed_roles: List[str]):
-    if current_user.role not in allowed_roles:
+    if not current_user or not hasattr(current_user, "role"):
         raise HTTPException(status_code=403, detail="You do not have permission")
+    role = str(current_user.role).strip().lower()
+    allowed = [r.strip().lower() for r in allowed_roles]
+    print(f"DEBUG check_role: user_id={current_user.id}, role='{role}', allowed={allowed}")
+    if role not in allowed:
+        raise HTTPException(status_code=403, detail=f"You do not have permission. Role: {role}")
 
 
-async def notify_students(db: AsyncSession, title: str, message: str):
+async def notify_students(db: AsyncSession, title: str, message: str, link: str = None):
     result = await db.execute(select(User).where(User.role == "student", User.is_active == True))
     students = result.scalars().all()
 
     for s in students:
-        db.add(Notification(user_id=s.id, title=title, message=message))
+        db.add(Notification(user_id=s.id, title=title, message=message, link=link))
 
     await db.commit()
 
@@ -95,7 +100,8 @@ async def upload_material(
     await notify_students(
         db,
         "New Learning Material",
-        f"{title} uploaded by {current_user.name}"
+        f"{title} uploaded by {current_user.name}",
+        link="Learning Resources"
     )
 
     return material
@@ -176,7 +182,7 @@ async def get_student_materials(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    await check_role(current_user, ["student", "admin"])
+    await check_role(current_user, ["student", "admin", "faculty"])
 
     query = select(LearningMaterial, User.name).join(User)
 
@@ -202,7 +208,7 @@ async def get_student_materials(
         bm = await db.scalar(
             select(MaterialBookmark).where(
                 MaterialBookmark.material_id == mat.id,
-                MaterialBookmark.user_id == current_user.id,
+                MaterialBookmark.student_id == current_user.id,
                 MaterialBookmark.is_active == True
             )
         )
@@ -243,7 +249,7 @@ async def track_action(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    await check_role(current_user, ["student"])
+    await check_role(current_user, ["student", "faculty", "admin"])
 
     if action.action_type not in ['VIEW', 'DOWNLOAD']:
         raise HTTPException(400, "Invalid action")
@@ -264,12 +270,12 @@ async def bookmark(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    await check_role(current_user, ["student"])
+    await check_role(current_user, ["student", "faculty", "admin"])
 
     bm = await db.scalar(
         select(MaterialBookmark).where(
             MaterialBookmark.material_id == material_id,
-            MaterialBookmark.user_id == current_user.id
+            MaterialBookmark.student_id == current_user.id
         )
     )
 
@@ -277,7 +283,7 @@ async def bookmark(
         bm.is_active = not bm.is_active
     else:
         db.add(MaterialBookmark(
-            user_id=current_user.id,
+            student_id=current_user.id,
             material_id=material_id,
             is_active=True
         ))
@@ -319,7 +325,7 @@ async def get_recent_materials(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    await check_role(current_user, ["student", "admin"])
+    await check_role(current_user, ["student", "admin", "faculty"])
 
     result = await db.execute(
         select(LearningMaterial)

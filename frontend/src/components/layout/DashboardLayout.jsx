@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
+import { materialApi } from "../../api";
 
 export function DashboardLayout({ children, role = "student", activeItem, setActiveItem, userName = "User", handleLogout }) {
   const [sidebarOpen, setSidebarOpen] = useState(() => {
@@ -30,35 +31,31 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
   });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // --- Search and Notification Functional State Management ---
-  const [searchQuery, setSearchQuery] = useState("");
+  // --- Notification Functional State Management ---
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const notificationRef = useRef(null);
   
-  // Initialized with realistic system updates relevant to your academic platform modules
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: "New Learning Material",
-      description: "Operating Systems Chapter 4 PDF notes uploaded.",
-      time: "10m ago",
-      isUnread: true,
-    },
-    {
-      id: 2,
-      title: "Upcoming Quiz Reminder",
-      description: "Computer Networks Quiz is scheduled for tomorrow.",
-      time: "2h ago",
-      isUnread: true,
-    },
-    {
-      id: 3,
-      title: "Attendance Updated",
-      description: "Your overall attendance summary metrics have been refreshed.",
-      time: "1d ago",
-      isUnread: false,
-    },
-  ]);
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await materialApi.getNotifications();
+      setNotifications(res.data.map(n => ({
+        id: n.id,
+        title: n.title,
+        description: n.message,
+        time: new Date(n.created_at).toLocaleDateString(),
+        isUnread: !n.is_read,
+        link: n.link
+      })));
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   // Compute live counter badge status
   const unreadCount = notifications.filter(n => n.isUnread).length;
@@ -79,14 +76,23 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
   }, [sidebarOpen]);
 
   // --- Notification Action Controllers ---
-  const markAsRead = (id) => {
+  const handleNotificationClick = (item) => {
     setNotifications(prev =>
-      prev.map(n => (n.id === id ? { ...n, isUnread: false } : n))
+      prev.map(n => (n.id === item.id ? { ...n, isUnread: false } : n))
     );
+    if (item.link) {
+      setActiveItem(item.link);
+      setNotificationsOpen(false);
+    }
   };
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
     setNotifications(prev => prev.map(n => ({ ...n, isUnread: false })));
+    try {
+      await materialApi.markNotificationsRead();
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const deleteNotification = (id, e) => {
@@ -235,28 +241,11 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
           {/* Center/Right Layout Section */}
           <div className="flex items-center gap-4 lg:gap-6">
             
-            {/* 1. Global Context Search Engine Control Field */}
-            <div className="hidden sm:flex items-center relative w-60 lg:w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search for materials, topics, quizzes..."
-                className="w-full bg-slate-100 border border-slate-200/50 rounded-xl pl-9 pr-8 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-orange-500 text-slate-700 placeholder-slate-400 transition-all duration-200"
-              />
-              {searchQuery && (
-                <button 
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-slate-200 text-slate-400 hover:text-slate-600 cursor-pointer"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              )}
-            </div>
+
 
             {/* 2. Notification Overlay Drawer Dropdown Node Context */}
-            <div className="relative" ref={notificationRef}>
+            {role !== "faculty" && (
+              <div className="relative" ref={notificationRef}>
               <button 
                 onClick={() => setNotificationsOpen(!notificationsOpen)}
                 className={cn(
@@ -308,7 +297,7 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
                         notifications.map((item) => (
                           <div 
                             key={item.id}
-                            onClick={() => markAsRead(item.id)}
+                            onClick={() => handleNotificationClick(item)}
                             className={cn(
                               "p-4 flex gap-3 transition-colors relative group/item cursor-pointer",
                               item.isUnread ? "bg-orange-50/30 hover:bg-orange-50/60" : "hover:bg-slate-50"
@@ -355,6 +344,7 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
                 )}
               </AnimatePresence>
             </div>
+            )}
           </div>
         </header>
 
