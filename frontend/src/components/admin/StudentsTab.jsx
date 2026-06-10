@@ -15,7 +15,7 @@ export default function StudentsTab() {
   const fetchStudents = async () => {
     setIsLoading(true);
     try {
-      const url = filter === "ALL" ? "/admin/students" : `/admin/students?status=${filter}`;
+      const url = filter === "ALL" ? "/api/v1/admin/students" : `/api/v1/admin/students?status=${filter}`;
       const response = await api.get(url);
       setStudents(response.data);
     } catch (error) {
