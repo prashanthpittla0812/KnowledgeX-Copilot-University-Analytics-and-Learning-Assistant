@@ -130,9 +130,9 @@ export function LearningMaterialsTab() {
           <h1 className="text-3xl font-black tracking-tight">Learning Materials</h1>
           <p className="text-muted-foreground">Manage and share resources with your students.</p>
         </div>
-        <div className="flex bg-muted/50 p-1 rounded-xl">
-          <button onClick={() => setActiveTab("upload")} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === "upload" ? "bg-white dark:bg-slate-800 shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"}`}>Upload</button>
-          <button onClick={() => setActiveTab("my-materials")} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === "my-materials" ? "bg-white dark:bg-slate-800 shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"}`}>My Materials</button>
+        <div className="flex bg-orange-100/60 p-1 rounded-xl border border-orange-200/50 shadow-inner">
+          <button onClick={() => setActiveTab("upload")} className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === "upload" ? "bg-gradient-to-r from-orange-500 to-amber-500 shadow-md text-white" : "text-orange-900/60 hover:text-orange-900 hover:bg-orange-200/50"}`}>Upload</button>
+          <button onClick={() => setActiveTab("my-materials")} className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === "my-materials" ? "bg-gradient-to-r from-orange-500 to-amber-500 shadow-md text-white" : "text-orange-900/60 hover:text-orange-900 hover:bg-orange-200/50"}`}>My Materials</button>
         </div>
       </div>
 

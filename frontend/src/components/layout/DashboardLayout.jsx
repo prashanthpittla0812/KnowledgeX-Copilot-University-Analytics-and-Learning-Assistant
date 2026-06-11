@@ -38,7 +38,10 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const notificationRef = useRef(null);
 
+
   const [notifications, setNotifications] = useState([]);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef(null);
 
   useEffect(() => {
     fetchNotifications();
@@ -68,6 +71,9 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
     function handleClickOutside(event) {
       if (notificationRef.current && !notificationRef.current.contains(event.target)) {
         setNotificationsOpen(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setProfileOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -130,36 +136,33 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
   const motivityLogoPath = "/motivity.webp";
 
   return (
-    <div className="flex h-screen w-full bg-background overflow-hidden selection:bg-primary/20 selection:text-primary transition-colors duration-300">
+    <div className="relative flex h-screen w-full overflow-hidden bg-[#fdfaf6] selection:bg-orange-500/20 selection:text-orange-900 transition-colors duration-300">
+
+      {/* Decorative Mesh Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] max-w-[600px] max-h-[600px] rounded-full bg-orange-400/20 blur-[120px]" />
+        <div className="absolute bottom-[10%] right-[20%] w-[40vw] h-[40vw] max-w-[500px] max-h-[500px] rounded-full bg-amber-400/20 blur-[100px]" />
+        <div className="absolute top-[40%] left-[30%] w-[30vw] h-[30vw] max-w-[400px] max-h-[400px] rounded-full bg-blue-400/10 blur-[100px]" />
+      </div>
 
       {/* Sidebar Desktop */}
       <motion.aside
         initial={false}
         animate={{ width: sidebarOpen ? 280 : 80 }}
-        className="hidden md:flex flex-col h-full border-r border-slate-800 bg-sidebar shadow-lg z-20 text-slate-300 animate-none"
+        className="hidden md:flex flex-col h-full border-r border-white/10 bg-gradient-to-b from-slate-900 via-[#0F172A] to-[#0B1329] shadow-[inset_0_1px_0_rgba(255,255,255,0.1),_10px_0_30px_rgba(0,0,0,0.5)] z-20 text-slate-300 animate-none relative backdrop-blur-xl"
       >
         {/* Brand Container with Motivity Labs Logo stacked exactly on top */}
         <div className="flex flex-col shrink-0 border-b border-slate-800 bg-[#0b1329] px-6 py-5 relative group">
 
-          {/* Motivity Labs Logo Container */}
-          {sidebarOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center mb-5 w-full"
-            >
-              <img
-                src={motivityLogoPath}
-                alt="Motivity Labs"
-                className="h-12 w-auto object-contain"
-              />
-            </motion.div>
-          )}
-
-          {/* KnowledgeX Logo Row */}
           <div className="flex items-center h-10 justify-start gap-3 w-full">
-            <div className="w-9 h-9 rounded-xl bg-[#ff9f43] flex items-center justify-center text-white font-bold shrink-0 shadow-md">
+            <div 
+              onClick={() => !sidebarOpen && setSidebarOpen(true)}
+              className={cn(
+                "w-9 h-9 rounded-xl bg-[#ff9f43] flex items-center justify-center text-white font-bold shrink-0 shadow-md transition-all", 
+                !sidebarOpen && "cursor-pointer hover:ring-2 hover:ring-orange-400/50 hover:scale-105"
+              )}
+              title={!sidebarOpen ? "Expand Sidebar" : ""}
+            >
               K
             </div>
             {sidebarOpen && (
@@ -172,16 +175,20 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
                 KnowledgeX
               </motion.span>
             )}
-
-            {/* Sidebar Toggle Arrow Button */}
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-1.5 rounded-md hover:bg-slate-800 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer absolute right-3 top-4"
-            >
-              {sidebarOpen ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-            </button>
           </div>
         </div>
+
+        {/* Sidebar Toggle Button (Permanently visible, aligned with MENU) */}
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className={cn(
+            "absolute top-[80px] p-1.5 rounded-md bg-slate-300 hover:bg-white text-slate-900 transition-all cursor-pointer shadow-sm z-50",
+            sidebarOpen ? "right-3" : "left-[26px]"
+          )}
+          title={sidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+        >
+          {sidebarOpen ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+        </button>
 
         {/* Desktop Navigation Link Items */}
         <div className="flex-1 overflow-y-auto py-6 px-3 space-y-1 custom-scrollbar">
@@ -197,42 +204,41 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all font-medium text-sm group cursor-pointer",
                   isActive
-                    ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-orange-500/20"
-                    : "text-slate-400 hover:bg-slate-800/60 hover:text-white"
+                    ? "bg-white/95 text-slate-900 shadow-[0_4px_12px_rgba(255,255,255,0.1),_inset_0_1px_0_rgba(255,255,255,1)]"
+                    : "text-slate-400 hover:bg-white/10 hover:text-white shadow-[inset_0_1px_0_rgba(255,255,255,0)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
                 )}
                 title={!sidebarOpen ? link.name : undefined}
               >
-                <link.icon className={cn("w-5 h-5 shrink-0 transition-transform group-hover:scale-110", isActive ? "text-white" : "text-slate-400 group-hover:text-white")} />
+                <link.icon className={cn("w-5 h-5 shrink-0 transition-transform group-hover:scale-110", isActive ? "text-slate-900" : "text-slate-400 group-hover:text-white")} />
                 {sidebarOpen && <span className="truncate">{link.name}</span>}
               </button>
             );
           })}
         </div>
 
-        {/* Footer Profile Status Block & Signout */}
-        <div className="p-4 border-t border-slate-800">
-          {sidebarOpen && (
-            <div className="flex items-center gap-3 px-3 py-2 mb-4 bg-slate-900/50 rounded-xl border border-slate-800">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold shrink-0">
-                {userName.charAt(0).toUpperCase()}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-white truncate">{userName}</p>
-                <p className="text-xs text-slate-500 capitalize">{role}</p>
-              </div>
+        {/* Footer Motivity Labs Branding */}
+        <div className="p-4 border-t border-white/5 flex justify-center items-center mt-auto bg-black/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+          {sidebarOpen ? (
+            <div className="flex flex-col items-center">
+               <span className="text-[10px] text-slate-500 font-semibold mb-2 uppercase tracking-widest">Powered By</span>
+               <div className="bg-white rounded-full px-4 py-1.5 flex items-center justify-center shadow-sm">
+                 <img src={motivityLogoPath} alt="Motivity Labs" className="h-5 w-auto object-contain" />
+               </div>
+            </div>
+          ) : (
+            <div className="flex justify-center w-full">
+               <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
+                 <img src={motivityLogoPath} alt="Motivity Labs" className="h-4 w-auto object-contain" />
+               </div>
             </div>
           )}
-          <Button variant="ghost" onClick={handleLogout} className={cn("w-full text-red-400 hover:bg-red-950/30 hover:text-red-300 cursor-pointer", !sidebarOpen && "justify-center px-0")}>
-            <LogOut className="w-5 h-5" />
-            {sidebarOpen && <span className="ml-3 font-medium">Log out</span>}
-          </Button>
         </div>
       </motion.aside>
 
       {/* Main App Workspace Content */}
-      <main className="flex-1 flex flex-col h-full min-w-0 bg-background">
+      <main id="main-workspace" className="flex-1 flex flex-col h-full min-w-0 bg-transparent z-10 relative">
         {/* Navbar Header */}
-        <header className="h-16 flex items-center justify-between px-4 lg:px-8 border-b border-slate-100 bg-white/90 backdrop-blur-md shadow-sm z-30 shrink-0 sticky top-0">
+        <header className="h-16 flex items-center justify-between px-4 lg:px-8 border-b border-white/40 bg-white/40 backdrop-blur-2xl shadow-sm z-30 shrink-0 sticky top-0">
 
           {/* Left Layout Section */}
           <div className="flex items-center gap-3">
@@ -248,6 +254,7 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
 
           {/* Center/Right Layout Section */}
           <div className="flex items-center gap-4 lg:gap-6">
+
 
 
 
@@ -353,6 +360,45 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
                 </AnimatePresence>
               </div>
             )}
+
+            {/* 3. User Profile Dropdown */}
+            <div className="relative" ref={profileRef}>
+              <button 
+                onClick={() => setProfileOpen(!profileOpen)}
+                className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white font-bold shrink-0 shadow-sm hover:ring-2 hover:ring-orange-500/50 transition-all cursor-pointer"
+              >
+                {userName.charAt(0).toUpperCase()}
+              </button>
+              
+              <AnimatePresence>
+                {profileOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 15, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 15, scale: 0.95 }}
+                    transition={{ duration: 0.15, ease: "easeOut" }}
+                    className="absolute right-0 mt-2.5 w-64 rounded-2xl border border-slate-100 bg-white shadow-2xl shadow-slate-900/10 overflow-hidden text-slate-800 z-50"
+                  >
+                    <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm">
+                        {userName.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-base font-bold text-slate-900 truncate">{userName}</p>
+                        <p className="text-xs text-slate-500 capitalize">{role}</p>
+                      </div>
+                    </div>
+                    <div className="p-2">
+                      <Button variant="ghost" onClick={handleLogout} className="w-full text-red-500 hover:bg-red-50 hover:text-red-600 justify-start cursor-pointer rounded-xl">
+                        <LogOut className="w-4 h-4 mr-3" />
+                        <span className="font-semibold">Log out</span>
+                      </Button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
           </div>
         </header>
 
@@ -392,16 +438,6 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
             >
               {/* Mobile Sidebar Header Layout */}
               <div className="flex flex-col shrink-0 border-b border-slate-800 bg-[#0b1329] px-6 py-5 relative">
-
-                {/* Mobile Motivity Labs Brand Logo Image */}
-                <div className="flex flex-col items-center justify-center mb-5 w-full">
-                  <img
-                    src={motivityLogoPath}
-                    alt="Motivity Labs"
-                    className="h-12 w-auto object-contain"
-                  />
-                </div>
-
                 {/* Mobile Identity / Navigation Toggle Row */}
                 <div className="flex items-center h-10 justify-between w-full">
                   <div className="flex items-center gap-3">
@@ -433,15 +469,25 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
                       className={cn(
                         "w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all font-medium group text-sm cursor-pointer",
                         isActive
-                          ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md"
+                          ? "bg-white text-slate-900 shadow-md"
                           : "text-slate-400 hover:bg-slate-800 hover:text-white"
                       )}
                     >
-                      <link.icon className={cn("w-5 h-5 shrink-0 transition-transform group-hover:scale-110", isActive ? "text-white" : "text-slate-400 group-hover:text-white")} />
+                      <link.icon className={cn("w-5 h-5 shrink-0 transition-transform group-hover:scale-110", isActive ? "text-slate-900" : "text-slate-400 group-hover:text-white")} />
                       <span>{link.name}</span>
                     </button>
                   );
                 })}
+              </div>
+
+              {/* Mobile Footer Motivity Labs Branding */}
+              <div className="p-4 border-t border-slate-800 flex justify-center items-center mt-auto">
+                <div className="flex flex-col items-center">
+                   <span className="text-[10px] text-slate-500 font-semibold mb-2 uppercase tracking-widest">Powered By</span>
+                   <div className="bg-white rounded-full px-4 py-1.5 flex items-center justify-center shadow-sm">
+                     <img src={motivityLogoPath} alt="Motivity Labs" className="h-5 w-auto object-contain" />
+                   </div>
+                </div>
               </div>
             </motion.aside>
           </>
