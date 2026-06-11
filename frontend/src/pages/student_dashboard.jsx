@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { chatbotApi, documentApi, studentApi, materialApi } from "../api";
 import { DashboardLayout } from "../components/layout/DashboardLayout";
@@ -24,6 +25,7 @@ export default function StudentDashboard() {
   const [isChatSending, setIsChatSending] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState([]);
+  const [portalTarget, setPortalTarget] = useState(null);
 
   const [previousChats, setPreviousChats] = useState(() => {
     let userId = "default";
@@ -82,6 +84,8 @@ export default function StudentDashboard() {
     const cu = JSON.parse(stored);
     if (cu?.name) setUserName(cu.name);
     if (cu?.id) setStudentId(cu.id);
+
+    setPortalTarget(document.getElementById("main-workspace") || document.body);
   }, [navigate]);
 
   const fetchAssignedQuizzes = async () => {
@@ -847,17 +851,17 @@ export default function StudentDashboard() {
               </div>
               <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
                 {previousChats.map(chat => (
-                  <div 
-                    key={chat.id} 
+                  <div
+                    key={chat.id}
                     onClick={() => setSelectedChatId(chat.id)}
                     className={`group p-3 rounded-xl cursor-pointer flex justify-between items-center transition-all ${selectedChatId === chat.id ? 'bg-primary text-primary-foreground shadow-md' : 'hover:bg-muted bg-background border border-border/50 text-foreground'}`}
                   >
                     <div className="truncate text-sm font-medium pr-2">
                       {chat.title || "New chat"}
                     </div>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       className={`h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity ${selectedChatId === chat.id ? 'text-primary-foreground hover:bg-primary-foreground/20' : 'text-muted-foreground hover:text-red-500 hover:bg-red-500/10'}`}
                       onClick={(e) => handleDeleteChat(e, chat.id)}
                     >
@@ -867,7 +871,7 @@ export default function StudentDashboard() {
                 ))}
               </div>
             </div>
-            
+
             {/* Main Chat Area */}
             <div className="flex-1 flex flex-col bg-background/50 relative">
               <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-4 pb-32">
@@ -881,19 +885,19 @@ export default function StudentDashboard() {
                   </div>
                 ) : (
                   selectedMessages.map((msg, i) => (
-                    <ChatBubble 
-                      key={i} 
-                      message={msg.text} 
-                      isUser={msg.isUser} 
-                      sources={msg.sources} 
+                    <ChatBubble
+                      key={i}
+                      message={msg.text}
+                      isUser={msg.isUser}
+                      sources={msg.sources}
                     />
                   ))
                 )}
                 {isChatSending && (
-                   <ChatBubble message="" isUser={false} isTyping={true} />
+                  <ChatBubble message="" isUser={false} isTyping={true} />
                 )}
               </div>
-              
+
               <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent pt-10">
                 <div className="max-w-4xl mx-auto flex flex-col gap-2">
                   {attachedFiles.length > 0 && (
@@ -907,19 +911,19 @@ export default function StudentDashboard() {
                     </div>
                   )}
                   <div className="flex items-end gap-2 w-full">
-                    <ChatInput 
-                      input={chatInput} 
-                      setInput={setChatInput} 
-                      onSubmit={handleSendChat} 
-                      isSending={isChatSending} 
+                    <ChatInput
+                      input={chatInput}
+                      setInput={setChatInput}
+                      onSubmit={handleSendChat}
+                      isSending={isChatSending}
                       onAttachClick={() => document.getElementById('chat-file-upload').click()}
                     />
-                    <input 
-                      type="file" 
-                      id="chat-file-upload" 
-                      multiple 
-                      className="hidden" 
-                      onChange={handleAttachFiles} 
+                    <input
+                      type="file"
+                      id="chat-file-upload"
+                      multiple
+                      className="hidden"
+                      onChange={handleAttachFiles}
                     />
                   </div>
                 </div>
@@ -932,13 +936,12 @@ export default function StudentDashboard() {
           </div>
         )}
       </div>
-      
-      {activeItem !== "Quizzes" && isChatbotVisible && (
-        <div className={`fixed z-[9999] bg-card border border-border shadow-2xl transition-all duration-300 flex flex-col overflow-hidden ${
-          chatbotMode === "maximized" 
-            ? "inset-4 rounded-xl" 
+
+      {activeItem !== "Quizzes" && isChatbotVisible && portalTarget && createPortal((
+        <div className={`absolute z-[9999] bg-card border border-border shadow-2xl transition-all duration-300 flex flex-col overflow-hidden ${chatbotMode === "maximized"
+            ? "inset-4 rounded-xl"
             : "bottom-24 right-8 w-[450px] h-[550px] rounded-2xl"
-        }`}>
+          }`}>
           {/* Header */}
           <div className="bg-[#0F172A] text-white px-4 py-3 flex justify-between items-center shrink-0 z-10 shadow-sm">
             <div className="font-bold flex items-center gap-2">
@@ -949,7 +952,7 @@ export default function StudentDashboard() {
               <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/20 rounded-full" onClick={() => setIsChatbotVisible(false)} title="Minimize">
                 <Minus className="w-4 h-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/20 rounded-full" onClick={() => {setChatbotMode(chatbotMode === "maximized" ? "normal" : "maximized"); setIsChatHistoryOpen(true);}} title="Maximize">
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/20 rounded-full" onClick={() => { setChatbotMode(chatbotMode === "maximized" ? "normal" : "maximized"); setIsChatHistoryOpen(true); }} title="Maximize">
                 <Maximize className="w-4 h-4" />
               </Button>
               <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/20 rounded-full" onClick={() => setIsChatbotVisible(false)} title="Close">
@@ -957,7 +960,7 @@ export default function StudentDashboard() {
               </Button>
             </div>
           </div>
-          
+
           <div className="flex-1 flex overflow-hidden bg-background">
             {/* Sidebar */}
             {chatbotMode === "maximized" && (
@@ -977,15 +980,15 @@ export default function StudentDashboard() {
                     </div>
                     <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-1 custom-scrollbar">
                       {previousChats.map(chat => (
-                        <div 
-                          key={chat.id} 
+                        <div
+                          key={chat.id}
                           onClick={() => setSelectedChatId(chat.id)}
                           className={`group px-3 py-2.5 rounded-xl cursor-pointer flex justify-between items-center transition-all ${selectedChatId === chat.id ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted text-foreground'}`}
                         >
                           <span className="truncate text-sm pr-2">{chat.title || "New chat"}</span>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             className={`h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity ${selectedChatId === chat.id ? 'text-primary hover:text-red-500 hover:bg-red-500/10' : 'text-muted-foreground hover:text-red-500 hover:bg-red-500/10'}`}
                             onClick={(e) => handleDeleteChat(e, chat.id)}
                           >
@@ -1003,7 +1006,7 @@ export default function StudentDashboard() {
                       </Button>
                       <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-foreground text-background text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity font-medium">Open sidebar</div>
                     </div>
-                    
+
                     <div className="relative group">
                       <Button variant="ghost" size="icon" onClick={handleNewChat} className="w-10 h-10 rounded-xl text-orange-600 hover:bg-orange-100 transition-colors">
                         <SquarePen className="w-5 h-5" />
@@ -1016,14 +1019,14 @@ export default function StudentDashboard() {
                         <Search className="w-5 h-5" />
                       </Button>
                       <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-foreground text-background text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity font-medium">Search</div>
-                      
+
                       {activeMiniPopover === 'search' && (
                         <div className="absolute left-full top-[-50px] ml-4 w-80 bg-card border border-border shadow-2xl rounded-2xl p-3 z-50 flex flex-col animate-in fade-in zoom-in-95 duration-200">
                           <input type="text" placeholder="Search chats..." className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm mb-4 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary shadow-sm" />
                           <div className="text-xs font-semibold text-muted-foreground mb-2 px-1">Today</div>
                           <div className="flex flex-col gap-0.5 max-h-[300px] overflow-y-auto custom-scrollbar">
                             {previousChats.map(chat => (
-                              <div key={chat.id} className="text-sm truncate px-3 py-2 hover:bg-muted rounded-lg cursor-pointer flex items-center gap-3 transition-colors" onClick={() => {setSelectedChatId(chat.id); setActiveMiniPopover(null);}}>
+                              <div key={chat.id} className="text-sm truncate px-3 py-2 hover:bg-muted rounded-lg cursor-pointer flex items-center gap-3 transition-colors" onClick={() => { setSelectedChatId(chat.id); setActiveMiniPopover(null); }}>
                                 <MessageSquare className="w-4 h-4 text-muted-foreground shrink-0" />
                                 {chat.title}
                               </div>
@@ -1044,7 +1047,7 @@ export default function StudentDashboard() {
                           <div className="text-[13px] font-bold mb-2 px-3 pt-2 text-foreground tracking-wide">Recents</div>
                           <div className="flex flex-col gap-0.5">
                             {previousChats.map(chat => (
-                              <div key={chat.id} className="text-sm truncate px-3 py-2.5 hover:bg-muted rounded-lg cursor-pointer transition-colors" onClick={() => {setSelectedChatId(chat.id); setActiveMiniPopover(null);}}>
+                              <div key={chat.id} className="text-sm truncate px-3 py-2.5 hover:bg-muted rounded-lg cursor-pointer transition-colors" onClick={() => { setSelectedChatId(chat.id); setActiveMiniPopover(null); }}>
                                 {chat.title}
                               </div>
                             ))}
@@ -1067,19 +1070,19 @@ export default function StudentDashboard() {
                   </div>
                 ) : (
                   selectedMessages.map((msg, i) => (
-                    <ChatBubble 
-                      key={i} 
-                      message={msg.text} 
-                      isUser={msg.isUser} 
-                      sources={msg.sources} 
+                    <ChatBubble
+                      key={i}
+                      message={msg.text}
+                      isUser={msg.isUser}
+                      sources={msg.sources}
                     />
                   ))
                 )}
                 {isChatSending && (
-                   <ChatBubble message="" isUser={false} isTyping={true} />
+                  <ChatBubble message="" isUser={false} isTyping={true} />
                 )}
               </div>
-              
+
               {/* Input Area */}
               <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent pt-10 pointer-events-none">
                 <div className="max-w-4xl mx-auto flex flex-col gap-2 pointer-events-auto bg-background/80 backdrop-blur-sm rounded-3xl p-1 shadow-sm border border-border">
@@ -1094,19 +1097,19 @@ export default function StudentDashboard() {
                     </div>
                   )}
                   <div className="flex items-end gap-2 w-full">
-                    <ChatInput 
-                      input={chatInput} 
-                      setInput={setChatInput} 
-                      onSubmit={handleSendChat} 
-                      isSending={isChatSending} 
+                    <ChatInput
+                      input={chatInput}
+                      setInput={setChatInput}
+                      onSubmit={handleSendChat}
+                      isSending={isChatSending}
                       onAttachClick={() => document.getElementById('popup-chat-file-upload').click()}
                     />
-                    <input 
-                      type="file" 
-                      id="popup-chat-file-upload" 
-                      multiple 
-                      className="hidden" 
-                      onChange={handleAttachFiles} 
+                    <input
+                      type="file"
+                      id="popup-chat-file-upload"
+                      multiple
+                      className="hidden"
+                      onChange={handleAttachFiles}
                     />
                   </div>
                 </div>
@@ -1114,7 +1117,7 @@ export default function StudentDashboard() {
             </div>
           </div>
         </div>
-      )}
+      ), portalTarget)}
 
       {activeItem !== "Quizzes" && (
         <CopilotFloatingButton onClick={() => { setIsChatbotVisible(!isChatbotVisible); setChatbotMode("normal"); }} />

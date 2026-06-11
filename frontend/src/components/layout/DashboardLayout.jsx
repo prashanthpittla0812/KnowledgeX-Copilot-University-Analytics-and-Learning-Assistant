@@ -135,13 +135,20 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
   const motivityLogoPath = "/motivity.webp";
 
   return (
-    <div className="flex h-screen w-full bg-background overflow-hidden selection:bg-primary/20 selection:text-primary transition-colors duration-300">
+    <div className="relative flex h-screen w-full overflow-hidden bg-[#fdfaf6] selection:bg-orange-500/20 selection:text-orange-900 transition-colors duration-300">
+
+      {/* Decorative Mesh Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] max-w-[600px] max-h-[600px] rounded-full bg-orange-400/20 blur-[120px]" />
+        <div className="absolute bottom-[10%] right-[20%] w-[40vw] h-[40vw] max-w-[500px] max-h-[500px] rounded-full bg-amber-400/20 blur-[100px]" />
+        <div className="absolute top-[40%] left-[30%] w-[30vw] h-[30vw] max-w-[400px] max-h-[400px] rounded-full bg-blue-400/10 blur-[100px]" />
+      </div>
 
       {/* Sidebar Desktop */}
       <motion.aside
         initial={false}
         animate={{ width: sidebarOpen ? 280 : 80 }}
-        className="hidden md:flex flex-col h-full border-r border-slate-800 bg-sidebar shadow-lg z-20 text-slate-300 animate-none"
+        className="hidden md:flex flex-col h-full border-r border-white/10 bg-gradient-to-b from-slate-900 via-[#0F172A] to-[#0B1329] shadow-[inset_0_1px_0_rgba(255,255,255,0.1),_10px_0_30px_rgba(0,0,0,0.5)] z-20 text-slate-300 animate-none relative backdrop-blur-xl"
       >
         {/* Brand Container */}
         <div className="flex flex-col shrink-0 border-b border-slate-800 bg-[#0b1329] px-6 py-5 relative group">
@@ -167,19 +174,20 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
                 KnowledgeX
               </motion.span>
             )}
-
-            {/* Sidebar Toggle Arrow Button */}
-            {sidebarOpen && (
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="p-1.5 rounded-md bg-slate-300 hover:bg-white text-slate-900 opacity-0 group-hover:opacity-100 transition-all cursor-pointer absolute right-3 top-4 shadow-sm"
-                title="Collapse Sidebar"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-            )}
           </div>
         </div>
+
+        {/* Sidebar Toggle Button (Permanently visible, aligned with MENU) */}
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className={cn(
+            "absolute top-[80px] p-1.5 rounded-md bg-slate-300 hover:bg-white text-slate-900 transition-all cursor-pointer shadow-sm z-50",
+            sidebarOpen ? "right-3" : "left-[26px]"
+          )}
+          title={sidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+        >
+          {sidebarOpen ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+        </button>
 
         {/* Desktop Navigation Link Items */}
         <div className="flex-1 overflow-y-auto py-6 px-3 space-y-1 custom-scrollbar">
@@ -195,12 +203,12 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all font-medium text-sm group cursor-pointer",
                   isActive
-                    ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-orange-500/20"
-                    : "text-slate-400 hover:bg-slate-800/60 hover:text-white"
+                    ? "bg-white/95 text-slate-900 shadow-[0_4px_12px_rgba(255,255,255,0.1),_inset_0_1px_0_rgba(255,255,255,1)]"
+                    : "text-slate-400 hover:bg-white/10 hover:text-white shadow-[inset_0_1px_0_rgba(255,255,255,0)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
                 )}
                 title={!sidebarOpen ? link.name : undefined}
               >
-                <link.icon className={cn("w-5 h-5 shrink-0 transition-transform group-hover:scale-110", isActive ? "text-white" : "text-slate-400 group-hover:text-white")} />
+                <link.icon className={cn("w-5 h-5 shrink-0 transition-transform group-hover:scale-110", isActive ? "text-slate-900" : "text-slate-400 group-hover:text-white")} />
                 {sidebarOpen && <span className="truncate">{link.name}</span>}
               </button>
             );
@@ -208,7 +216,7 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
         </div>
 
         {/* Footer Motivity Labs Branding */}
-        <div className="p-4 border-t border-slate-800 flex justify-center items-center mt-auto">
+        <div className="p-4 border-t border-white/5 flex justify-center items-center mt-auto bg-black/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
           {sidebarOpen ? (
             <div className="flex flex-col items-center">
                <span className="text-[10px] text-slate-500 font-semibold mb-2 uppercase tracking-widest">Powered By</span>
@@ -227,9 +235,9 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
       </motion.aside>
 
       {/* Main App Workspace Content */}
-      <main className="flex-1 flex flex-col h-full min-w-0 bg-background">
+      <main id="main-workspace" className="flex-1 flex flex-col h-full min-w-0 bg-transparent z-10 relative">
         {/* Navbar Header */}
-        <header className="h-16 flex items-center justify-between px-4 lg:px-8 border-b border-slate-100 bg-white/90 backdrop-blur-md shadow-sm z-30 shrink-0 sticky top-0">
+        <header className="h-16 flex items-center justify-between px-4 lg:px-8 border-b border-white/40 bg-white/40 backdrop-blur-2xl shadow-sm z-30 shrink-0 sticky top-0">
 
           {/* Left Layout Section */}
           <div className="flex items-center gap-3">
@@ -459,11 +467,11 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
                       className={cn(
                         "w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all font-medium group text-sm cursor-pointer",
                         isActive
-                          ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md"
+                          ? "bg-white text-slate-900 shadow-md"
                           : "text-slate-400 hover:bg-slate-800 hover:text-white"
                       )}
                     >
-                      <link.icon className={cn("w-5 h-5 shrink-0 transition-transform group-hover:scale-110", isActive ? "text-white" : "text-slate-400 group-hover:text-white")} />
+                      <link.icon className={cn("w-5 h-5 shrink-0 transition-transform group-hover:scale-110", isActive ? "text-slate-900" : "text-slate-400 group-hover:text-white")} />
                       <span>{link.name}</span>
                     </button>
                   );

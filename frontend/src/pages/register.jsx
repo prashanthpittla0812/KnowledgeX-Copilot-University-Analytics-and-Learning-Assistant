@@ -156,7 +156,7 @@ export default function Register() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="absolute right-[0%] lg:right-[5%] xl:right-[0%] top-1/2 -translate-y-[45%] w-[350px] lg:w-[450px] pointer-events-none opacity-95 hidden md:block mix-blend-multiply z-0"
+          className="absolute right-[-10%] lg:right-[-5%] xl:right-[-12%] top-1/2 -translate-y-[45%] w-[350px] lg:w-[450px] pointer-events-none opacity-95 hidden md:block z-0"
         >
           <img src={illustrationPath} alt="Student with AI" className="w-full h-auto object-contain drop-shadow-2xl" />
         </motion.div>
