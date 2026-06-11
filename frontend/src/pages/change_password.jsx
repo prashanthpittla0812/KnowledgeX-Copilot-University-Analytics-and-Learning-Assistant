@@ -101,41 +101,41 @@ export default function ChangePassword() {
             Security Verification
           </div>
           <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">Change Password</h1>
-          <p className="text-gray-500 dark:text-gray-400 font-medium mt-2">Update your temporary credentials to continue</p>
+          <p className="text-gray-500 font-medium mt-2">Update your temporary credentials to continue</p>
         </div>
 
-        <div className="rounded-[2rem] border border-white/20 dark:border-white/10 bg-white/70 dark:bg-slate-900/70 p-6 sm:p-10 shadow-2xl shadow-black/5 backdrop-blur-xl">
+        <div className="rounded-[2rem] border border-white/20 bg-white/70 p-6 sm:p-10 shadow-2xl shadow-black/5 backdrop-blur-xl">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Temporary Password</label>
+              <label className="text-sm font-bold text-gray-700">Temporary Password</label>
               <Input 
                 type="password" 
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 placeholder="Enter temporary password"
-                className="h-12 bg-white/50 dark:bg-slate-950/50 border-gray-200 dark:border-slate-800 focus:bg-white dark:focus:bg-slate-900"
+                className="h-12 bg-white/50 border-gray-200 focus:bg-white"
               />
             </div>
             
             <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-700 dark:text-gray-300">New Password</label>
+              <label className="text-sm font-bold text-gray-700">New Password</label>
               <Input 
                 type="password" 
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Minimum 6 characters"
-                className="h-12 bg-white/50 dark:bg-slate-950/50 border-gray-200 dark:border-slate-800 focus:bg-white dark:focus:bg-slate-900"
+                className="h-12 bg-white/50 border-gray-200 focus:bg-white"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Confirm New Password</label>
+              <label className="text-sm font-bold text-gray-700">Confirm New Password</label>
               <Input 
                 type="password" 
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Must match new password"
-                className="h-12 bg-white/50 dark:bg-slate-950/50 border-gray-200 dark:border-slate-800 focus:bg-white dark:focus:bg-slate-900"
+                className="h-12 bg-white/50 border-gray-200 focus:bg-white"
               />
             </div>
             

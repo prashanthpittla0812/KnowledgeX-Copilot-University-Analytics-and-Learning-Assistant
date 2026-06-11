@@ -24,9 +24,8 @@ from app.schemas.admin_schema import (
 
 router = APIRouter(prefix="/admin", tags=["Admin"], dependencies=[Depends(get_current_admin)])
 
-def generate_temp_password(length=8):
-    chars = string.ascii_letters + string.digits
-    return "Faculty@" + "".join(random.choice(chars) for _ in range(length))
+def generate_temp_password():
+    return "Faculty@123"
 
 def log_audit(db: AsyncSession, action: str, admin_id: int, target_id: Optional[int] = None):
     log = AuditLog(
