@@ -69,6 +69,7 @@ async def student_dashboard(
         "documents_uploaded": doc_count or 0,
         "quizzes_taken": (quiz_count or 0) + (attempt_count or 0),
         "average_quiz_score": avg_score,
+        "study_streak": current_user.current_streak,
     }
 
 
@@ -161,6 +162,17 @@ async def faculty_get_results(
     service = TeacherResultService(db)
     result = await service.get_results(quiz_id)
     return ResultResponse(**result)
+
+
+@faculty_router.get("/quiz/{quiz_id}")
+async def faculty_get_quiz(
+    quiz_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_faculty),
+):
+    service = TeacherQuizService(db)
+    result = await service.get_quiz(quiz_id)
+    return result
 
 
 @admin_router.get("/dashboard")

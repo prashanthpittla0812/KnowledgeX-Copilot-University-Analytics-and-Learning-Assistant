@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "../components/layout/DashboardLayout";
 import { facultyMenuItems } from "./faculty_menu";
 import { facultyApi } from "../api";
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line
 } from "recharts";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
@@ -34,12 +34,14 @@ export default function FacultyDashboard() {
   const [quizTopic, setQuizTopic] = useState("");
   const [quizType, setQuizType] = useState("MCQ");
   const [quizDifficulty, setQuizDifficulty] = useState("medium");
-  const [quizCount, setQuizCount] = useState(25);
+  const [quizCount, setQuizCount] = useState(0);
 
   // Quiz Results State
   const [quizzes, setQuizzes] = useState([]);
   const [selectedQuiz, setSelectedQuiz] = useState(null);
   const [quizPerformance, setQuizPerformance] = useState(null);
+  const [quizDetails, setQuizDetails] = useState(null);
+  const [activeQuizTab, setActiveQuizTab] = useState("performance");
 
   // Analyze Results State
   const [learningGaps, setLearningGaps] = useState(null);
@@ -76,11 +78,13 @@ export default function FacultyDashboard() {
   const fetchQuizPerformance = async (quizId) => {
     try {
       setIsLoading(true);
-      const [res, gapsRes] = await Promise.all([
+      const [res, gapsRes, detailsRes] = await Promise.all([
         facultyApi.getQuizResults(quizId),
-        facultyApi.getLearningGaps(quizId).catch(() => ({ data: null }))
+        facultyApi.getLearningGaps(quizId).catch(() => ({ data: null })),
+        facultyApi.getQuiz(quizId).catch(() => ({ data: null }))
       ]);
       setQuizPerformance(res.data);
+      if (detailsRes && detailsRes.data) setQuizDetails(detailsRes.data);
       if (gapsRes && gapsRes.data) setSelectedQuizGaps(gapsRes.data);
       setSelectedQuiz(quizId);
     } catch (e) {
@@ -158,16 +162,16 @@ export default function FacultyDashboard() {
         num_questions: quizCount
       });
       alert("Quiz generated!");
-      
+
       // Reset form fields
       setQuizTopic("");
       setQuizType("MCQ");
       setQuizDifficulty("medium");
       setQuizCount(25);
-      
+
       // Clear uploaded documents history
       setUploadedDocs([]);
-      
+
       fetchQuizzes();
     } catch (e) {
       console.error(e);
@@ -192,7 +196,7 @@ export default function FacultyDashboard() {
       handleLogout={handleLogout}
     >
       <div className={`h-full w-full flex flex-col ${activeItem === 'Chatbot' ? 'overflow-hidden' : ''}`}>
-        
+
         {/* OVERVIEW DASHBOARD */}
         {activeItem === "Dashboard" ? (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -200,7 +204,7 @@ export default function FacultyDashboard() {
               <h1 className="text-3xl font-black text-foreground tracking-tight">Overview</h1>
               <p className="text-muted-foreground mt-1">Here's your faculty summary for today.</p>
             </div>
-            
+
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               <StatCard title="Active Courses" value="4" icon={BookOpen} description="CS101, PHY204..." />
               <StatCard title="Total Students" value="120" icon={Users} trend="↑ 5" trendColor="text-emerald-500" description="enrolled recently" />
@@ -231,7 +235,7 @@ export default function FacultyDashboard() {
                         <h4 className="font-bold text-sm text-muted-foreground uppercase tracking-wider mb-2">Upload Knowledge Base</h4>
                         <div>
                           <label className="text-sm font-semibold mb-1 block">Topic Name</label>
-                          <input value={uploadTopic} onChange={e=>setUploadTopic(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="e.g., Computer Networks Ch 1" />
+                          <input value={uploadTopic} onChange={e => setUploadTopic(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="e.g., Computer Networks Ch 1" />
                         </div>
                         <div>
                           <label className="text-sm font-semibold mb-1 block">Lecture PDF</label>
@@ -241,22 +245,22 @@ export default function FacultyDashboard() {
                               Uploading & Processing Document...
                             </div>
                           ) : (
-                            <input 
+                            <input
                               ref={pdfInputRef}
-                              type="file" 
+                              type="file"
                               onChange={(e) => {
                                 const file = e.target.files[0];
                                 if (file) {
                                   setUploadFile(file);
                                   handleUploadDocument(file);
                                 }
-                              }} 
-                              accept=".pdf" 
-                              className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm file:mr-4 file:rounded-full file:border-0 file:bg-primary/10 file:text-primary file:font-semibold hover:file:bg-primary/20 cursor-pointer" 
+                              }}
+                              accept=".pdf"
+                              className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm file:mr-4 file:rounded-full file:border-0 file:bg-primary/10 file:text-primary file:font-semibold hover:file:bg-primary/20 cursor-pointer"
                             />
                           )}
                         </div>
-                        
+
                         {uploadedDocs.length > 0 && (
                           <div className="mt-4 p-4 rounded-xl border border-emerald-100 bg-emerald-50/50 animate-in fade-in slide-in-from-top-2">
                             <h5 className="text-xs font-bold text-emerald-800 uppercase mb-3">Successfully Uploaded</h5>
@@ -288,19 +292,19 @@ export default function FacultyDashboard() {
                         <h4 className="font-bold text-sm text-muted-foreground uppercase tracking-wider mb-2">Generate Assessment</h4>
                         <div>
                           <label className="text-sm font-semibold mb-1 block">Assessment Topic</label>
-                          <input value={quizTopic} onChange={e=>setQuizTopic(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="e.g., OSI Model" />
+                          <input value={quizTopic} onChange={e => setQuizTopic(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="e.g., OSI Model" />
                         </div>
                         <div className="grid grid-cols-3 gap-4">
                           <div>
                             <label className="text-sm font-semibold mb-1 block">Type</label>
-                            <select value={quizType} onChange={e=>setQuizType(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none">
+                            <select value={quizType} onChange={e => setQuizType(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none">
                               <option value="MCQ">MCQ</option>
                               <option value="Theory">Theory</option>
                             </select>
                           </div>
                           <div>
                             <label className="text-sm font-semibold mb-1 block">Difficulty</label>
-                            <select value={quizDifficulty} onChange={e=>setQuizDifficulty(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none">
+                            <select value={quizDifficulty} onChange={e => setQuizDifficulty(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none">
                               <option value="easy">Easy</option>
                               <option value="medium">Medium</option>
                               <option value="hard">Hard</option>
@@ -308,7 +312,7 @@ export default function FacultyDashboard() {
                           </div>
                           <div>
                             <label className="text-sm font-semibold mb-1 block">Questions</label>
-                            <input type="number" min="1" max="50" value={quizCount} onChange={e=>setQuizCount(Number(e.target.value))} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none transition-all" />
+                            <input type="number" min="1" max="50" value={quizCount} onChange={e => setQuizCount(Number(e.target.value))} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none transition-all" />
                           </div>
                         </div>
                         <Button onClick={handleGenerateQuiz} disabled={isGenerating} className="w-full h-11">
@@ -345,54 +349,96 @@ export default function FacultyDashboard() {
             ) : (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
                 <Button variant="ghost" onClick={() => setSelectedQuiz(null)} className="pl-0 hover:bg-transparent hover:text-primary">← Back to Quizzes</Button>
-                <h3 className="text-2xl font-bold">Quiz Performance</h3>
-                {quizPerformance && (
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <StatCard title="Avg Score" value={`${quizPerformance.summary?.average_score?.toFixed(1) || 0}%`} icon={BarChart} />
-                    <StatCard title="High Score" value={`${quizPerformance.summary?.highest_score || 0}%`} icon={CheckCircle} trendColor="text-emerald-500" />
-                    <StatCard title="Low Score" value={`${quizPerformance.summary?.lowest_score || 0}%`} icon={AlertCircle} trendColor="text-red-500" />
-                    <StatCard title="Total Attempts" value={quizPerformance.summary?.total_attempts || 0} icon={Users} />
+                
+                <div className="flex border-b border-border/50">
+                  <button 
+                    className={`py-3 px-6 font-semibold border-b-2 transition-colors ${activeQuizTab === "performance" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                    onClick={() => setActiveQuizTab("performance")}
+                  >
+                    Quiz Performance
+                  </button>
+                  <button 
+                    className={`py-3 px-6 font-semibold border-b-2 transition-colors ${activeQuizTab === "details" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                    onClick={() => setActiveQuizTab("details")}
+                  >
+                    View Quiz
+                  </button>
+                </div>
+
+                {activeQuizTab === "performance" ? (
+                  <>
+                    {quizPerformance && (
+                      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <StatCard title="Avg Score" value={`${quizPerformance.summary?.average_score?.toFixed(1) || 0}%`} icon={BarChart} />
+                        <StatCard title="High Score" value={`${quizPerformance.summary?.highest_score || 0}%`} icon={CheckCircle} trendColor="text-emerald-500" />
+                        <StatCard title="Low Score" value={`${quizPerformance.summary?.lowest_score || 0}%`} icon={AlertCircle} trendColor="text-red-500" />
+                        <StatCard title="Total Attempts" value={quizPerformance.summary?.total_attempts || 0} icon={Users} />
+                      </div>
+                    )}
+                    {quizPerformance?.student_results?.length > 0 && (
+                      <Card className="glass-card mt-8">
+                        <table className="w-full text-left text-sm">
+                          <thead className="bg-muted/50 border-b border-border">
+                            <tr>
+                              <th className="p-4 font-semibold text-muted-foreground">Student Name</th>
+                              <th className="p-4 font-semibold text-muted-foreground">Score</th>
+                              <th className="p-4 font-semibold text-muted-foreground">Date</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {quizPerformance.student_results.map((r, i) => (
+                              <tr key={i} className="border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors">
+                                <td className="p-4 font-medium">{r.student_name}</td>
+                                <td className="p-4 font-bold text-primary">{r.percentage}%</td>
+                                <td className="p-4 text-muted-foreground">{new Date(r.submitted_at).toLocaleDateString()}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </Card>
+                    )}
+                    
+                    {selectedQuizGaps && selectedQuizGaps.ai_recommendations && (
+                      <Card className="glass-card mt-8 bg-primary/5 border-primary/20">
+                        <CardHeader>
+                          <CardTitle className="text-xl flex items-center gap-2 text-primary">
+                            <AlertCircle className="w-5 h-5" />
+                            AI Recommendations & Learning Gaps
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="prose prose-sm max-w-none">
+                            <p className="whitespace-pre-wrap leading-relaxed">{selectedQuizGaps.ai_recommendations}</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </>
+                ) : (
+                  <div className="space-y-6">
+                    {quizDetails?.questions?.map((q, idx) => (
+                      <Card key={idx} className="glass-card">
+                        <CardContent className="p-6">
+                          <h4 className="font-semibold text-lg mb-4">{idx + 1}. {q.question}</h4>
+                          {q.options && q.options.length > 0 ? (
+                            <ul className="space-y-2 mb-4">
+                              {q.options.map((opt, oIdx) => (
+                                <li key={oIdx} className={`p-3 rounded-lg border ${opt.trim().toLowerCase() === q.answer?.trim().toLowerCase() ? "bg-emerald-50 border-emerald-200 font-semibold text-emerald-800" : "bg-background border-border text-muted-foreground"}`}>
+                                  {opt}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <div className="p-4 rounded-lg bg-emerald-50 border border-emerald-200 mb-4">
+                              <span className="font-semibold text-emerald-800">Answer: </span>
+                              <span className="text-emerald-700">{q.answer}</span>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                 )}
-                {quizPerformance?.student_results?.length > 0 && (
-                  <Card className="glass-card mt-8">
-                    <table className="w-full text-left text-sm">
-                      <thead className="bg-muted/50 border-b border-border">
-                        <tr>
-                          <th className="p-4 font-semibold text-muted-foreground">Student Name</th>
-                          <th className="p-4 font-semibold text-muted-foreground">Score</th>
-                          <th className="p-4 font-semibold text-muted-foreground">Date</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {quizPerformance.student_results.map((r, i) => (
-                          <tr key={i} className="border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors">
-                            <td className="p-4 font-medium">{r.student_name}</td>
-                            <td className="p-4 font-bold text-primary">{r.percentage}%</td>
-                            <td className="p-4 text-muted-foreground">{new Date(r.submitted_at).toLocaleDateString()}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </Card>
-                )}
-                
-                {selectedQuizGaps && selectedQuizGaps.ai_recommendations && (
-                  <Card className="glass-card mt-8 bg-primary/5 border-primary/20">
-                    <CardHeader>
-                      <CardTitle className="text-xl flex items-center gap-2 text-primary">
-                        <AlertCircle className="w-5 h-5" />
-                        AI Recommendations & Learning Gaps
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="prose prose-sm max-w-none">
-                        <p className="whitespace-pre-wrap leading-relaxed">{selectedQuizGaps.ai_recommendations}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-                
               </div>
             )}
           </div>
@@ -411,13 +457,13 @@ export default function FacultyDashboard() {
                 }}
                 className="rounded-xl border border-input bg-background px-4 py-2 text-sm focus:ring-1 focus:ring-primary outline-none max-w-xs"
               >
-                  <option value="" >All Quizzes</option>
-                  {quizzes.map(q => (
-                    <option key={q.id} value={q.id}>{q.topic_name} - {new Date(q.created_at).toLocaleDateString()}</option>
-                  ))}
+                <option value="" >All Quizzes</option>
+                {quizzes.map(q => (
+                  <option key={q.id} value={q.id}>{q.topic_name} - {new Date(q.created_at).toLocaleDateString()}</option>
+                ))}
               </select>
             </div>
-            
+
             {isLoading ? <p className="text-muted-foreground">Loading Analytics...</p> : learningGaps ? (
               <div className="grid lg:grid-cols-2 gap-8">
                 <AnalyticsCard title="Student Performance" className="min-h-[400px]">
@@ -433,15 +479,15 @@ export default function FacultyDashboard() {
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={learningGaps.student_performance} margin={{ bottom: 30, right: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
-                        <XAxis dataKey="student_name" axisLine={false} tickLine={false} tick={{fontSize: 11, fill: 'var(--muted-foreground)', angle: -45, textAnchor: 'end'}} interval={0} height={60} />
-                        <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: 'var(--muted-foreground)'}} domain={[0, 100]} />
-                        <Tooltip cursor={{fill: 'var(--muted)', opacity: 0.4}} contentStyle={{backgroundColor: 'var(--background)', borderRadius: '12px', border: '1px solid var(--border)'}} />
+                        <XAxis dataKey="student_name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--muted-foreground)', angle: -45, textAnchor: 'end' }} interval={0} height={60} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }} domain={[0, 100]} />
+                        <Tooltip cursor={{ fill: 'var(--muted)', opacity: 0.4 }} contentStyle={{ backgroundColor: 'var(--background)', borderRadius: '12px', border: '1px solid var(--border)' }} />
                         <Bar dataKey="average_score" fill="var(--primary)" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </AnalyticsCard>
-                
+
                 <div className="space-y-6">
                   <AnalyticsCard title="Weak Topics" className="border-red-500/20 bg-red-500/5">
                     <div className="space-y-3 mt-4">

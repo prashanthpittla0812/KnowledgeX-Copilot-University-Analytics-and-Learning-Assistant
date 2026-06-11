@@ -104,16 +104,21 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
     }
   };
 
-  const deleteNotification = (id, e) => {
+  const deleteNotification = async (id, e) => {
     e.stopPropagation(); // Stop parent modal trigger propagation toggles
     setNotifications(prev => prev.filter(n => n.id !== id));
+    try {
+      await materialApi.deleteNotification(id);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const studentLinks = [
     { name: "Dashboard", icon: LayoutDashboard },
     { name: "Quizzes", icon: CheckCircle },
     { name: "Learning Resources", icon: BookOpen },
-    { name: "Study Plan", icon: BookOpen },
+    { name: "Study Plan", icon: Calendar },
     { name: "Recommendations", icon: Lightbulb },
     { name: "Analytics", icon: PieChart },
   ];

@@ -320,6 +320,27 @@ async def mark_read(
 
     await db.commit()
     return {"message": "Read"}
+
+@router.delete("/notifications/{notification_id}")
+async def delete_notification(
+    notification_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    res = await db.execute(
+        select(Notification).where(
+            Notification.id == notification_id,
+            Notification.user_id == current_user.id
+        )
+    )
+    notification = res.scalar_one_or_none()
+
+    if not notification:
+        raise HTTPException(404, "Notification not found")
+
+    await db.delete(notification)
+    await db.commit()
+    return {"message": "Deleted"}
 @router.get("/student/recent")
 async def get_recent_materials(
     db: AsyncSession = Depends(get_db),

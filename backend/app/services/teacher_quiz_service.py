@@ -155,5 +155,29 @@ class TeacherQuizService:
             "questions": questions,
         }
 
+    async def get_quiz(self, quiz_id: int) -> dict:
+        from sqlalchemy import select
+        result = await self.db.execute(
+            select(TeacherQuizQuestion).where(TeacherQuizQuestion.quiz_id == quiz_id)
+        )
+        questions = result.scalars().all()
+        
+        formatted = []
+        for q in questions:
+            options = q.options
+            if isinstance(options, str):
+                try:
+                    options = json.loads(options)
+                except (json.JSONDecodeError, TypeError):
+                    options = []
+            formatted.append({
+                "id": q.id,
+                "question": q.question,
+                "options": options,
+                "answer": q.answer,
+            })
+            
+        return {"quiz_id": quiz_id, "questions": formatted}
+
 
 
