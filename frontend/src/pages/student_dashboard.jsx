@@ -487,7 +487,7 @@ export default function StudentDashboard() {
                             </div>
                             <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
                               <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-1">Correct Answer</p>
-                              <p className="font-medium text-emerald-700 dark:text-emerald-400">
+                              <p className="font-medium text-emerald-700">
                                 {res.correct_answer}
                               </p>
                             </div>
@@ -720,7 +720,7 @@ export default function StudentDashboard() {
                     <ul className="space-y-3">
                       {recommendations.weak_topics?.length > 0 ? (
                         recommendations.weak_topics.map((topic, i) => (
-                          <li key={i} className="flex items-center gap-3 p-3 rounded-lg bg-red-500/5 border border-red-500/20 text-red-600 dark:text-red-400 font-medium">
+                          <li key={i} className="flex items-center gap-3 p-3 rounded-lg bg-red-500/5 border border-red-500/20 text-red-600 font-medium">
                             <Target className="w-5 h-5" />
                             {topic}
                           </li>

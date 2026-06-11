@@ -316,7 +316,7 @@ export default function FacultyDashboard() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="prose prose-sm dark:prose-invert max-w-none">
+                      <div className="prose prose-sm max-w-none">
                         <p className="whitespace-pre-wrap leading-relaxed">{selectedQuizGaps.ai_recommendations}</p>
                       </div>
                     </CardContent>

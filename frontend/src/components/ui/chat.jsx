@@ -19,7 +19,7 @@ export function ChatBubble({ message, sources, isUser, isTyping = false }) {
           ? "bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-md rounded-br-sm" 
           : "bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] shadow-sm rounded-bl-sm"
       )}>
-        <div className={cn("prose prose-sm max-w-none break-words font-medium", isUser ? "text-white" : "dark:prose-invert text-[var(--foreground)]")}>
+        <div className={cn("prose prose-sm max-w-none break-words font-medium", isUser ? "text-white" : "text-[var(--foreground)]")}>
           {isTyping ? (
             <div className="flex gap-1 py-1.5 items-center">
               <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary [animation-delay:-0.3s]"></span>
