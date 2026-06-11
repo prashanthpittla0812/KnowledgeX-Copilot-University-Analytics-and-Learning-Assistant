@@ -44,6 +44,7 @@ export default function StudentDashboard() {
   const [activeMiniPopover, setActiveMiniPopover] = useState(null);
   const [isChatbotVisible, setIsChatbotVisible] = useState(false);
   const [chatbotMode, setChatbotMode] = useState("minimized");
+  const [chatHistoryCollapsed, setChatHistoryCollapsed] = useState(false);
   // Quiz States
   const [quizTopic, setQuizTopic] = useState("");
   const [quizDifficulty, setQuizDifficulty] = useState("medium");
