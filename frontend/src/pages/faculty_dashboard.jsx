@@ -30,6 +30,7 @@ export default function FacultyDashboard() {
   // Conduct Quizzes State
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadTopic, setUploadTopic] = useState("");
+  const [uploadedDocs, setUploadedDocs] = useState([]);
   const [quizTopic, setQuizTopic] = useState("");
   const [quizType, setQuizType] = useState("MCQ");
   const [quizDifficulty, setQuizDifficulty] = useState("medium");
@@ -125,16 +126,18 @@ export default function FacultyDashboard() {
     }
   }, [activeItem]);
 
-  const handleUploadDocument = async () => {
-    if (!uploadFile || !uploadTopic) return alert("Provide file and topic");
+  const handleUploadDocument = async (file = null) => {
+    const fileToUpload = file || uploadFile;
+    if (!fileToUpload || !uploadTopic) return alert("Provide file and topic");
     setIsUploading(true);
     try {
       const formData = new FormData();
-      formData.append("file", uploadFile);
+      formData.append("file", fileToUpload);
       await facultyApi.uploadDocument(formData, uploadTopic);
-      alert("Document uploaded!");
+      setUploadedDocs(prev => [...prev, { name: fileToUpload.name, topic: uploadTopic }]);
       setUploadFile(null);
       setUploadTopic("");
+      if (pdfInputRef.current) pdfInputRef.current.value = "";
     } catch (e) {
       console.error(e);
       alert("Failed upload.");
@@ -155,7 +158,16 @@ export default function FacultyDashboard() {
         num_questions: quizCount
       });
       alert("Quiz generated!");
+      
+      // Reset form fields
       setQuizTopic("");
+      setQuizType("MCQ");
+      setQuizDifficulty("medium");
+      setQuizCount(25);
+      
+      // Clear uploaded documents history
+      setUploadedDocs([]);
+      
       fetchQuizzes();
     } catch (e) {
       console.error(e);
@@ -211,45 +223,103 @@ export default function FacultyDashboard() {
                   </div>
                 </div>
 
-                <div className="grid lg:grid-cols-2 gap-8 mb-8">
-                  <AnalyticsCard title="1. Upload Knowledge Base">
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-semibold mb-1 block">Topic Name</label>
-                        <input value={uploadTopic} onChange={e=>setUploadTopic(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="e.g., Computer Networks Ch 1" />
+                <div className="mb-8 max-w-2xl mx-auto">
+                  <AnalyticsCard title="Generate Assessments">
+                    <div className="space-y-10">
+                      {/* Step 1: Upload */}
+                      <div className="space-y-4">
+                        <h4 className="font-bold text-sm text-muted-foreground uppercase tracking-wider mb-2">Upload Knowledge Base</h4>
+                        <div>
+                          <label className="text-sm font-semibold mb-1 block">Topic Name</label>
+                          <input value={uploadTopic} onChange={e=>setUploadTopic(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="e.g., Computer Networks Ch 1" />
+                        </div>
+                        <div>
+                          <label className="text-sm font-semibold mb-1 block">Lecture PDF</label>
+                          {isUploading ? (
+                            <div className="w-full rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary font-semibold flex items-center gap-2">
+                              <span className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
+                              Uploading & Processing Document...
+                            </div>
+                          ) : (
+                            <input 
+                              ref={pdfInputRef}
+                              type="file" 
+                              onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                  setUploadFile(file);
+                                  handleUploadDocument(file);
+                                }
+                              }} 
+                              accept=".pdf" 
+                              className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm file:mr-4 file:rounded-full file:border-0 file:bg-primary/10 file:text-primary file:font-semibold hover:file:bg-primary/20 cursor-pointer" 
+                            />
+                          )}
+                        </div>
+                        
+                        {uploadedDocs.length > 0 && (
+                          <div className="mt-4 p-4 rounded-xl border border-emerald-100 bg-emerald-50/50 animate-in fade-in slide-in-from-top-2">
+                            <h5 className="text-xs font-bold text-emerald-800 uppercase mb-3">Successfully Uploaded</h5>
+                            <div className="space-y-2">
+                              {uploadedDocs.map((doc, idx) => (
+                                <div key={idx} className="flex justify-between items-center text-sm p-3 bg-white rounded-lg border border-emerald-100 shadow-sm">
+                                  <div className="flex items-center gap-2 text-emerald-700">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                                    <span className="font-semibold">{doc.topic}</span>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-emerald-600 truncate max-w-[150px] text-xs" title={doc.name}>{doc.name}</span>
+                                    <button onClick={() => setUploadedDocs(prev => prev.filter((_, i) => i !== idx))} className="text-emerald-400 hover:text-red-500 transition-colors p-1" title="Remove">
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <div>
-                        <label className="text-sm font-semibold mb-1 block">Lecture PDF</label>
-                        <input type="file" onChange={e=>setUploadFile(e.target.files[0])} accept=".pdf" className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm file:mr-4 file:rounded-full file:border-0 file:bg-primary/10 file:text-primary file:font-semibold hover:file:bg-primary/20 cursor-pointer" />
-                      </div>
-                      <Button onClick={handleUploadDocument} disabled={isUploading || isGenerating} className="w-full h-11">{isUploading ? "Uploading..." : "Upload & Process PDF"}</Button>
-                    </div>
-                  </AnalyticsCard>
 
-                  <AnalyticsCard title="2. Generate Assessment">
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-semibold mb-1 block">Assessment Topic</label>
-                        <input value={quizTopic} onChange={e=>setQuizTopic(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="e.g., OSI Model" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
+                      {/* Divider */}
+                      <div className="h-px bg-slate-100 w-full rounded-full"></div>
+
+                      {/* Step 2: Generate */}
+                      <div className="space-y-4">
+                        <h4 className="font-bold text-sm text-muted-foreground uppercase tracking-wider mb-2">Generate Assessment</h4>
                         <div>
-                          <label className="text-sm font-semibold mb-1 block">Type</label>
-                          <select value={quizType} onChange={e=>setQuizType(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none">
-                            <option value="MCQ">MCQ</option>
-                            <option value="Theory">Theory</option>
-                          </select>
+                          <label className="text-sm font-semibold mb-1 block">Assessment Topic</label>
+                          <input value={quizTopic} onChange={e=>setQuizTopic(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="e.g., OSI Model" />
                         </div>
-                        <div>
-                          <label className="text-sm font-semibold mb-1 block">Difficulty</label>
-                          <select value={quizDifficulty} onChange={e=>setQuizDifficulty(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none">
-                            <option value="easy">Easy</option>
-                            <option value="medium">Medium</option>
-                            <option value="hard">Hard</option>
-                          </select>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <label className="text-sm font-semibold mb-1 block">Type</label>
+                            <select value={quizType} onChange={e=>setQuizType(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none">
+                              <option value="MCQ">MCQ</option>
+                              <option value="Theory">Theory</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-sm font-semibold mb-1 block">Difficulty</label>
+                            <select value={quizDifficulty} onChange={e=>setQuizDifficulty(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none">
+                              <option value="easy">Easy</option>
+                              <option value="medium">Medium</option>
+                              <option value="hard">Hard</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-sm font-semibold mb-1 block">Questions</label>
+                            <input type="number" min="1" max="50" value={quizCount} onChange={e=>setQuizCount(Number(e.target.value))} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none transition-all" />
+                          </div>
                         </div>
+                        <Button onClick={handleGenerateQuiz} disabled={isGenerating} className="w-full h-11">
+                          {isGenerating ? (
+                            <span className="flex items-center justify-center gap-2">
+                              <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></span>
+                              Generating AI Quiz...
+                            </span>
+                          ) : "Generate AI Quiz"}
+                        </Button>
                       </div>
-                      <Button onClick={handleGenerateQuiz} disabled={isLoading} className="w-full h-11">{isLoading ? "Generating..." : "Generate AI Quiz"}</Button>
                     </div>
                   </AnalyticsCard>
                 </div>

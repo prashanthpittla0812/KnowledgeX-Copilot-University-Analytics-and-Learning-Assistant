@@ -30,6 +30,7 @@ class TeacherQuizService:
                 model_provider="openai",
                 api_key=settings.OPENAI_API_KEY,
                 temperature=0.3,
+                max_tokens=4096,
             )
         elif settings.AI_PROVIDER == "azure":
             return init_chat_model(
@@ -39,6 +40,7 @@ class TeacherQuizService:
                 azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
                 api_version=settings.AZURE_OPENAI_API_VERSION,
                 temperature=0.3,
+                max_tokens=4096,
             )
         elif settings.AI_PROVIDER == "groq":
             return init_chat_model(
@@ -46,6 +48,7 @@ class TeacherQuizService:
                 model_provider="groq",
                 api_key=settings.GROQ_API_KEY,
                 temperature=0.3,
+                max_tokens=4096,
             )
         else:
             return init_chat_model(
