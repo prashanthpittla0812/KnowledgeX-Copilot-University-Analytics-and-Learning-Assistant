@@ -30,6 +30,7 @@ class TeacherQuizService:
                 model_provider="openai",
                 api_key=settings.OPENAI_API_KEY,
                 temperature=0.3,
+                max_tokens=4096,
             )
         elif settings.AI_PROVIDER == "azure":
             return init_chat_model(
@@ -39,6 +40,7 @@ class TeacherQuizService:
                 azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
                 api_version=settings.AZURE_OPENAI_API_VERSION,
                 temperature=0.3,
+                max_tokens=4096,
             )
         elif settings.AI_PROVIDER == "groq":
             return init_chat_model(
@@ -46,6 +48,7 @@ class TeacherQuizService:
                 model_provider="groq",
                 api_key=settings.GROQ_API_KEY,
                 temperature=0.3,
+                max_tokens=4096,
             )
         else:
             return init_chat_model(
@@ -151,6 +154,30 @@ class TeacherQuizService:
             "quiz_id": quiz.id,
             "questions": questions,
         }
+
+    async def get_quiz(self, quiz_id: int) -> dict:
+        from sqlalchemy import select
+        result = await self.db.execute(
+            select(TeacherQuizQuestion).where(TeacherQuizQuestion.quiz_id == quiz_id)
+        )
+        questions = result.scalars().all()
+        
+        formatted = []
+        for q in questions:
+            options = q.options
+            if isinstance(options, str):
+                try:
+                    options = json.loads(options)
+                except (json.JSONDecodeError, TypeError):
+                    options = []
+            formatted.append({
+                "id": q.id,
+                "question": q.question,
+                "options": options,
+                "answer": q.answer,
+            })
+            
+        return {"quiz_id": quiz_id, "questions": formatted}
 
 
 
