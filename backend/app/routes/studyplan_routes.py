@@ -29,6 +29,7 @@ async def generate_study_plan(
             subjects=request.subjects,
             exam_date=str(request.exam_date),
             daily_hours=request.daily_hours,
+            syllabus=request.syllabus,
         )
         return StudyPlanResponse(
             id=result["id"],

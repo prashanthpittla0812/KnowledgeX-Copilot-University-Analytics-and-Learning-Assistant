@@ -143,13 +143,6 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
   return (
     <div className="relative flex h-screen w-full overflow-hidden bg-[#fdfaf6] selection:bg-orange-500/20 selection:text-orange-900 transition-colors duration-300">
 
-      {/* Decorative Mesh Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] max-w-[600px] max-h-[600px] rounded-full bg-orange-400/20 blur-[120px]" />
-        <div className="absolute bottom-[10%] right-[20%] w-[40vw] h-[40vw] max-w-[500px] max-h-[500px] rounded-full bg-amber-400/20 blur-[100px]" />
-        <div className="absolute top-[40%] left-[30%] w-[30vw] h-[30vw] max-w-[400px] max-h-[400px] rounded-full bg-blue-400/10 blur-[100px]" />
-      </div>
-
       {/* Sidebar Desktop */}
       <motion.aside
         initial={false}
@@ -408,7 +401,10 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
         </header>
 
         {/* Router View Port Outlet Container Area */}
-        <div className="flex-1 overflow-y-auto p-6 lg:p-8 custom-scrollbar">
+        <div className={cn(
+          "flex-1 p-6 lg:p-8 custom-scrollbar",
+          (activeItem === "Chatbot" || activeItem === "Study Plan") ? "overflow-hidden p-4 lg:p-4" : "overflow-y-auto"
+        )}>
           <motion.div
             key={activeItem}
             initial={{ opacity: 0, y: 10 }}
