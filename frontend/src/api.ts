@@ -39,6 +39,7 @@ export type LoginPayload = {
 export type QuizGenerationPayload = {
   faculty_name?: string;
   topic_name: string;
+  document_topic?: string;
   question_type?: string;
   difficulty: "easy" | "medium" | "hard" | string;
   num_questions: number;

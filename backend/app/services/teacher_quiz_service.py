@@ -83,9 +83,11 @@ class TeacherQuizService:
         question_type: str,
         difficulty: str,
         num_questions: int,
+        document_topic: str = None,
         teacher_id: int = None,
     ) -> dict:
-        context = retrieve_context(topic_name, topic_name)
+        doc_topic = document_topic or topic_name
+        context = retrieve_context(doc_topic, topic_name)
         if not context:
             return {"status": "error", "message": "No content found for this topic. Upload a document first."}
 

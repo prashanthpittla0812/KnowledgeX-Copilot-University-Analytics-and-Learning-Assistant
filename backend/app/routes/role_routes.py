@@ -132,6 +132,7 @@ async def faculty_generate_quiz(
     result = await service.generate_quiz(
         faculty_name=request.faculty_name,
         topic_name=request.topic_name,
+        document_topic=request.document_topic or request.topic_name,
         question_type=request.question_type,
         difficulty=request.difficulty,
         num_questions=request.num_questions,

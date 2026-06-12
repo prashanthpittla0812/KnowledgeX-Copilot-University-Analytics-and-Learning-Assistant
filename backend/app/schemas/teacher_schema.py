@@ -5,6 +5,7 @@ from typing import List, Optional
 class QuizGenerateRequest(BaseModel):
     faculty_name: str
     topic_name: str
+    document_topic: Optional[str] = None
     question_type: str
     difficulty: str
     num_questions: int
