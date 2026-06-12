@@ -9,7 +9,7 @@ import { StatCard } from "../components/ui/stat-card";
 import { AnalyticsCard } from "../components/ui/analytics-card";
 import { ChatBubble, ChatInput } from "../components/ui/chat";
 import { Button } from "../components/ui/button";
-import { BookOpen, AlertCircle, FileText, Calendar, CheckCircle, BarChart as BarChartIcon, GraduationCap, Target, Lightbulb, TrendingUp, X, Trash2, PanelLeftClose, PanelLeftOpen, Maximize, Minus, Plus, Bot, Paperclip, SquarePen, Search, MessageSquare, RotateCw, Sparkles, Play, Clock } from "lucide-react";
+import { BookOpen, AlertCircle, FileText, Calendar, CheckCircle, BarChart as BarChartIcon, GraduationCap, Target, Lightbulb, TrendingUp, X, Trash2, PanelLeftClose, PanelLeftOpen, Maximize, Minus, Plus, Bot, Paperclip, SquarePen, Search, MessageSquare, RotateCw, Sparkles, Play, Clock, History } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import CopilotFloatingButton from "./CopilotFloatingButton";
 
@@ -54,6 +54,7 @@ export default function StudentDashboard() {
   const [quizResult, setQuizResult] = useState(null);
   const [quizHistory, setQuizHistory] = useState([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [showPastQuizzes, setShowPastQuizzes] = useState(false);
   const [assignedQuizzes, setAssignedQuizzes] = useState([]);
 
 
@@ -97,6 +98,9 @@ export default function StudentDashboard() {
 
   // Recent Materials State
   const [recentMaterials, setRecentMaterials] = useState([]);
+
+  // Dashboard Stats State
+  const [dashboardStats, setDashboardStats] = useState(null);
 
   // Analytics States
   const [analytics, setAnalytics] = useState(null);
@@ -178,9 +182,19 @@ export default function StudentDashboard() {
     }
   };
 
+  const fetchDashboardStats = async () => {
+    try {
+      const res = await studentApi.getDashboard();
+      setDashboardStats(res.data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   useEffect(() => {
     if (activeItem === "Dashboard") {
       fetchRecentMaterials();
+      fetchDashboardStats();
     }
     if (activeItem === "Quizzes" || activeItem === "Analytics") {
       fetchQuizHistory();
@@ -442,9 +456,9 @@ export default function StudentDashboard() {
             </div>
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              <StatCard title="Quizzes Taken" value="12" icon={CheckCircle} description="Across 3 subjects" />
-              <StatCard title="Average Score" value="82%" icon={Target} trend="↑ 4%" trendColor="text-emerald-500" description="since last week" />
-              <StatCard title="Study Streak" value="5 days" icon={TrendingUp} description="Keep it up!" />
+              <StatCard title="Quizzes Taken" value={dashboardStats?.quizzes_taken ?? "0"} icon={CheckCircle} description="Total practice quizzes" />
+              <StatCard title="Average Score" value={`${dashboardStats?.average_quiz_score ?? 0}%`} icon={Target} description="All time average" />
+              <StatCard title="Study Streak" value={`${dashboardStats?.study_streak ?? 0} days`} icon={TrendingUp} description="Keep it up!" />
             </div>
 
             <div className="grid gap-6 lg:grid-cols-2">
@@ -575,6 +589,22 @@ export default function StudentDashboard() {
                   </Button>
                 </div>
               </div>
+            ) : showPastQuizzes ? (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                <Button variant="ghost" onClick={() => setShowPastQuizzes(false)} className="pl-0 hover:bg-transparent hover:text-primary mb-4">← Back to Practice Quizzes</Button>
+                <h3 className="text-2xl font-bold mt-2 mb-4">Past Quizzes History</h3>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {isHistoryLoading ? <p className="text-muted-foreground">Loading history...</p> : quizHistory.length === 0 ? <p className="text-muted-foreground">No past quizzes found.</p> : quizHistory.map((q, i) => (
+                    <Card key={i} className="glass-card hover:border-primary/50 transition-colors">
+                      <CardContent className="p-6">
+                        <h4 className="text-lg font-bold truncate">{q.topic}</h4>
+                        <p className="text-xs text-muted-foreground mt-1 mb-4">{new Date(q.created_at || q.timestamp).toLocaleDateString()}</p>
+                        <div className="text-2xl font-black text-primary">{q.score !== null ? `${Math.round(q.score)}%` : "Not Attempted"}</div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
             ) : (
               <>
                 <div className="flex justify-between items-end mb-6">
@@ -584,29 +614,39 @@ export default function StudentDashboard() {
                   </div>
                 </div>
 
-                <AnalyticsCard title="Generate New Quiz" className="max-w-2xl mb-10">
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm font-semibold mb-1 block">Topic</label>
-                      <input value={quizTopic} onChange={e => setQuizTopic(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="e.g., Data Structures" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
+                <div className="grid lg:grid-cols-3 gap-8 mb-10">
+                  <AnalyticsCard title="Generate New Quiz" className="lg:col-span-2">
+                    <div className="space-y-4">
                       <div>
-                        <label className="text-sm font-semibold mb-1 block">Difficulty</label>
-                        <select value={quizDifficulty} onChange={e => setQuizDifficulty(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none">
-                          <option value="easy">Easy</option>
-                          <option value="medium">Medium</option>
-                          <option value="hard">Hard</option>
-                        </select>
+                        <label className="text-sm font-semibold mb-1 block">Topic</label>
+                        <input value={quizTopic} onChange={e => setQuizTopic(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="e.g., Data Structures" />
                       </div>
-                      <div>
-                        <label className="text-sm font-semibold mb-1 block">Questions</label>
-                        <input type="number" value={quizNumQuestions} onChange={e => setQuizNumQuestions(Number(e.target.value))} min="1" max="25" className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none" />
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-semibold mb-1 block">Difficulty</label>
+                          <select value={quizDifficulty} onChange={e => setQuizDifficulty(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none">
+                            <option value="easy">Easy</option>
+                            <option value="medium">Medium</option>
+                            <option value="hard">Hard</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-sm font-semibold mb-1 block">Questions</label>
+                          <input type="number" value={quizNumQuestions} onChange={e => setQuizNumQuestions(Number(e.target.value))} min="1" max="25" className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none" />
+                        </div>
                       </div>
+                      <Button onClick={handleGenerateQuiz} disabled={isLoading} className="w-full h-11">{isLoading ? "Generating..." : "Generate AI Quiz"}</Button>
                     </div>
-                    <Button onClick={handleGenerateQuiz} disabled={isLoading} className="w-full h-11">{isLoading ? "Generating..." : "Generate AI Quiz"}</Button>
-                  </div>
-                </AnalyticsCard>
+                  </AnalyticsCard>
+
+                  <Card onClick={() => setShowPastQuizzes(true)} className="glass-card cursor-pointer hover:border-primary/50 transition-all flex flex-col justify-center items-center p-6 text-center group h-full">
+                    <div className="bg-primary/10 p-4 rounded-full mb-4 group-hover:scale-110 transition-transform">
+                      <History className="w-10 h-10 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-bold mb-2">Past Quizzes</h3>
+                    <p className="text-sm text-muted-foreground">View your generated practice history and scores.</p>
+                  </Card>
+                </div>
 
                 {assignedQuizzes.length > 0 && (
                   <div className="mb-10">
@@ -636,19 +676,6 @@ export default function StudentDashboard() {
                     </div>
                   </div>
                 )}
-
-                <h3 className="text-xl font-bold mt-10 mb-4">Past Quizzes</h3>
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {isHistoryLoading ? <p className="text-muted-foreground">Loading history...</p> : quizHistory.length === 0 ? <p className="text-muted-foreground">No past quizzes found.</p> : quizHistory.map((q, i) => (
-                    <Card key={i} className="glass-card hover:border-primary/50 transition-colors">
-                      <CardContent className="p-6">
-                        <h4 className="text-lg font-bold truncate">{q.topic}</h4>
-                        <p className="text-xs text-muted-foreground mt-1 mb-4">{new Date(q.created_at || q.timestamp).toLocaleDateString()}</p>
-                        <div className="text-2xl font-black text-primary">{q.score !== null ? `${Math.round(q.score)}%` : "Not Attempted"}</div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
               </>
             )}
           </div>

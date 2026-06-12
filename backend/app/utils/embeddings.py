@@ -1,7 +1,7 @@
 from langchain_chroma import Chroma
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_openai import AzureOpenAIEmbeddings, OpenAIEmbeddings
-from langchain_community.embeddings import HuggingFaceEmbeddings # Optional fallback
+from langchain_huggingface import HuggingFaceEmbeddings # Optional fallback
 from functools import lru_cache
 
 from app.config.settings import settings
