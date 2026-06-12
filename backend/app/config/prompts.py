@@ -55,10 +55,11 @@ STUDYPLAN_GENERATION_PROMPT_TEMPLATE = """You are an expert academic advisor cre
 
 Current Date: {current_date}
 Subjects: {subjects}
+Syllabus / Topics to cover: {syllabus}
 Exam Date: {exam_date}
 Daily Study Hours: {daily_hours}
 
-Create a day-by-day study schedule covering all subjects before the exam date.
+Create a day-by-day study schedule covering the specified subjects and syllabus topics before the exam date.
 
 Return ONLY valid JSON in this exact format:
 {{
@@ -80,7 +81,7 @@ Return ONLY valid JSON in this exact format:
   }}
 }}
 
-Ensure the plan is realistic, covers all subjects, and includes breaks.
+Ensure the plan is realistic, covers all specified subjects and syllabus topics systematically, and includes breaks.
 
 CRITICAL INSTRUCTION: Output ONLY raw JSON. Do NOT wrap the JSON in markdown blocks (e.g., ```json or ```). Do not include any conversational text before or after the JSON."""
 
