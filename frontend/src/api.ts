@@ -165,7 +165,7 @@ export const studentApi = {
     return api.post("/assessment/attempt", payload);
   },
 
-  generateStudyPlan(payload: { subjects: string[]; exam_date: string; daily_hours: number }) {
+  generateStudyPlan(payload: { subjects: string[]; exam_date: string; daily_hours: number; syllabus?: string }) {
     return api.post("/studyplan/generate", payload);
   },
 

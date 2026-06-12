@@ -8,6 +8,7 @@ class StudyPlanRequest(BaseModel):
     subjects: list[str]
     exam_date: date
     daily_hours: float = 3.0
+    syllabus: Optional[str] = None
 
 
 class DailyScheduleItem(BaseModel):
