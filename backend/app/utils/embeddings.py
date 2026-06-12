@@ -1,7 +1,6 @@
 from langchain_chroma import Chroma
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_openai import AzureOpenAIEmbeddings, OpenAIEmbeddings
-from langchain_huggingface import HuggingFaceEmbeddings # Optional fallback
 from functools import lru_cache
 
 from app.config.settings import settings
@@ -25,6 +24,7 @@ def get_embeddings():
     elif settings.AI_PROVIDER == "groq":
         # Since Groq handles LLMs but not embeddings, we use a high-quality free cloud alternative 
         # so you don't run into a crashing endpoint.
+        from langchain_community.embeddings import HuggingFaceEmbeddings
         return HuggingFaceEmbeddings(
             model_name="all-MiniLM-L6-v2"
         )
