@@ -131,17 +131,13 @@ export const facultyApi = {
   getDashboard() {
     return api.get("/faculty/dashboard");
   },
-  
+
   getAttendance() {
     return api.get("/attendance/class");
   },
 
   getAtRiskStudents() {
     return api.get("/attendance/at-risk");
-  },
-
-  getQuiz(quizId: string | number) {
-    return api.get(`/faculty/quiz/${quizId}`);
   }
 };
 
@@ -281,9 +277,6 @@ export const materialApi = {
   },
   markNotificationsRead() {
     return api.post("/materials/notifications/read");
-  },
-  deleteNotification(id: number) {
-    return api.delete(`/materials/notifications/${id}`);
   }
 };
 
