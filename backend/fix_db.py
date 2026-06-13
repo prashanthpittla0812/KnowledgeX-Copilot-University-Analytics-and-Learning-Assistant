@@ -1,32 +1,25 @@
-import pymysql
-import os
-from urllib.parse import urlparse
+import asyncio
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy import text
+from app.config.settings import settings
 
-# DATABASE_URL=mysql+pymysql://root:akshaya@localhost:3306/knowledgex
-
-connection = pymysql.connect(
-    host='localhost',
-    user='root',
-    password='akshaya',
-    database='knowledgex',
-    port=3306
-)
-
-try:
-    with connection.cursor() as cursor:
+async def main():
+    engine = create_async_engine(settings.DATABASE_URL)
+    async with engine.begin() as conn:
         try:
-            print("Renaming student_id to user_id...")
-            cursor.execute("ALTER TABLE material_bookmarks CHANGE student_id user_id INT NOT NULL;")
+            await conn.execute(text("ALTER TABLE quizzes ALTER COLUMN quiz_source DROP NOT NULL"))
+            print("Successfully dropped NOT NULL constraint on quiz_source")
         except Exception as e:
-            print(f"Error (maybe already renamed): {e}")
+            print("Could not drop quiz_source NOT NULL:", e)
+
+        # Let's try inserting again to see if there are any MORE constraints
+        try:
+            await conn.execute(text("INSERT INTO quizzes (user_id, topic, score, quiz_data, created_at) VALUES (1, 'Test2', null, '{}', now())"))
+            print("Insert succeeded! No more constraints failing.")
+        except Exception as e:
+            print("Insert failed again:", e)
             
-        try:
-            print("Adding timestamp column...")
-            cursor.execute("ALTER TABLE material_bookmarks ADD COLUMN timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL;")
-        except Exception as e:
-            print(f"Error (maybe already added): {e}")
+    await engine.dispose()
 
-    connection.commit()
-    print("Database updated successfully.")
-finally:
-    connection.close()
+if __name__ == "__main__":
+    asyncio.run(main())

@@ -40,6 +40,19 @@ async def student_dashboard(
     current_user: User = Depends(get_current_student),
     db: AsyncSession = Depends(get_db),
 ):
+    from datetime import datetime
+    now = datetime.utcnow()
+    if current_user.last_login_date:
+        delta = now.date() - current_user.last_login_date.date()
+        if delta.days == 1:
+            current_user.current_streak += 1
+            current_user.last_login_date = now
+            await db.commit()
+        elif delta.days > 1:
+            current_user.current_streak = 1
+            current_user.last_login_date = now
+            await db.commit()
+
     doc_count = await db.scalar(
         select(func.count()).select_from(Document).where(Document.user_id == current_user.id)
     )
