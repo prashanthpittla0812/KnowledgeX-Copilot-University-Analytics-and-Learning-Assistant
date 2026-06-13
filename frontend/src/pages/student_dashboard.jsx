@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { chatbotApi, documentApi, studentApi, materialApi } from "../api";
@@ -9,8 +10,8 @@ import { StatCard } from "../components/ui/stat-card";
 import { AnalyticsCard } from "../components/ui/analytics-card";
 import { ChatBubble, ChatInput } from "../components/ui/chat";
 import { Button } from "../components/ui/button";
-import { BookOpen, AlertCircle, FileText, Calendar, CheckCircle, BarChart as BarChartIcon, GraduationCap, Target, Lightbulb, TrendingUp, X, Trash2, PanelLeftClose, PanelLeftOpen, Maximize, Minus, Plus, Bot, Paperclip, SquarePen, Search, MessageSquare, RotateCw, Sparkles, Play, Clock, History } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
+import { BookOpen, AlertCircle, FileText, Calendar, CheckCircle, BarChart as BarChartIcon, GraduationCap, Target, Lightbulb, TrendingUp, X, Trash2, PanelLeftClose, PanelLeftOpen, Maximize, Minus, Plus, Bot, Paperclip, SquarePen, Search, MessageSquare, RotateCw, Sparkles, Play, Clock, History, Award, ChevronRight } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, PieChart, Pie, RadialBarChart, RadialBar, Legend } from "recharts";
 import CopilotFloatingButton from "./CopilotFloatingButton";
 
 export default function StudentDashboard() {
@@ -19,11 +20,37 @@ export default function StudentDashboard() {
   const [userName, setUserName] = useState("Student");
   const [studentId, setStudentId] = useState(null);
   const [activeItem, setActiveItem] = useState("Dashboard");
+  const [selectedQuizPeriod, setSelectedQuizPeriod] = useState("All Time");
+  const [selectedTrendPeriod, setSelectedTrendPeriod] = useState("All Time");
+  const [selectedSkillSubject, setSelectedSkillSubject] = useState("All Subjects");
 
   // Chatbot State
   const [chatInput, setChatInput] = useState("");
   const [isChatSending, setIsChatSending] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("Generate AI Quiz");
+
+  useEffect(() => {
+    let interval;
+    if (isGeneratingQuiz) {
+      const messages = [
+        "🧠 AI is analyzing the topic...",
+        "⚙️ Generating questions...",
+        "⚖️ Calibrating difficulty...",
+        "✨ Finalizing your quiz..."
+      ];
+      let i = 0;
+      setLoadingMessage(messages[0]);
+      interval = setInterval(() => {
+        i = (i + 1) % messages.length;
+        setLoadingMessage(messages[i]);
+      }, 2000);
+    } else {
+      setLoadingMessage("Generate AI Quiz");
+    }
+    return () => clearInterval(interval);
+  }, [isGeneratingQuiz]);
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [portalTarget, setPortalTarget] = useState(null);
 
@@ -46,9 +73,10 @@ export default function StudentDashboard() {
   const [chatbotMode, setChatbotMode] = useState("minimized");
   const [chatHistoryCollapsed, setChatHistoryCollapsed] = useState(false);
   // Quiz States
+  const [quizSubject, setQuizSubject] = useState("Computer Science");
   const [quizTopic, setQuizTopic] = useState("");
   const [quizDifficulty, setQuizDifficulty] = useState("medium");
-  const [quizNumQuestions, setQuizNumQuestions] = useState(25);
+  const [quizNumQuestions, setQuizNumQuestions] = useState(0);
   const [activeQuiz, setActiveQuiz] = useState(null);
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [quizResult, setQuizResult] = useState(null);
@@ -90,6 +118,10 @@ export default function StudentDashboard() {
     const updated = { ...completedPlans, [activeStudyPlanId]: true };
     setCompletedPlans(updated);
     localStorage.setItem(`completedStudyPlans_${userId}`, JSON.stringify(updated));
+    
+    // Clear the active plan from view once completed
+    setActiveStudyPlan(null);
+    setActiveStudyPlanId(null);
   };
 
   // Recommendations States
@@ -118,6 +150,15 @@ export default function StudentDashboard() {
 
     setPortalTarget(document.getElementById("main-workspace") || document.body);
   }, [navigate]);
+
+  const formatTopicForDisplay = (topic) => {
+    if (!topic) return "";
+    const match1 = topic.match(/Specific Topic: (.*?) \(Category: .*?\)/i);
+    if (match1) return match1[1];
+    const match2 = topic.match(/^(.*?) - (.*?)$/);
+    if (match2) return match2[2];
+    return topic;
+  };
 
   const fetchAssignedQuizzes = async () => {
     try {
@@ -335,15 +376,20 @@ export default function StudentDashboard() {
   };
 
   const handleGenerateQuiz = async () => {
-    if (!quizTopic.trim()) return alert("Enter a topic");
+    if (!quizTopic.trim()) return alert("Enter a specific topic");
+    const numQ = Number(quizNumQuestions);
+    if (!numQ || numQ < 1 || numQ > 25) return alert("Enter a valid number of questions between 1 and 25");
+    setIsGeneratingQuiz(true);
     setIsLoading(true);
     try {
-      const response = await studentApi.generateQuiz({ topic: quizTopic, difficulty: quizDifficulty, number_of_questions: quizNumQuestions });
+      const combinedTopic = quizSubject === "Other" ? quizTopic : `Specific Topic: ${quizTopic} (Category: ${quizSubject})`;
+      const response = await studentApi.generateQuiz({ topic: combinedTopic, difficulty: quizDifficulty, number_of_questions: numQ });
       setActiveQuiz({ id: response.data.quiz_id, topic: response.data.topic, difficulty: response.data.difficulty, questions: response.data.quiz });
       setSelectedAnswers({});
     } catch (error) {
       alert("Failed to generate quiz");
     } finally {
+      setIsGeneratingQuiz(false);
       setIsLoading(false);
     }
   };
@@ -402,6 +448,7 @@ export default function StudentDashboard() {
         setQuizResult(response.data);
       }
       setActiveQuiz(null);
+      fetchQuizHistory();
     } catch (error) {
       console.error(error);
       const errorMsg = error.response?.data?.detail || error.response?.data?.message || "Failed to submit quiz";
@@ -456,62 +503,62 @@ export default function StudentDashboard() {
             </div>
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              <StatCard title="Quizzes Taken" value={dashboardStats?.quizzes_taken ?? "0"} icon={CheckCircle} description="Total practice quizzes" />
-              <StatCard title="Average Score" value={`${dashboardStats?.average_quiz_score ?? 0}%`} icon={Target} description="All time average" />
-              <StatCard title="Study Streak" value={`${dashboardStats?.study_streak ?? 0} days`} icon={TrendingUp} description="Keep it up!" />
+              <StatCard title="Quizzes Taken" value={dashboardStats?.quizzes_taken ?? "0"} icon={CheckCircle} description="Total practice quizzes" colorClass="bg-gradient-to-br from-indigo-400 to-indigo-600 shadow-indigo-500/20" />
+              <StatCard title="Average Score" value={`${dashboardStats?.average_quiz_score ?? 0}%`} icon={Target} description="All time average" colorClass="bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-emerald-500/20" />
+              <StatCard title="Study Streak" value={`${dashboardStats?.study_streak ?? 0} days`} icon={TrendingUp} description="Keep it up!" colorClass="bg-gradient-to-br from-sky-400 to-sky-600 shadow-sky-500/20" />
+              <StatCard title="Docs Uploaded" value={dashboardStats?.documents_uploaded ?? "0"} icon={FileText} description="Total resources" colorClass="bg-gradient-to-br from-violet-400 to-violet-600 shadow-violet-500/20" />
             </div>
 
             <div className="grid gap-6 lg:grid-cols-2">
-              <AnalyticsCard title="Upcoming Tasks" className="min-h-[300px]">
-                <div className="space-y-4">
-                  <div className="p-4 rounded-xl bg-accent/10 border border-accent/20 flex justify-between items-center">
-                    <div>
-                      <p className="font-bold text-accent flex items-center gap-2"><BookOpen className="w-4 h-4" /> Operating Systems Midterm</p>
-                      <p className="text-sm text-foreground mt-1">Due in 3 days. Complete chapter 4 and 5 revision.</p>
+              <AnalyticsCard title="Quick Launch" className="min-h-[240px]">
+                <div className="grid grid-cols-2 gap-4 h-full">
+                  <div 
+                    onClick={() => setActiveItem("Study Plan")}
+                    className="flex flex-col items-center justify-center gap-3 p-6 rounded-2xl bg-gradient-to-br from-orange-50 to-orange-100/50 border border-orange-200 cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all group"
+                  >
+                    <div className="w-14 h-14 rounded-full bg-orange-500 text-white flex items-center justify-center shadow-orange-500/30 shadow-lg group-hover:scale-110 transition-transform">
+                      <Calendar className="w-6 h-6" />
                     </div>
-                    <Button size="sm" onClick={() => setActiveItem("Study Plan")}>Plan</Button>
+                    <p className="font-bold text-orange-900 text-center">Generate Study Plan</p>
                   </div>
-                  <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 flex justify-between items-center">
-                    <div>
-                      <p className="font-bold text-primary flex items-center gap-2"><CheckCircle className="w-4 h-4" /> Computer Networks Quiz</p>
-                      <p className="text-sm text-foreground mt-1">Practice subnetting calculations.</p>
+                  <div 
+                    onClick={() => setActiveItem("Quizzes")}
+                    className="flex flex-col items-center justify-center gap-3 p-6 rounded-2xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 border border-indigo-200 cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all group"
+                  >
+                    <div className="w-14 h-14 rounded-full bg-indigo-500 text-white flex items-center justify-center shadow-indigo-500/30 shadow-lg group-hover:scale-110 transition-transform">
+                      <Target className="w-6 h-6" />
                     </div>
-                    <Button size="sm" onClick={() => setActiveItem("Quizzes")}>Practice</Button>
+                    <p className="font-bold text-indigo-900 text-center">Take a Practice Quiz</p>
                   </div>
+                </div>
+              </AnalyticsCard>
+              
+              <AnalyticsCard title="AI Insights" className="min-h-[240px] bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200">
+                <div className="flex flex-col justify-center h-full space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-blue-500/20 text-blue-600 flex items-center justify-center shrink-0">
+                      <Sparkles className="w-5 h-5" />
+                    </div>
+                    <h3 className="font-bold text-lg text-blue-900">Your Learning Pulse</h3>
+                  </div>
+                  <p className="text-slate-700 leading-relaxed">
+                    💡 You've maintained a {dashboardStats?.study_streak ?? 0}-day study streak and taken {(dashboardStats?.quizzes_taken ?? 0)} quizzes. Keep up the momentum by focusing on your weak areas today!
+                  </p>
+                  <Button variant="outline" className="w-fit mt-2 border-blue-300 text-blue-700 hover:bg-blue-100 hover:text-blue-900" onClick={() => setActiveItem("Recommendations")}>
+                    View Recommendations
+                  </Button>
                 </div>
               </AnalyticsCard>
             </div>
 
-            <AnalyticsCard title="Recently Uploaded Materials">
-              <div className="space-y-4">
-                {recentMaterials.length === 0 ? (
-                  <p className="text-muted-foreground text-sm py-4">No recent materials.</p>
-                ) : (
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {recentMaterials.slice(0, 3).map((m) => (
-                      <div key={m.id} className="p-4 rounded-xl border bg-card hover:border-primary/50 transition-colors cursor-pointer" onClick={() => setActiveItem("Learning Resources")}>
-                        <div className="flex items-start justify-between mb-2">
-                          <FileText className="text-primary w-6 h-6" />
-                          <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-1 rounded-md">{m.material_type}</span>
-                        </div>
-                        <h4 className="font-bold text-sm line-clamp-1">{m.title}</h4>
-                        <p className="text-xs text-muted-foreground mt-1">By {m.faculty_name}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <Button variant="ghost" className="w-full text-sm mt-2" onClick={() => setActiveItem("Learning Resources")}>
-                  View All Resources
-                </Button>
-              </div>
-            </AnalyticsCard>
+
           </div>
         ) : activeItem === "Quizzes" ? (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {quizResult ? (
               <div className="max-w-3xl mx-auto">
                 <div className="flex justify-between items-center mb-4">
-                  <Button variant="ghost" onClick={() => setQuizResult(null)} className="pl-0 hover:bg-transparent hover:text-primary">← Back to Quizzes</Button>
+                  <Button variant="ghost" onClick={() => { setQuizResult(null); setQuizTopic(""); setQuizDifficulty("medium"); setQuizNumQuestions(0); }} className="pl-0 hover:bg-transparent hover:text-primary">← Back to Quizzes</Button>
                   <Button onClick={() => setActiveItem("Recommendations")} variant="default" className="gap-2">
                     <Lightbulb className="w-4 h-4" />
                     Get AI Recommendations
@@ -565,7 +612,7 @@ export default function StudentDashboard() {
             ) : activeQuiz ? (
               <div className="max-w-3xl mx-auto">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold">{activeQuiz.topic} Quiz</h2>
+                  <h2 className="text-2xl font-bold">{formatTopicForDisplay(activeQuiz.topic)} Quiz</h2>
                   <span className="px-3 py-1 rounded-md bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">{activeQuiz.difficulty}</span>
                 </div>
                 <div className="space-y-6">
@@ -577,7 +624,9 @@ export default function StudentDashboard() {
                           {q.options.map((opt, j) => (
                             <label key={j} className={`flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all border ${selectedAnswers[i] === opt ? "border-primary bg-primary/5 shadow-sm" : "border-border bg-background hover:border-primary/50"}`}>
                               <input type="radio" name={`q-${i}`} value={opt} checked={selectedAnswers[i] === opt} onChange={() => setSelectedAnswers(prev => ({ ...prev, [i]: opt }))} className="text-primary" />
-                              <span className={`text-sm font-medium ${selectedAnswers[i] === opt ? "text-foreground" : "text-muted-foreground"}`}>{opt}</span>
+                              <span className={`text-sm font-medium ${selectedAnswers[i] === opt ? "text-foreground" : "text-muted-foreground"}`}>
+                                <span className="font-bold mr-2 uppercase">{String.fromCharCode(97 + j)})</span> {opt}
+                              </span>
                             </label>
                           ))}
                         </div>
@@ -597,7 +646,7 @@ export default function StudentDashboard() {
                   {isHistoryLoading ? <p className="text-muted-foreground">Loading history...</p> : quizHistory.length === 0 ? <p className="text-muted-foreground">No past quizzes found.</p> : quizHistory.map((q, i) => (
                     <Card key={i} className="glass-card hover:border-primary/50 transition-colors">
                       <CardContent className="p-6">
-                        <h4 className="text-lg font-bold truncate">{q.topic}</h4>
+                        <h4 className="text-lg font-bold truncate">{formatTopicForDisplay(q.topic)}</h4>
                         <p className="text-xs text-muted-foreground mt-1 mb-4">{new Date(q.created_at || q.timestamp).toLocaleDateString()}</p>
                         <div className="text-2xl font-black text-primary">{q.score !== null ? `${Math.round(q.score)}%` : "Not Attempted"}</div>
                       </CardContent>
@@ -617,9 +666,33 @@ export default function StudentDashboard() {
                 <div className="grid lg:grid-cols-3 gap-8 mb-10">
                   <AnalyticsCard title="Generate New Quiz" className="lg:col-span-2">
                     <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-semibold mb-1 block">Subject</label>
+                          <select value={quizSubject} onChange={e => setQuizSubject(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none">
+                            <option value="Mathematics">Mathematics</option>
+                            <option value="Computer Science">Computer Science</option>
+                            <option value="Data Science">Data Science</option>
+                            <option value="General Knowledge">General Knowledge</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-sm font-semibold mb-1 block">Specific Topic</label>
+                          <input value={quizTopic} onChange={e => setQuizTopic(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="e.g., Data Structures" />
+                        </div>
+                      </div>
                       <div>
-                        <label className="text-sm font-semibold mb-1 block">Topic</label>
-                        <input value={quizTopic} onChange={e => setQuizTopic(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="e.g., Data Structures" />
+                        {recentMaterials && recentMaterials.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-3 items-center">
+                            <span className="text-xs font-semibold text-muted-foreground">Suggested:</span>
+                            {recentMaterials.slice(0, 3).map((m, idx) => (
+                              <button key={idx} onClick={() => setQuizTopic(m.title)} className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-full hover:bg-primary hover:text-white transition-colors border border-primary/20">
+                                {m.title.length > 25 ? m.title.substring(0, 25) + "..." : m.title}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -632,20 +705,42 @@ export default function StudentDashboard() {
                         </div>
                         <div>
                           <label className="text-sm font-semibold mb-1 block">Questions</label>
-                          <input type="number" value={quizNumQuestions} onChange={e => setQuizNumQuestions(Number(e.target.value))} min="1" max="25" className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none" />
+                          <input type="number" value={quizNumQuestions} onChange={e => setQuizNumQuestions(Number(e.target.value) > 25 ? 25 : e.target.value)} min="0" max="25" className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none" />
                         </div>
                       </div>
-                      <Button onClick={handleGenerateQuiz} disabled={isLoading} className="w-full h-11">{isLoading ? "Generating..." : "Generate AI Quiz"}</Button>
+                      <Button onClick={handleGenerateQuiz} disabled={isGeneratingQuiz || isLoading} className="w-full h-11 transition-all disabled:opacity-100 disabled:bg-orange-400 disabled:text-white font-bold">{loadingMessage}</Button>
                     </div>
                   </AnalyticsCard>
 
-                  <Card onClick={() => setShowPastQuizzes(true)} className="glass-card cursor-pointer hover:border-primary/50 transition-all flex flex-col justify-center items-center p-6 text-center group h-full">
-                    <div className="bg-primary/10 p-4 rounded-full mb-4 group-hover:scale-110 transition-transform">
-                      <History className="w-10 h-10 text-primary" />
+                  <AnalyticsCard title="Recent History" className="h-full">
+                    <div className="flex flex-col h-full space-y-4">
+                      {(!quizHistory || quizHistory.length === 0) ? (
+                        <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-muted-foreground">
+                          <History className="w-8 h-8 mb-2 opacity-50" />
+                          <p className="text-sm">No quizzes taken yet.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3 flex-1 overflow-y-auto pr-1">
+                          {quizHistory.slice(0, 3).map((q, i) => (
+                            <div key={i} className="flex justify-between items-center p-3 rounded-lg border bg-card/50 hover:bg-accent/5 transition-colors">
+                              <div className="min-w-0 pr-3">
+                                <h4 className="font-semibold text-sm truncate">{formatTopicForDisplay(q.topic)}</h4>
+                                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{q.difficulty}</p>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <span className={`text-sm font-black ${q.score >= 70 ? "text-emerald-500" : q.score >= 40 ? "text-orange-500" : "text-red-500"}`}>
+                                  {q.score !== null ? `${Math.round(q.score)}%` : "N/A"}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <Button variant="ghost" className="w-full text-xs shrink-0" onClick={() => setShowPastQuizzes(true)}>
+                        View All History <ChevronRight className="w-4 h-4 ml-1" />
+                      </Button>
                     </div>
-                    <h3 className="text-xl font-bold mb-2">Past Quizzes</h3>
-                    <p className="text-sm text-muted-foreground">View your generated practice history and scores.</p>
-                  </Card>
+                  </AnalyticsCard>
                 </div>
 
                 {assignedQuizzes.length > 0 && (
@@ -658,7 +753,7 @@ export default function StudentDashboard() {
                       {assignedQuizzes.map((q, i) => (
                         <Card key={i} className="glass-card border-primary/30 bg-primary/5 hover:border-primary transition-colors">
                           <CardContent className="p-6">
-                            <h4 className="text-lg font-bold truncate">{q.topic_name}</h4>
+                            <h4 className="text-lg font-bold truncate">{formatTopicForDisplay(q.topic_name)}</h4>
                             <p className="text-xs text-muted-foreground mt-1 mb-4">By {q.teacher_name} • {q.num_questions} Questions</p>
                             {q.is_completed ? (
                               <Button className="w-full bg-emerald-600 hover:bg-emerald-600 text-white cursor-not-allowed" disabled>
@@ -742,14 +837,14 @@ export default function StudentDashboard() {
                     )}
                     <Button 
                       variant="outline" 
-                      className="border-slate-200 hover:bg-slate-50 text-slate-600 rounded-2xl gap-2 font-bold px-4 py-2"
+                      className="border border-slate-100 bg-white hover:bg-slate-50 hover:shadow-md text-slate-600 rounded-3xl gap-2 font-bold px-5 py-2.5 shadow-sm transition-all"
                       onClick={() => setIsGenModalOpen(true)}
                     >
                       <RotateCw className="w-4 h-4" />
                       Regenerate Plan
                     </Button>
-                    <div className="flex items-center gap-2 border border-slate-200 bg-white px-4 py-2 rounded-2xl text-slate-600 font-bold text-sm shadow-sm">
-                      <span>{dateRangeStr}</span>
+                    <div className="flex items-center gap-2 border border-slate-100 bg-white px-5 py-2.5 rounded-3xl text-slate-600 font-bold text-sm shadow-sm transition-all">
+                      <span>{isPlanCompleted ? '-' : dateRangeStr}</span>
                       <Calendar className="w-4 h-4 text-slate-400" />
                     </div>
                   </div>
@@ -880,7 +975,7 @@ export default function StudentDashboard() {
  
               // 4. Learning goals
               const getSubjectProgress = (subject) => {
-                if (!Array.isArray(quizHistory) || quizHistory.length === 0 || !subject) return 40;
+                if (!Array.isArray(quizHistory) || quizHistory.length === 0 || !subject) return null;
                 const subLower = String(subject).toLowerCase();
                 const matches = quizHistory.filter(q => 
                   q?.topic && (q.topic.toLowerCase().includes(subLower) || subLower.includes(q.topic.toLowerCase()))
@@ -889,7 +984,7 @@ export default function StudentDashboard() {
                   const totalScore = matches.reduce((sum, q) => sum + (q?.score || 0), 0);
                   return Math.round(totalScore / matches.length);
                 }
-                return 40; // Fallback
+                return null; // No data yet
               };
 
               const learningGoals = uniqueSubjects.slice(0, 2).map((subject, idx) => {
@@ -996,61 +1091,40 @@ export default function StudentDashboard() {
                 <div className="space-y-4">
                   {/* Top Summary Cards Grid */}
                   <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                    {/* Duration Card */}
-                    <Card className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
-                      <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-500 shrink-0">
-                        <Calendar className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-slate-400">Plan Duration</p>
-                        <h3 className="text-xl font-bold text-slate-800 mt-0.5">{durationDays} {durationDays === 1 ? 'Day' : 'Days'}</h3>
-                        <p className="text-[11px] text-slate-500 mt-0.5">{dateRangeStr}</p>
-                      </div>
-                    </Card>
-
-                    {/* Focus Subjects Card */}
-                    <Card className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
-                      <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
-                        <BookOpen className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-slate-400">Focus Subjects</p>
-                        <h3 className="text-xl font-bold text-slate-800 mt-0.5">
-                          {subjectsCount} {subjectsCount === 1 ? 'Subject' : 'Subjects'}
-                        </h3>
-                        <p className="text-[11px] text-slate-500 mt-0.5 truncate max-w-[140px]" title={subjectsListStr}>{subjectsListStr}</p>
-                      </div>
-                    </Card>
-
-                    {/* Daily Study Time Card */}
-                    <Card className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
-                      <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-500 shrink-0">
-                        <Clock className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-slate-400">Daily Study Time</p>
-                        <h3 className="text-xl font-bold text-slate-800 mt-0.5">{dailyHoursRangeStr}</h3>
-                        <p className="text-[11px] text-slate-500 mt-0.5">Recommended</p>
-                      </div>
-                    </Card>
-
-                    {/* Goals Card */}
-                    <Card className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
-                      <div className="w-12 h-12 rounded-2xl bg-pink-50 flex items-center justify-center text-pink-500 shrink-0">
-                        <Target className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-slate-400">Goals</p>
-                        <h3 className="text-xl font-bold text-slate-800 mt-0.5">{goalsCount} Goals</h3>
-                        <p className="text-[11px] text-slate-500 mt-0.5">This Week</p>
-                      </div>
-                    </Card>
+                    <StatCard 
+                      title="Plan Duration" 
+                      value={`${isPlanCompleted ? 0 : durationDays} ${isPlanCompleted ? 'Days' : (durationDays === 1 ? 'Day' : 'Days')}`} 
+                      icon={Calendar} 
+                      description={isPlanCompleted ? '-' : dateRangeStr} 
+                      colorClass="bg-gradient-to-br from-orange-400 to-orange-600 shadow-orange-500/20" 
+                    />
+                    <StatCard 
+                      title="Focus Subjects" 
+                      value={`${isPlanCompleted ? 0 : subjectsCount} ${isPlanCompleted ? 'Subjects' : (subjectsCount === 1 ? 'Subject' : 'Subjects')}`} 
+                      icon={BookOpen} 
+                      description={isPlanCompleted ? '-' : subjectsListStr} 
+                      colorClass="bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-emerald-500/20" 
+                    />
+                    <StatCard 
+                      title="Daily Study Time" 
+                      value={isPlanCompleted ? '0 Hours' : dailyHoursRangeStr} 
+                      icon={Clock} 
+                      description="Recommended" 
+                      colorClass="bg-gradient-to-br from-amber-400 to-amber-600 shadow-amber-500/20" 
+                    />
+                    <StatCard 
+                      title="Goals" 
+                      value={`${isPlanCompleted ? 0 : goalsCount} ${isPlanCompleted ? 'Goals' : (goalsCount === 1 ? 'Goal' : 'Goals')}`} 
+                      icon={Target} 
+                      description="AI Generated" 
+                      colorClass="bg-gradient-to-br from-pink-400 to-pink-600 shadow-pink-500/20" 
+                    />
                   </div>
 
                   {/* Main Grid Columns Layout */}
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
                     {/* Left Timeline Card (Col span 9) */}
-                    <Card className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm lg:col-span-9 flex flex-col lg:h-[calc(100vh-280px)]">
+                    <Card className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm lg:col-span-9 flex flex-col lg:h-[calc(100vh-320px)]">
                       {isPlanCompleted ? (
                         <div className="flex flex-col items-center justify-center h-full text-center p-6 animate-in fade-in duration-500">
                           <div className="w-16 h-16 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mb-4 shadow-sm border border-orange-200">
@@ -1156,9 +1230,9 @@ export default function StudentDashboard() {
                   </Card>
 
                     {/* Right Sidebar Column (Col span 3) */}
-                    <div className="lg:col-span-3 space-y-4 lg:h-[calc(100vh-280px)] lg:overflow-y-auto pr-1 custom-scrollbar">
+                    <div className="lg:col-span-3 space-y-4 lg:h-[calc(100vh-320px)] lg:overflow-y-auto pr-1 custom-scrollbar">
                       {/* Learning Goals Card */}
-                      {learningGoals.length > 0 && (
+                      {!isPlanCompleted && learningGoals.length > 0 && (
                         <Card className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm">
                           <CardHeader className="p-0 pb-3">
                             <CardTitle className="text-lg font-bold text-slate-800">Learning Goals</CardTitle>
@@ -1175,10 +1249,12 @@ export default function StudentDashboard() {
                                 <div className="pl-9 space-y-1">
                                   <div className="flex justify-between items-center text-[10px] uppercase font-bold tracking-wider">
                                     <span className="text-slate-400">Progress</span>
-                                    <span className="text-slate-800">{goal.progress}%</span>
+                                    <span className={goal.progress !== null ? "text-slate-800" : "text-slate-400"}>
+                                      {goal.progress !== null ? `${goal.progress}%` : "Not Started"}
+                                    </span>
                                   </div>
                                   <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                                    <div className="bg-orange-500 h-1.5 rounded-full" style={{ width: `${goal.progress}%` }} />
+                                    <div className="bg-orange-500 h-1.5 rounded-full" style={{ width: `${goal.progress || 0}%` }} />
                                   </div>
                                 </div>
                               </div>
@@ -1341,7 +1417,7 @@ export default function StudentDashboard() {
                         <li key={i} className="flex flex-col gap-1 p-3 rounded-lg bg-[var(--background)] border border-[var(--border)]">
                           <div className="flex items-center gap-2">
                             <CheckCircle className="w-4 h-4 text-primary" />
-                            <span className="font-bold text-foreground">{quiz.topic}</span>
+                            <span className="font-bold text-foreground">{formatTopicForDisplay(quiz.topic)}</span>
                             <span className="px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded bg-primary/10 text-primary">{quiz.difficulty}</span>
                           </div>
                           <p className="text-xs text-muted-foreground ml-6">{quiz.reason}</p>
@@ -1360,7 +1436,7 @@ export default function StudentDashboard() {
                             <BookOpen className="w-4 h-4 text-secondary" />
                             <span className="font-bold text-foreground">{mat.resource}</span>
                           </div>
-                          <p className="text-xs text-muted-foreground ml-6">For: {mat.topic}</p>
+                          <p className="text-xs text-muted-foreground ml-6">For: {formatTopicForDisplay(mat.topic)}</p>
                           <p className="text-xs text-muted-foreground ml-6">{mat.reason}</p>
                           {mat.url && (
                             <a href={mat.url} target="_blank" rel="noopener noreferrer" className="ml-6 mt-1 text-xs text-blue-500 hover:underline flex items-center gap-1">
@@ -1376,76 +1452,341 @@ export default function StudentDashboard() {
             )}
           </div>
         ) : activeItem === "Analytics" ? (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-              <h1 className="text-3xl font-black tracking-tight">Performance Analytics</h1>
-              <p className="text-muted-foreground">Track your progress.</p>
-            </div>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, staggerChildren: 0.1 }}
+            className="space-y-6"
+          >
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} 
+              className="flex items-center gap-3"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-500 shadow-sm border border-indigo-100">
+                <BarChartIcon className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-black tracking-tight text-slate-800">Performance Analytics</h1>
+                <p className="text-sm font-semibold text-slate-500">Track your progress and learning trends.</p>
+              </div>
+            </motion.div>
 
             {(() => {
               const totalQuizzes = quizHistory.length;
               const avgScore = totalQuizzes > 0 ? quizHistory.reduce((acc, q) => acc + q.score, 0) / totalQuizzes : 0;
+              
+              const topicScores = {};
+              quizHistory.forEach(q => {
+                if (!topicScores[q.topic]) topicScores[q.topic] = { total: 0, count: 0 };
+                topicScores[q.topic].total += q.score;
+                topicScores[q.topic].count += 1;
+              });
+              const topicMasteryData = Object.keys(topicScores).map(topic => {
+                const cleanTopic = formatTopicForDisplay(topic);
+                return {
+                  topic: cleanTopic.length > 10 ? cleanTopic.substring(0,10) + '...' : cleanTopic,
+                  fullTopic: cleanTopic,
+                  score: Math.round(topicScores[topic].total / topicScores[topic].count)
+                };
+              });
+              const weakTopics = topicMasteryData.filter(t => t.score < 60);
+
+              const subjectMap = {
+                "Mathematics": ["maths", "additions", "algebra", "geometry", "calculus", "math"],
+                "Computer Science": ["ai", "data structures", "algorithms", "programming", "python", "java", "cs"],
+                "Data Science": ["data", "machine learning", "statistics", "sql", "pandas"],
+                "General Knowledge": ["states and capitals", "history", "geography", "science", "gk"]
+              };
+              
+              const filteredSkillData = selectedSkillSubject === "All Subjects" 
+                ? topicMasteryData 
+                : topicMasteryData.filter(t => (subjectMap[selectedSkillSubject] || []).some(sub => t.fullTopic.toLowerCase().includes(sub)));
+              const subjectColors = {
+                "Mathematics": "url(#mathGradient)",
+                "Computer Science": "url(#csGradient)",
+                "Data Science": "url(#dataGradient)",
+                "General Knowledge": "url(#gkGradient)",
+                "default": "url(#barGradient)"
+              };
+
+              const getSubjectForTopic = (topic) => {
+                if (!topic) return "default";
+                const match = topic.match(/Category: (.*?)\)/i);
+                if (match && subjectMap[match[1]]) return match[1];
+                const t = topic.toLowerCase();
+                for (const [subject, keywords] of Object.entries(subjectMap)) {
+                  if (t.includes(subject.toLowerCase()) || keywords.some(k => t.includes(k))) return subject;
+                }
+                return "default";
+              };
+              
+              const CustomTooltip = ({ active, payload, label, isDate = false }) => {
+                if (active && payload && payload.length) {
+                  return (
+                    <div className="bg-white/90 backdrop-blur-md border border-slate-200 p-4 rounded-2xl shadow-xl">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                        {isDate ? new Date(label).toLocaleDateString() : (payload[0].payload.subject ? `${payload[0].payload.subject}: ${label}` : label)}
+                      </p>
+                      <p className="text-lg font-black text-indigo-600">
+                        Score: <span className="text-slate-800">{payload[0].value}%</span>
+                      </p>
+                    </div>
+                  );
+                }
+                return null;
+              };
+
               return (
                 <>
-                  <div className="grid sm:grid-cols-3 gap-6 mb-8">
-                    <StatCard title="Quizzes Taken" value={totalQuizzes} icon={FileText} />
-                    <StatCard title="Average Score" value={`${avgScore.toFixed(1)}%`} icon={Target} trendColor="text-emerald-500" />
-                    <StatCard title="Study Plans" value={studyPlans.length} icon={BookOpen} />
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-4">
+                    <StatCard 
+                      title="Quizzes Taken" 
+                      value={totalQuizzes} 
+                      icon={FileText} 
+                      colorClass="bg-gradient-to-br from-indigo-400 to-indigo-600 shadow-indigo-500/20" 
+                    />
+                    <StatCard 
+                      title="Average Score" 
+                      value={`${avgScore.toFixed(1)}%`} 
+                      icon={Target} 
+                      colorClass="bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-emerald-500/20" 
+                    />
+                    <StatCard 
+                      title="Study Plans" 
+                      value={studyPlans.length} 
+                      icon={BookOpen} 
+                      colorClass="bg-gradient-to-br from-sky-400 to-sky-600 shadow-sky-500/20" 
+                    />
+                    <StatCard 
+                      title="Highest Score" 
+                      value={`${totalQuizzes > 0 ? Math.max(...quizHistory.map(q => q.score)).toFixed(1) : 0}%`} 
+                      icon={Award} 
+                      colorClass="bg-gradient-to-br from-purple-400 to-purple-600 shadow-purple-500/20" 
+                    />
                   </div>
 
-                  <div className="grid lg:grid-cols-2 gap-8">
-                    <AnalyticsCard title="Recent Quiz Performance">
-                      <div className="h-[300px] mt-4">
-                        {quizHistory.length > 0 ? (
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={quizHistory.slice(0, 5).reverse()} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                              <XAxis dataKey="topic" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
-                              <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} />
-                              <Tooltip
-                                cursor={{ fill: 'var(--muted)' }}
-                                contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '8px' }}
-                              />
-                              <Bar dataKey="score" fill="#F59E0B" radius={[4, 4, 0, 0]} maxBarSize={50} />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        ) : (
-                          <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
-                            <BarChartIcon className="w-8 h-8 mb-2 opacity-50" />
-                            <p>No quiz data available.</p>
-                          </div>
-                        )}
-                      </div>
-                    </AnalyticsCard>
+                  {(() => {
+                    const getHalfMonthLabel = (dateStr) => {
+                      const d = new Date(dateStr);
+                      const month = d.toLocaleString('default', { month: 'short' });
+                      const year = d.getFullYear();
+                      const half = d.getDate() <= 15 ? '1-15' : '16-31';
+                      return `${month} ${half}, ${year}`;
+                    };
 
-                    <AnalyticsCard title="Learning Trends">
-                      <div className="h-[300px] mt-4">
-                        {quizHistory.length > 0 ? (
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={quizHistory.slice(0, 10).reverse()} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                              <XAxis dataKey="created_at" tickFormatter={(val) => new Date(val).toLocaleDateString()} stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
-                              <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
-                              <Tooltip
-                                contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '8px' }}
-                                labelFormatter={(label) => new Date(label).toLocaleDateString()}
-                              />
-                              <Line type="monotone" dataKey="score" stroke="#FB923C" strokeWidth={3} dot={{ r: 4, fill: '#FB923C', strokeWidth: 2 }} activeDot={{ r: 6 }} />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        ) : (
-                          <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
-                            <TrendingUp className="w-8 h-8 mb-2 opacity-50" />
-                            <p>Not enough data to show trends.</p>
-                          </div>
-                        )}
-                      </div>
-                    </AnalyticsCard>
+                    const periods = ["All Time", ...Array.from(new Set(quizHistory.map(q => getHalfMonthLabel(q.created_at))))];
+                    
+                    const filteredQuizHistory = (selectedQuizPeriod === "All Time" 
+                      ? quizHistory 
+                      : quizHistory.filter(q => getHalfMonthLabel(q.created_at) === selectedQuizPeriod))
+                    .filter(q => q.score !== null)
+                    .map(q => {
+                      const displayTopic = formatTopicForDisplay(q.topic);
+                      let subjectName = getSubjectForTopic(q.topic);
+                      if (subjectName === "default") subjectName = "Other";
+                      return { ...q, topic: displayTopic, subject: subjectName };
+                    });
+
+                    const filteredTrendHistory = selectedTrendPeriod === "All Time" 
+                      ? quizHistory 
+                      : quizHistory.filter(q => getHalfMonthLabel(q.created_at) === selectedTrendPeriod);
+
+                    return (
+                      <div className="grid lg:grid-cols-2 gap-8 pb-10">
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
+                          <AnalyticsCard 
+                            title="Recent Quiz Performance" 
+                            className="border-slate-100 shadow-sm rounded-3xl bg-white/80 backdrop-blur-xl"
+                            action={
+                              <select 
+                                value={selectedQuizPeriod} 
+                                onChange={(e) => setSelectedQuizPeriod(e.target.value)}
+                                className="text-sm border border-slate-200 bg-white text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                              >
+                                {periods.map(p => (
+                                  <option key={p} value={p}>{p}</option>
+                                ))}
+                              </select>
+                            }
+                          >
+                            <div className="h-[220px] mt-4">
+                              {filteredQuizHistory.length > 0 ? (
+                                <div className="h-full flex flex-col">
+                                  <div className="flex-1 min-h-0">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                  <BarChart 
+                                    data={selectedQuizPeriod === "All Time" ? filteredQuizHistory.slice(0, 15).reverse() : [...filteredQuizHistory].reverse()} 
+                                    margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+                                  >
+                                    <defs>
+                                      <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#F87171" />
+                                        <stop offset="100%" stopColor="#DC2626" />
+                                      </linearGradient>
+                                      <linearGradient id="mathGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#EC4899" />
+                                        <stop offset="100%" stopColor="#8B5CF6" />
+                                      </linearGradient>
+                                      <linearGradient id="csGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#F59E0B" />
+                                        <stop offset="100%" stopColor="#EF4444" />
+                                      </linearGradient>
+                                      <linearGradient id="dataGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#10B981" />
+                                        <stop offset="100%" stopColor="#3B82F6" />
+                                      </linearGradient>
+                                      <linearGradient id="gkGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#8B5CF6" />
+                                        <stop offset="100%" stopColor="#6366F1" />
+                                      </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                                    <XAxis dataKey="topic" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tick={false} />
+                                    <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} />
+                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#e2e8f0' }} />
+                                    <Bar dataKey="score" fill="url(#barGradient)" radius={[6, 6, 0, 0]} maxBarSize={40}>
+                                      {(selectedQuizPeriod === "All Time" ? filteredQuizHistory.slice(0, 15).reverse() : [...filteredQuizHistory].reverse()).map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={subjectColors[entry.subject] || subjectColors["default"]} />
+                                      ))}
+                                    </Bar>
+                                  </BarChart>
+                                </ResponsiveContainer>
+                                  </div>
+                                <div className="flex flex-wrap justify-center gap-4 mt-2">
+                                  <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-pink-500 to-violet-500"></div><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Mathematics</span></div>
+                                  <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-emerald-500 to-blue-500"></div><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Data Science</span></div>
+                                  <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-amber-500 to-red-500"></div><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Computer Science</span></div>
+                                  <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-violet-500 to-indigo-500"></div><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">General Knowledge</span></div>
+                                  <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-red-400 to-red-600"></div><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Other</span></div>
+                                </div>
+                                </div>
+                              ) : (
+                                <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                                  <BarChartIcon className="w-10 h-10 mb-3 opacity-30" />
+                                  <p className="font-semibold">No quiz data available for this period.</p>
+                                </div>
+                              )}
+                            </div>
+                          </AnalyticsCard>
+                        </motion.div>
+
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}>
+                          <AnalyticsCard 
+                            title="Learning Trends" 
+                            className="border-slate-100 shadow-sm rounded-3xl bg-white/80 backdrop-blur-xl"
+                            action={
+                              <select 
+                                value={selectedTrendPeriod} 
+                                onChange={(e) => setSelectedTrendPeriod(e.target.value)}
+                                className="text-sm border border-slate-200 bg-white text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                              >
+                                {periods.map(p => (
+                                  <option key={p} value={p}>{p}</option>
+                                ))}
+                              </select>
+                            }
+                          >
+                            <div className="h-[220px] mt-4">
+                              {filteredTrendHistory.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <AreaChart 
+                                    data={selectedTrendPeriod === "All Time" ? filteredTrendHistory.slice(0, 15).reverse() : [...filteredTrendHistory].reverse()} 
+                                    margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+                                  >
+                                <defs>
+                                  <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#0EA5E9" stopOpacity={0.4}/>
+                                    <stop offset="95%" stopColor="#0EA5E9" stopOpacity={0}/>
+                                  </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                                <XAxis dataKey="created_at" tickFormatter={(val) => new Date(val).toLocaleDateString()} stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                                <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                                <Tooltip content={<CustomTooltip isDate={true} />} />
+                                <Area type="monotone" dataKey="score" stroke="#0EA5E9" strokeWidth={4} fillOpacity={1} fill="url(#areaGradient)" activeDot={{ r: 8, fill: '#0EA5E9', stroke: '#fff', strokeWidth: 2 }} />
+                              </AreaChart>
+                            </ResponsiveContainer>
+                          ) : (
+                            <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                              <TrendingUp className="w-10 h-10 mb-3 opacity-30" />
+                              <p className="font-semibold">Not enough data to show trends.</p>
+                            </div>
+                          )}
+                        </div>
+                      </AnalyticsCard>
+                    </motion.div>
+
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}>
+                      <AnalyticsCard 
+                        title="Skill Matrix" 
+                        className="border-slate-100 shadow-sm rounded-3xl bg-white/80 backdrop-blur-xl"
+                        action={
+                          <select 
+                            value={selectedSkillSubject} 
+                            onChange={(e) => setSelectedSkillSubject(e.target.value)}
+                            className="text-sm border border-slate-200 bg-white text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                          >
+                            <option value="All Subjects">All Subjects</option>
+                            <option value="Mathematics">Mathematics</option>
+                            <option value="Computer Science">Computer Science</option>
+                            <option value="Data Science">Data Science</option>
+                            <option value="General Knowledge">General Knowledge</option>
+                          </select>
+                        }
+                      >
+                        <div className="h-[300px] mt-4">
+                          {filteredSkillData.length > 2 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                              <RadarChart cx="50%" cy="50%" outerRadius="70%" data={filteredSkillData}>
+                                <PolarGrid stroke="#94a3b8" strokeWidth={1.5} />
+                                <PolarAngleAxis dataKey="topic" tick={{ fill: '#334155', fontSize: 12, fontWeight: 600 }} />
+                                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                                <Radar name="Mastery" dataKey="score" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.5} />
+                                <Tooltip content={<CustomTooltip />} />
+                              </RadarChart>
+                            </ResponsiveContainer>
+                          ) : (
+                            <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                              <p className="font-semibold px-4 text-center">Not enough topics in this subject. Take more diverse quizzes!</p>
+                            </div>
+                          )}
+                        </div>
+                      </AnalyticsCard>
+                    </motion.div>
+
+
+
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6 }}>
+                      <AnalyticsCard title="Weak Areas Radar" className="border-slate-100 shadow-sm rounded-3xl bg-white/80 backdrop-blur-xl">
+                        <div className="h-[300px] mt-4 overflow-y-auto custom-scrollbar">
+                          {weakTopics.length > 0 ? (
+                            <div className="space-y-3 p-2">
+                              {weakTopics.map((t, i) => (
+                                <div key={i} className="flex justify-between items-center p-4 rounded-2xl bg-red-50/50 border border-red-100">
+                                  <div>
+                                    <h4 className="font-bold text-red-900">{t.fullTopic}</h4>
+                                    <p className="text-sm font-semibold text-red-700 mt-1">Avg Score: {t.score}%</p>
+                                  </div>
+                                  <Button size="sm" variant="outline" className="bg-white border-red-200 text-red-700 hover:bg-red-500 hover:text-white" onClick={() => { setActiveItem("Study Plan"); }}>Plan</Button>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                              <CheckCircle className="w-12 h-12 mb-3 text-emerald-400 opacity-50" />
+                              <p className="font-semibold text-center px-4">No weak areas identified! You are scoring above 60% in all topics.</p>
+                            </div>
+                          )}
+                        </div>
+                      </AnalyticsCard>
+                    </motion.div>
                   </div>
+                  );
+                 })()}
                 </>
               );
             })()}
-          </div>
+          </motion.div>
         ) : activeItem === "Chatbot" ? (
           <div className="flex h-full overflow-hidden animate-in fade-in duration-500 rounded-xl border border-border shadow-sm mt-4">
             {/* Sidebar for chat history */}

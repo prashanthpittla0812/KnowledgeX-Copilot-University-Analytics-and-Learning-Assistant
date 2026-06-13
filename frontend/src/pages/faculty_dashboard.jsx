@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "../components/layout/DashboardLayout";
 import { facultyMenuItems } from "./faculty_menu";
 import { facultyApi } from "../api";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, Line
+  LineChart, Line, Cell
 } from "recharts";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
 import { StatCard } from "../components/ui/stat-card";
@@ -532,80 +533,151 @@ export default function FacultyDashboard() {
             )}
           </div>
         ) : activeItem === "Analytics" ? (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex justify-between items-start">
-              <div>
-                <h1 className="text-3xl font-black tracking-tight">Analytics</h1>
-                <p className="text-muted-foreground">Learning gaps and topic performance.</p>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, staggerChildren: 0.1 }}
+            className="space-y-6"
+          >
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} 
+              className="flex justify-between items-start"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-500 shadow-sm border border-indigo-100">
+                  <BarChartIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-black tracking-tight text-slate-800">Analytics Overview</h1>
+                  <p className="text-sm font-semibold text-slate-500">Analyze topic performance and learning gaps.</p>
+                </div>
               </div>
-              <select
-                value={analyticsQuiz}
-                onChange={(e) => {
-                  setAnalyticsQuiz(e.target.value);
-                  fetchLearningGaps(e.target.value);
-                }}
-                className="rounded-xl border border-input bg-background px-4 py-2 text-sm focus:ring-1 focus:ring-primary outline-none max-w-xs"
-              >
-                <option value="" >All Quizzes</option>
-                {quizzes.map(q => (
-                  <option key={q.id} value={q.id}>{q.topic_name} - {new Date(q.created_at).toLocaleDateString()}</option>
-                ))}
-              </select>
-            </div>
+              <div className="bg-white/60 backdrop-blur-xl border border-slate-100 p-1.5 rounded-2xl shadow-sm">
+                <select
+                  value={analyticsQuiz}
+                  onChange={(e) => {
+                    setAnalyticsQuiz(e.target.value);
+                    fetchLearningGaps(e.target.value);
+                  }}
+                  className="rounded-xl border-none bg-transparent px-4 py-2 text-sm font-semibold text-slate-700 focus:ring-0 outline-none max-w-xs cursor-pointer"
+                >
+                  <option value="">All Quizzes (Overview)</option>
+                  {quizzes.map(q => (
+                    <option key={q.id} value={q.id}>{q.topic_name} - {new Date(q.created_at).toLocaleDateString()}</option>
+                  ))}
+                </select>
+              </div>
+            </motion.div>
 
-            {isLoading ? <p className="text-muted-foreground">Loading Analytics...</p> : learningGaps ? (
+            {isLoading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full" />
+              </div>
+            ) : learningGaps ? (
               <div className="grid lg:grid-cols-2 gap-8">
-                <AnalyticsCard title="Student Performance" className="min-h-[400px]">
-                  <div className="flex flex-wrap gap-2 mt-4 mb-6">
-                    {learningGaps.student_performance.map((sp, idx) => (
-                      <div key={idx} className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-sm">
-                        <span className="font-semibold">{sp.student_name}</span>
-                        <span className="text-primary font-black">{sp.average_score}%</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={learningGaps.student_performance} margin={{ bottom: 30, right: 20 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
-                        <XAxis dataKey="student_name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--muted-foreground)', angle: -45, textAnchor: 'end' }} interval={0} height={60} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }} domain={[0, 100]} />
-                        <Tooltip cursor={{ fill: 'var(--muted)', opacity: 0.4 }} contentStyle={{ backgroundColor: 'var(--background)', borderRadius: '12px', border: '1px solid var(--border)' }} />
-                        <Bar dataKey="average_score" fill="var(--primary)" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </AnalyticsCard>
+                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
+                  <AnalyticsCard title="Student Performance" className="min-h-[400px] border-slate-100 shadow-sm rounded-3xl bg-white/80 backdrop-blur-xl">
+                    <div className="flex flex-wrap gap-2 mt-4 mb-6">
+                      {learningGaps.student_performance.map((sp, idx) => (
+                        <motion.div whileHover={{ scale: 1.05 }} key={idx} className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 text-sm shadow-sm cursor-default">
+                          <span className="font-semibold text-slate-700">{sp.student_name}</span>
+                          <span className="text-indigo-600 font-black">{sp.average_score}%</span>
+                        </motion.div>
+                      ))}
+                    </div>
+                    <div className="h-[300px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={learningGaps.student_performance} margin={{ bottom: 30, right: 20 }}>
+                          <defs>
+                            <linearGradient id="facultyBar" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#6366F1" />
+                              <stop offset="100%" stopColor="#A855F7" />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.8} />
+                          <XAxis dataKey="student_name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', angle: -45, textAnchor: 'end' }} interval={0} height={60} />
+                          <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} domain={[0, 100]} />
+                          <Tooltip 
+                            cursor={{ fill: '#f1f5f9', opacity: 0.8 }} 
+                            content={({ active, payload, label }) => {
+                              if (active && payload && payload.length) {
+                                return (
+                                  <div className="bg-white/90 backdrop-blur-md border border-slate-200 p-4 rounded-2xl shadow-xl">
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{label}</p>
+                                    <p className="text-lg font-black text-indigo-600">
+                                      Score: <span className="text-slate-800">{payload[0].value}%</span>
+                                    </p>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }}
+                          />
+                          <Bar dataKey="average_score" fill="url(#facultyBar)" radius={[6, 6, 0, 0]} maxBarSize={40}>
+                            {learningGaps.student_performance.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill="url(#facultyBar)" />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </AnalyticsCard>
+                </motion.div>
 
                 <div className="space-y-6">
-                  <AnalyticsCard title="Weak Topics" className="border-red-500/20 bg-red-500/5">
-                    <div className="space-y-3 mt-4">
-                      {learningGaps.weak_topics?.length === 0 && <p className="text-sm text-muted-foreground">No weak topics identified.</p>}
-                      {learningGaps.weak_topics?.map((wt, i) => (
-                        <div key={i} className="flex justify-between items-center bg-background/50 p-4 rounded-xl border border-red-500/20">
-                          <span className="font-semibold">{wt.topic}</span>
-                          <span className="font-black text-red-500">{wt.average_accuracy}% Accuracy</span>
-                        </div>
-                      ))}
-                    </div>
-                  </AnalyticsCard>
-                  <AnalyticsCard title="Strong Topics" className="border-emerald-500/20 bg-emerald-500/5">
-                    <div className="space-y-3 mt-4">
-                      {learningGaps.strong_topics?.length === 0 && <p className="text-sm text-muted-foreground">No strong topics identified.</p>}
-                      {learningGaps.strong_topics?.map((st, i) => (
-                        <div key={i} className="flex justify-between items-center bg-background/50 p-4 rounded-xl border border-emerald-500/20">
-                          <span className="font-semibold">{st.topic}</span>
-                          <span className="font-black text-emerald-500">{st.average_accuracy}% Accuracy</span>
-                        </div>
-                      ))}
-                    </div>
-                  </AnalyticsCard>
+                  <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
+                    <AnalyticsCard title="Weak Topics" className="border-red-100 shadow-sm rounded-3xl bg-gradient-to-br from-red-50/50 to-white">
+                      <div className="space-y-3 mt-4">
+                        {learningGaps.weak_topics?.length === 0 && <p className="text-sm font-semibold text-slate-400 text-center py-4">No weak topics identified! 🎉</p>}
+                        {learningGaps.weak_topics?.map((wt, i) => (
+                          <motion.div whileHover={{ scale: 1.02 }} key={i} className="flex justify-between items-center bg-white p-4 rounded-2xl border border-red-100 shadow-sm group transition-all hover:border-red-200">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-500 font-bold shrink-0">
+                                <AlertCircle className="w-4 h-4" />
+                              </div>
+                              <span className="font-bold text-slate-700 group-hover:text-red-700 transition-colors">{wt.topic}</span>
+                            </div>
+                            <div className="flex flex-col items-end">
+                              <span className="font-black text-red-500 text-lg">{wt.average_accuracy}%</span>
+                              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Accuracy</span>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </AnalyticsCard>
+                  </motion.div>
+
+                  <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
+                    <AnalyticsCard title="Strong Topics" className="border-emerald-100 shadow-sm rounded-3xl bg-gradient-to-br from-emerald-50/50 to-white">
+                      <div className="space-y-3 mt-4">
+                        {learningGaps.strong_topics?.length === 0 && <p className="text-sm font-semibold text-slate-400 text-center py-4">No strong topics identified yet.</p>}
+                        {learningGaps.strong_topics?.map((st, i) => (
+                          <motion.div whileHover={{ scale: 1.02 }} key={i} className="flex justify-between items-center bg-white p-4 rounded-2xl border border-emerald-100 shadow-sm group transition-all hover:border-emerald-200">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold shrink-0">
+                                <CheckCircle className="w-4 h-4" />
+                              </div>
+                              <span className="font-bold text-slate-700 group-hover:text-emerald-700 transition-colors">{st.topic}</span>
+                            </div>
+                            <div className="flex flex-col items-end">
+                              <span className="font-black text-emerald-500 text-lg">{st.average_accuracy}%</span>
+                              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Accuracy</span>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </AnalyticsCard>
+                  </motion.div>
                 </div>
               </div>
             ) : (
-              <p className="text-muted-foreground mt-8 text-center bg-muted/20 py-8 rounded-xl border border-dashed border-muted">No analytics data available or backend is still loading.</p>
+              <div className="flex flex-col items-center justify-center py-20 text-slate-400 bg-white/50 backdrop-blur-md rounded-3xl border border-dashed border-slate-200">
+                <BarChartIcon className="w-12 h-12 mb-4 opacity-20" />
+                <p className="font-semibold text-lg">No analytics data available</p>
+                <p className="text-sm">Select a quiz to view performance metrics</p>
+              </div>
             )}
-          </div>
+          </motion.div>
         ) : (
           <div className="flex h-full flex-col items-center justify-center text-center animate-in fade-in duration-500">
             <h2 className="text-2xl font-bold text-muted-foreground">Under Construction</h2>

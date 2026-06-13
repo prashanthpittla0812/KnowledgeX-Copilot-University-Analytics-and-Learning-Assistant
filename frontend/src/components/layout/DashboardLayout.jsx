@@ -113,7 +113,7 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
     { name: "Dashboard", icon: LayoutDashboard },
     { name: "Quizzes", icon: CheckCircle },
     { name: "Learning Resources", icon: BookOpen },
-    { name: "Study Plan", icon: BookOpen },
+    { name: "Study Plan", icon: Calendar },
     { name: "Recommendations", icon: Lightbulb },
     { name: "Analytics", icon: PieChart },
   ];
@@ -137,6 +137,12 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
 
   return (
     <div className="relative flex h-screen w-full overflow-hidden bg-[#fdfaf6] selection:bg-orange-500/20 selection:text-orange-900 transition-colors duration-300">
+      
+      {/* Ambient Background Effects */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute -top-[10%] -left-[5%] w-[50%] h-[50%] rounded-full bg-orange-100/50 blur-[100px]" />
+        <div className="absolute bottom-[-10%] right-[-5%] w-[60%] h-[60%] rounded-full bg-orange-200/40 blur-[120px]" />
+      </div>
 
       {/* Sidebar Desktop */}
       <motion.aside
@@ -175,12 +181,12 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className={cn(
-            "absolute top-[80px] p-1.5 rounded-md bg-slate-300 hover:bg-white text-slate-900 transition-all cursor-pointer shadow-sm z-50",
+            "absolute top-[80px] p-1.5 rounded-md text-white hover:bg-white/10 transition-all cursor-pointer z-50",
             sidebarOpen ? "right-3" : "left-[26px]"
           )}
           title={sidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
         >
-          {sidebarOpen ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+          <Menu className="w-5 h-5" />
         </button>
 
         {/* Desktop Navigation Link Items */}
