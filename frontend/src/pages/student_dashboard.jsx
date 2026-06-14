@@ -10,7 +10,7 @@ import { StatCard } from "../components/ui/stat-card";
 import { AnalyticsCard } from "../components/ui/analytics-card";
 import { ChatBubble, ChatInput } from "../components/ui/chat";
 import { Button } from "../components/ui/button";
-import { BookOpen, AlertCircle, FileText, Calendar, CheckCircle, BarChart as BarChartIcon, GraduationCap, Target, Lightbulb, TrendingUp, X, Trash2, PanelLeftClose, PanelLeftOpen, Maximize, Minus, Plus, Bot, Paperclip, SquarePen, Search, MessageSquare, RotateCw, Sparkles, Play, Clock, History, Award, ChevronRight } from "lucide-react";
+import { BookOpen, AlertCircle, FileText, Calendar, CheckCircle, BarChart as BarChartIcon, GraduationCap, Target, Lightbulb, TrendingUp, X, Trash2, PanelLeftClose, PanelLeftOpen, Maximize, Minus, Plus, Bot, Paperclip, SquarePen, Search, MessageSquare, RotateCw, Sparkles, Play, Clock, History, Award, ChevronRight, ArrowDown } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, PieChart, Pie, RadialBarChart, RadialBar, Legend } from "recharts";
 import CopilotFloatingButton from "./CopilotFloatingButton";
 
@@ -72,6 +72,11 @@ export default function StudentDashboard() {
   const [isChatbotVisible, setIsChatbotVisible] = useState(false);
   const [chatbotMode, setChatbotMode] = useState("minimized");
   const [chatHistoryCollapsed, setChatHistoryCollapsed] = useState(false);
+
+  const messagesEndRef = useRef(null);
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [previousChats, selectedChatId, isChatSending]);
   // Quiz States
   const [quizSubject, setQuizSubject] = useState("Computer Science");
   const [quizTopic, setQuizTopic] = useState("");
@@ -1819,8 +1824,8 @@ export default function StudentDashboard() {
             </div>
 
             {/* Main Chat Area */}
-            <div className="flex-1 flex flex-col bg-background/50 relative">
-              <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-4 pb-32">
+            <div className="flex-1 flex flex-col bg-background/50">
+              <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar">
                 {selectedMessages.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center opacity-70">
                     <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
@@ -1842,9 +1847,18 @@ export default function StudentDashboard() {
                 {isChatSending && (
                   <ChatBubble message="" isUser={false} isTyping={true} />
                 )}
+                <div ref={messagesEndRef} />
               </div>
 
-              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent pt-10">
+              <button 
+                onClick={() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })}
+                className="absolute bottom-32 right-8 p-3 bg-white text-black hover:bg-slate-100 rounded-full shadow-md border border-slate-200 transition-all z-10"
+                title="Scroll to bottom"
+              >
+                <ArrowDown className="w-5 h-5" />
+              </button>
+
+              <div className="p-4 bg-background/95 backdrop-blur-md border-t border-border/20 shrink-0">
                 <div className="max-w-4xl mx-auto flex flex-col gap-2">
                   {attachedFiles.length > 0 && (
                     <div className="flex flex-wrap gap-2 px-2">
@@ -1886,7 +1900,7 @@ export default function StudentDashboard() {
       {activeItem !== "Quizzes" && isChatbotVisible && portalTarget && createPortal((
         <div className={`absolute z-[9999] bg-card border border-border shadow-2xl transition-all duration-300 flex flex-col overflow-hidden ${chatbotMode === "maximized"
             ? "inset-4 rounded-xl"
-            : "bottom-24 right-8 w-[450px] h-[550px] rounded-2xl"
+            : "bottom-24 right-12 w-[450px] h-[550px] rounded-2xl"
           }`}>
           {/* Header */}
           <div className="bg-[#0F172A] text-white px-4 py-3 flex justify-between items-center shrink-0 z-10 shadow-sm">
@@ -2008,7 +2022,7 @@ export default function StudentDashboard() {
 
             {/* Main Chat Area */}
             <div className="flex-1 flex flex-col relative bg-background/50">
-              <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 pb-32 custom-scrollbar">
+              <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 pb-4 custom-scrollbar">
                 {selectedMessages.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center opacity-70">
                     <Bot className="w-12 h-12 text-primary mb-3 opacity-50" />
@@ -2027,11 +2041,19 @@ export default function StudentDashboard() {
                 {isChatSending && (
                   <ChatBubble message="" isUser={false} isTyping={true} />
                 )}
+                <div ref={messagesEndRef} />
               </div>
+              <button 
+                onClick={() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })}
+                className="absolute bottom-24 right-6 p-2 bg-white text-black hover:bg-slate-100 rounded-full shadow-md border border-slate-200 transition-all z-10"
+                title="Scroll to bottom"
+              >
+                <ArrowDown className="w-4 h-4" />
+              </button>
 
               {/* Input Area */}
-              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent pt-10 pointer-events-none">
-                <div className="max-w-4xl mx-auto flex flex-col gap-2 pointer-events-auto bg-background/80 backdrop-blur-sm rounded-3xl p-1 shadow-sm border border-border">
+              <div className="p-4 bg-background/95 backdrop-blur-md border-t border-border/20 shrink-0">
+                <div className="max-w-4xl mx-auto flex flex-col gap-2 bg-background rounded-3xl p-1 shadow-sm border border-border">
                   {attachedFiles.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-1 px-3 pt-2">
                       {attachedFiles.map((f, i) => (

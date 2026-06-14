@@ -1,10 +1,12 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Bot, User, Paperclip, Send, Loader2, Mic } from 'lucide-react';
+import { Bot, User, Paperclip, Send, Loader2, Mic, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Button } from './button';
 
 export function ChatBubble({ message, sources, isUser, isTyping = false }) {
+  const [feedback, setFeedback] = React.useState(null);
+
   return (
     <div className={cn("flex w-full gap-4 p-4 md:p-6 transition-all", isUser ? "justify-end" : "justify-start")}>
       {!isUser && (
@@ -44,6 +46,24 @@ export function ChatBubble({ message, sources, isUser, isTyping = false }) {
                       )}
                     </div>
                   ))}
+                </div>
+              )}
+              {!isUser && (
+                <div className="flex justify-end gap-2 mt-3 pt-2 border-t border-border/10">
+                  <button 
+                    onClick={() => setFeedback(feedback === 'up' ? null : 'up')}
+                    className={cn("p-1 rounded transition-colors", feedback === 'up' ? "text-green-500 bg-green-500/10" : "text-muted-foreground opacity-60 hover:opacity-100 hover:text-green-500 hover:bg-green-500/10")} 
+                    title="Helpful"
+                  >
+                    <ThumbsUp className="w-3.5 h-3.5" />
+                  </button>
+                  <button 
+                    onClick={() => setFeedback(feedback === 'down' ? null : 'down')}
+                    className={cn("p-1 rounded transition-colors", feedback === 'down' ? "text-red-500 bg-red-500/10" : "text-muted-foreground opacity-60 hover:opacity-100 hover:text-red-500 hover:bg-red-500/10")} 
+                    title="Not helpful"
+                  >
+                    <ThumbsDown className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               )}
             </>
@@ -95,6 +115,20 @@ export function ChatInput({ input, setInput, onSubmit, isSending = false, onAtta
     recognition.onerror = (event) => {
       console.error("Speech recognition error", event.error);
       setIsListening(false);
+
+      let errorMessage = `Microphone error (${event.error}). Please try again.`;
+      if (event.error === 'not-allowed') {
+        errorMessage = "Microphone access was denied. Please click the microphone icon in your address bar to allow it.";
+      } else if (event.error === 'no-speech') {
+        errorMessage = "No speech was detected.";
+      } else if (event.error === 'audio-capture') {
+        errorMessage = "No microphone was found. Please ensure a microphone is plugged in and recognized by your system.";
+      } else if (event.error === 'network') {
+        errorMessage = "Network error. Speech recognition requires an internet connection.";
+      }
+      
+      // Use toast or alert depending on what's available
+      alert(errorMessage);
     };
 
     recognition.onend = () => {

@@ -514,7 +514,7 @@ export default function FacultyDashboard() {
                             <ul className="space-y-2 mb-4">
                               {q.options.map((opt, oIdx) => (
                                 <li key={oIdx} className={`p-3 rounded-lg border ${opt.trim().toLowerCase() === q.answer?.trim().toLowerCase() ? "bg-emerald-50 border-emerald-200 font-semibold text-emerald-800" : "bg-background border-border text-muted-foreground"}`}>
-                                  {opt}
+                                  <span className="font-bold mr-2">{String.fromCharCode(65 + oIdx)}.</span> {opt}
                                 </li>
                               ))}
                             </ul>

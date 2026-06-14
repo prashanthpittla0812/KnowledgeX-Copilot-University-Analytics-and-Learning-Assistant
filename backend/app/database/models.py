@@ -220,6 +220,7 @@ class QuizAttempt(Base):
     total_questions = Column(Integer, nullable=False)
     correct_answers = Column(Integer, nullable=False)
     wrong_answers = Column(Integer, nullable=False)
+    attempt_type = Column(String(50), nullable=False, default="practice")
     submitted_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     quiz = relationship("TeacherQuiz", back_populates="attempts")

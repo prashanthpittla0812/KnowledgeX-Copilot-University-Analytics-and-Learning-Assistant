@@ -104,9 +104,14 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
     }
   };
 
-  const deleteNotification = (id, e) => {
+  const deleteNotification = async (id, e) => {
     e.stopPropagation(); // Stop parent modal trigger propagation toggles
     setNotifications(prev => prev.filter(n => n.id !== id));
+    try {
+      await materialApi.deleteNotification(id);
+    } catch (error) {
+      console.error("Failed to delete notification", error);
+    }
   };
 
   const studentLinks = [

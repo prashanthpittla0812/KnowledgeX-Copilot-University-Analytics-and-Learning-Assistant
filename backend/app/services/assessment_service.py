@@ -89,6 +89,7 @@ class AssessmentService:
             total_questions=total,
             correct_answers=correct,
             wrong_answers=wrong,
+            attempt_type="practice",
         )
         self.db.add(attempt)
         await self.db.flush()

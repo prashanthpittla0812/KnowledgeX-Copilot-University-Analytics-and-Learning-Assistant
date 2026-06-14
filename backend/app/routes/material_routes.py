@@ -282,14 +282,15 @@ async def bookmark(
     if bm:
         bm.is_active = not bm.is_active
     else:
-        db.add(MaterialBookmark(
+        bm = MaterialBookmark(
             student_id=current_user.id,
             material_id=material_id,
             is_active=True
-        ))
+        )
+        db.add(bm)
 
     await db.commit()
-    return {"message": "Updated"}
+    return {"message": "Updated", "is_bookmarked": bm.is_active}
 
 
 @router.get("/notifications", response_model=List[NotificationResponse])

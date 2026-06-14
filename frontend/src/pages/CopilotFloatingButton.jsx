@@ -29,11 +29,8 @@ const CopilotFloatingButton = ({ onClick }) => {
                 border: '2px solid #FF7F00',
                 boxShadow: '0px 6px 15px rgba(0, 0, 0, 0.2)',
                 cursor: 'pointer',
-                zIndex: 1000,
-                transition: 'transform 0.2s ease-in-out'
+                zIndex: 1000
             }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
         >
             <img src="/kx-robot.png" alt="KnowledgeX Copilot" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'contain' }} />
         </button>
