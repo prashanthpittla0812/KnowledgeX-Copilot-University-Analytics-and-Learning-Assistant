@@ -21,7 +21,8 @@ import {
   Trash2,
   GraduationCap,
   Users,
-  History
+  History,
+  FileText
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
@@ -116,9 +117,10 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
 
   const studentLinks = [
     { name: "Dashboard", icon: LayoutDashboard },
-    { name: "Quizzes", icon: CheckCircle },
     { name: "Learning Resources", icon: BookOpen },
     { name: "Study Plan", icon: Calendar },
+    { name: "Quizzes", icon: CheckCircle },
+    { name: "Assessments", icon: FileText },
     { name: "Recommendations", icon: Lightbulb },
     { name: "Analytics", icon: PieChart },
   ];
@@ -126,7 +128,7 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
   const facultyLinks = [
     { name: "Dashboard", icon: LayoutDashboard },
     { name: "Learning Materials", icon: BookOpen },
-    { name: "Quizzes", icon: CheckCircle },
+    { name: "Quizzes/Assessments", icon: CheckCircle },
     { name: "Analytics", icon: PieChart },
   ];
 
@@ -253,7 +255,9 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
             >
               <Menu className="w-5 h-5" />
             </button>
-            <h1 className="text-lg md:text-xl font-bold text-foreground tracking-tight">{activeItem}</h1>
+            <h1 className="text-lg md:text-xl font-bold text-foreground tracking-tight">
+              {activeItem?.startsWith("Assessment_") ? "Assessment Details" : activeItem}
+            </h1>
           </div>
 
           {/* Center/Right Layout Section */}

@@ -151,10 +151,7 @@ export function LearningMaterialsTab() {
                     <option value="PDF">PDF Document</option>
                     <option value="PPT">Presentation (PPT)</option>
                     <option value="DOC">Word Document (DOC)</option>
-                    <option value="NOTE">Study Notes</option>
-                    <option value="ASSIGNMENT">Assignment</option>
                     <option value="VIDEO">Video Link</option>
-                    <option value="LINK">Reference Link</option>
                   </select>
                 </div>
               </div>
@@ -179,20 +176,37 @@ export function LearningMaterialsTab() {
                 </div>
                 <div>
                   <label className="text-sm font-semibold mb-1 block">Semester</label>
-                  <input value={semester} onChange={e => setSemester(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-2 text-sm focus:ring-1 focus:ring-primary outline-none" placeholder="e.g., 6" />
+                  <select value={semester} onChange={e => setSemester(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-2 text-sm focus:ring-1 focus:ring-primary outline-none">
+                    <option value="">Select Semester</option>
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map(sem => (
+                      <option key={sem} value={sem}>Semester {sem}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
               <div className="border-t border-border pt-6 mt-6">
-                {["LINK", "VIDEO"].includes(materialType) ? (
+                {materialType === "VIDEO" ? (
                   <div>
-                    <label className="text-sm font-semibold mb-1 block">Resource URL *</label>
+                    <label className="text-sm font-semibold mb-1 block">Video URL *</label>
                     <input type="url" required value={linkUrl} onChange={e => setLinkUrl(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-2 text-sm focus:ring-1 focus:ring-primary outline-none" placeholder="https://..." />
                   </div>
                 ) : (
                   <div>
                     <label className="text-sm font-semibold mb-1 block">Upload File *</label>
-                    <input ref={fileInputRef} type="file" required onChange={e => setFile(e.target.files[0])} className="w-full rounded-xl border border-input bg-background px-4 py-2 text-sm focus:ring-1 focus:ring-primary outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 transition-all" />
+                    <input 
+                      ref={fileInputRef} 
+                      type="file" 
+                      accept={
+                        materialType === "PDF" ? ".pdf,application/pdf" :
+                        materialType === "PPT" ? ".ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" :
+                        materialType === "DOC" ? ".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" :
+                        "*/*"
+                      }
+                      required 
+                      onChange={e => setFile(e.target.files[0])} 
+                      className="w-full rounded-xl border border-input bg-background px-4 py-2 text-sm focus:ring-1 focus:ring-primary outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 transition-all" 
+                    />
                   </div>
                 )}
               </div>

@@ -18,11 +18,16 @@ class StudentQuizService:
 
         attempted_quiz_ids = set()
         if student_id:
-            from app.database.models import QuizAttempt
+            from app.database.models import QuizAttempt, AssessmentSubmission
             attempts_result = await self.db.execute(
                 select(QuizAttempt.quiz_id).where(QuizAttempt.student_id == student_id)
             )
             attempted_quiz_ids = set(attempts_result.scalars().all())
+
+            subs_result = await self.db.execute(
+                select(AssessmentSubmission.assessment_id).where(AssessmentSubmission.student_id == student_id)
+            )
+            attempted_quiz_ids.update(subs_result.scalars().all())
 
         return [
             {
@@ -59,7 +64,20 @@ class StudentQuizService:
                 "options": options,
             })
 
-        return {"quiz_id": quiz_id, "questions": formatted}
+        result = await self.db.execute(
+            select(TeacherQuiz)
+            .where(TeacherQuiz.id == quiz_id)
+        )
+        quiz = result.scalar_one_or_none()
+        
+        return {
+            "quiz_id": quiz_id, 
+            "topic_name": quiz.topic_name if quiz else None,
+            "question_type": quiz.question_type if quiz else None,
+            "num_questions": quiz.num_questions if quiz else None,
+            "created_at": quiz.created_at.isoformat() if quiz and quiz.created_at else None,
+            "questions": formatted
+        }
 
 
 class StudentSubmitService:

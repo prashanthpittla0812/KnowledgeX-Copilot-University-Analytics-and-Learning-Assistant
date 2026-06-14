@@ -121,3 +121,62 @@ class TeacherDashboardService:
             "lowest_score": round(row[2] or 0, 2),
             "quiz_breakdown": breakdown,
         }
+
+    async def get_recent_quiz_rankings(self, teacher_id: int) -> dict:
+        user_res = await self.db.execute(select(User.name).where(User.id == teacher_id))
+        teacher_name = user_res.scalar_one_or_none()
+
+        query = select(TeacherQuiz)
+        if teacher_name:
+            query = query.where(
+                or_(
+                    TeacherQuiz.teacher_id == teacher_id,
+                    (TeacherQuiz.teacher_id.is_(None)) & (TeacherQuiz.teacher_name == teacher_name)
+                )
+            )
+        else:
+            query = query.where(TeacherQuiz.teacher_id == teacher_id)
+
+        # Get the most recent quiz
+        recent_quiz = await self.db.execute(query.order_by(TeacherQuiz.created_at.desc()).limit(1))
+        quiz = recent_quiz.scalar_one_or_none()
+
+        if not quiz:
+            return {"quiz_topic": None, "top_3": [], "bottom_3": []}
+
+        # Get attempts for this quiz
+        attempts_res = await self.db.execute(
+            select(
+                User.id,
+                User.name,
+                func.max(QuizAttempt.percentage).label("best_score")
+            )
+            .join(QuizAttempt, QuizAttempt.student_id == User.id)
+            .where(QuizAttempt.quiz_id == quiz.id)
+            .where(User.role == "student")
+            .group_by(User.id)
+        )
+        attempts = attempts_res.all()
+
+        if not attempts:
+            return {"quiz_topic": quiz.topic_name, "top_3": [], "bottom_3": []}
+
+        # Sort attempts
+        sorted_attempts = sorted(attempts, key=lambda x: x.best_score, reverse=True)
+        top_3 = [{"user_id": a.id, "user_name": a.name, "score": round(a.best_score, 2)} for a in sorted_attempts[:3]]
+        
+        top_3_ids = {u["user_id"] for u in top_3}
+        
+        sorted_asc = sorted(attempts, key=lambda x: x.best_score)
+        bottom_3 = []
+        for a in sorted_asc:
+            if a.id not in top_3_ids:
+                bottom_3.append({"user_id": a.id, "user_name": a.name, "score": round(a.best_score, 2)})
+            if len(bottom_3) == 3:
+                break
+
+        return {
+            "quiz_topic": quiz.topic_name,
+            "top_3": top_3,
+            "bottom_3": bottom_3
+        }

@@ -85,21 +85,33 @@ class TeacherQuizService:
         num_questions: int,
         document_topic: str = None,
         teacher_id: int = None,
+        is_assessment: bool = False,
+        manual_questions: str = None,
+        duration_mins: int = 60,
     ) -> dict:
-        doc_topic = document_topic or topic_name
-        context = retrieve_context(doc_topic, topic_name)
-        if not context:
-            return {"status": "error", "message": "No content found for this topic. Upload a document first."}
+        if manual_questions:
+            # For manual questions, just format them into JSON via LLM
+            prompt = f"Format the following manual questions into a JSON list of objects with 'question', 'options' (empty list if none), and 'answer' (empty string if none) keys.\n\nQuestions:\n{manual_questions}\n\nReturn ONLY valid JSON."
+            response = await self.llm.ainvoke(prompt)
+            content = response.content if hasattr(response, "content") else str(response)
+        else:
+            doc_topic = document_topic or topic_name
+            context = retrieve_context(doc_topic, topic_name)
+            if not context:
+                return {"status": "error", "message": "No content found for this topic. Upload a document first."}
 
-        prompt = self._get_prompt(
-            question_type=question_type,
-            context=context,
-            difficulty=difficulty,
-            num_questions=num_questions,
-        )
+            if is_assessment:
+                prompt = f"Generate {num_questions} questions for an assessment of type {question_type} at {difficulty} difficulty.\nUse ONLY this context:\n{context}\n\nReturn ONLY valid JSON as a list of objects with 'question', 'options' (empty list if none), and 'answer' (empty string if none) keys."
+            else:
+                prompt = self._get_prompt(
+                    question_type=question_type,
+                    context=context,
+                    difficulty=difficulty,
+                    num_questions=num_questions,
+                )
 
-        response = await self.llm.ainvoke(prompt)
-        content = response.content if hasattr(response, "content") else str(response)
+            response = await self.llm.ainvoke(prompt)
+            content = response.content if hasattr(response, "content") else str(response)
 
         questions = None
         try:
@@ -128,13 +140,15 @@ class TeacherQuizService:
             logger.error(f"Failed to extract JSON from LLM response: {content[:200]}")
             return {"status": "error", "message": "Failed to generate valid quiz format"}
 
+        final_question_type = f"Assessment: {question_type} ({duration_mins} mins)" if is_assessment else question_type
+
         quiz = TeacherQuiz(
             teacher_name=faculty_name,
             teacher_id=teacher_id,
             topic_name=topic_name,
-            question_type=question_type,
+            question_type=final_question_type,
             difficulty=difficulty,
-            num_questions=num_questions,
+            num_questions=num_questions if not manual_questions else len(questions),
         )
         self.db.add(quiz)
         await self.db.flush()

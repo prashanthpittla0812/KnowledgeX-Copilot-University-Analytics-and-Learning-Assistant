@@ -12,7 +12,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card"
 import { StatCard } from "../components/ui/stat-card";
 import { AnalyticsCard } from "../components/ui/analytics-card";
 import { ChatBubble, ChatInput } from "../components/ui/chat";
-import { BookOpen, Users, AlertCircle, FileText, Send, CheckCircle, BarChart as BarChartIcon, BookMarked } from "lucide-react";
+import { BookOpen, Users, AlertCircle, FileText, Send, CheckCircle, BarChart as BarChartIcon, BookMarked, TrendingUp, TrendingDown, Upload, Download, Eye } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { LearningMaterialsTab } from "../components/faculty/LearningMaterialsTab";
 import { MultimodalUploadTab } from "../components/faculty/MultimodalUploadTab";
@@ -33,16 +33,24 @@ export default function FacultyDashboard() {
   const [uploadTopic, setUploadTopic] = useState("");
   const [uploadedDocs, setUploadedDocs] = useState([]);
   const [quizTopic, setQuizTopic] = useState("");
-  const [quizType, setQuizType] = useState("MCQ");
+  const [quizType, setQuizType] = useState("MCQs");
   const [quizDifficulty, setQuizDifficulty] = useState("medium");
   const [quizCount, setQuizCount] = useState(0);
+  const [assessmentGenerationMethod, setAssessmentGenerationMethod] = useState("AI");
+  const [assessmentType, setAssessmentType] = useState("Essay");
+  const [assessmentDifficulty, setAssessmentDifficulty] = useState("Beginner");
+  const [assessmentDuration, setAssessmentDuration] = useState(60);
+  const [manualQuestionsText, setManualQuestionsText] = useState("");
 
   // Quiz Results State
   const [quizzes, setQuizzes] = useState([]);
   const [selectedQuiz, setSelectedQuiz] = useState(null);
+  const [selectedAssessmentId, setSelectedAssessmentId] = useState(null);
+  const [assessmentSubmissions, setAssessmentSubmissions] = useState([]);
+  const [activeQuizTab, setActiveQuizTab] = useState("performance");
+  const [activeAssessmentTab, setActiveAssessmentTab] = useState("submissions");
   const [quizPerformance, setQuizPerformance] = useState(null);
   const [quizDetails, setQuizDetails] = useState(null);
-  const [activeQuizTab, setActiveQuizTab] = useState("performance");
 
   // Analyze Results State
   const [learningGaps, setLearningGaps] = useState(null);
@@ -51,6 +59,8 @@ export default function FacultyDashboard() {
 
   // Recommendations State
   const [dashboardStats, setDashboardStats] = useState(null);
+  const [recentRankings, setRecentRankings] = useState({ quiz_topic: null, top_3: [], bottom_3: [] });
+  const [quizMode, setQuizMode] = useState("Quiz");
 
 
 
@@ -95,6 +105,52 @@ export default function FacultyDashboard() {
     }
   };
 
+  const fetchAssessmentSubmissions = async (quizId) => {
+    try {
+      setIsLoading(true);
+      const res = await facultyApi.getAssessmentSubmissions(quizId);
+      setAssessmentSubmissions(res.data.submissions);
+      const detailsRes = await facultyApi.getQuiz(quizId).catch(() => ({ data: null }));
+      if (detailsRes && detailsRes.data) setQuizDetails(detailsRes.data);
+      setActiveAssessmentTab("submissions");
+      setSelectedAssessmentId(quizId);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to load submissions.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDownloadSubmission = async (submissionId, fileName) => {
+    try {
+      const res = await facultyApi.downloadSubmission(submissionId);
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (e) {
+      console.error(e);
+      alert("Failed to download submission.");
+    }
+  };
+
+  const handleViewSubmission = async (submissionId, fileName) => {
+    try {
+      const res = await facultyApi.downloadSubmission(submissionId);
+      const isPdf = fileName.toLowerCase().endsWith('.pdf');
+      const type = isPdf ? 'application/pdf' : 'application/octet-stream';
+      const url = window.URL.createObjectURL(new Blob([res.data], { type }));
+      window.open(url, '_blank');
+    } catch (e) {
+      console.error(e);
+      alert("Failed to view submission.");
+    }
+  };
+
   const fetchLearningGaps = async (quizId = "") => {
     try {
       setIsLoading(true);
@@ -112,6 +168,9 @@ export default function FacultyDashboard() {
       setIsLoading(true);
       const res = await facultyApi.getDashboard();
       setDashboardStats(res.data.stats);
+      
+      const rankRes = await facultyApi.getRecentQuizRankings();
+      setRecentRankings(rankRes.data);
     } catch (e) {
       console.error(e);
     } finally {
@@ -122,7 +181,9 @@ export default function FacultyDashboard() {
 
 
   useEffect(() => {
-    if (activeItem === "Quizzes") {
+    if (activeItem === "Dashboard") {
+      fetchDashboardStats();
+    } else if (activeItem === "Quizzes/Assessments") {
       fetchQuizzes();
     } else if (activeItem === "Analytics") {
       fetchQuizzes();
@@ -184,6 +245,42 @@ export default function FacultyDashboard() {
     }
   };
 
+  const handleGenerateAssessment = async () => {
+    if (assessmentGenerationMethod === "AI" && !quizTopic) return alert("Enter topic name.");
+    if (assessmentGenerationMethod === "Manual" && !manualQuestionsText) return alert("Enter manual questions.");
+    
+    setIsGenerating(true);
+    try {
+      await facultyApi.generateQuiz({
+        faculty_name: userName,
+        topic_name: quizTopic || "Manual Assessment",
+        document_topic: uploadedDocs.length > 0 ? uploadedDocs[0].topic : undefined,
+        question_type: assessmentType,
+        difficulty: assessmentDifficulty,
+        num_questions: 5, // Generate 5 questions for AI assessments by default
+        is_assessment: true,
+        manual_questions: assessmentGenerationMethod === "Manual" ? manualQuestionsText : undefined,
+        duration_mins: assessmentDuration
+      });
+      alert("Assessment generated and students notified!");
+      
+      setQuizTopic("");
+      setManualQuestionsText("");
+      setUploadedDocs([]);
+      fetchQuizzes();
+    } catch (e) {
+      console.error(e);
+      const errorMsg = e.response?.data?.detail || e.response?.data?.message || "Failed generation.";
+      alert(errorMsg);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+
+  const regularQuizzes = quizzes.filter(q => !q.question_type?.startsWith("Assessment"));
+  const assessments = quizzes.filter(q => q.question_type?.startsWith("Assessment"));
+
   const handleLogout = () => {
     localStorage.removeItem("currentUser");
     navigate("/");
@@ -208,9 +305,103 @@ export default function FacultyDashboard() {
             </div>
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              <StatCard title="Active Courses" value="4" icon={BookOpen} description="CS101, PHY204..." />
-              <StatCard title="Total Students" value="120" icon={Users} trend="↑ 5" trendColor="text-emerald-500" description="enrolled recently" />
-              <StatCard title="Generated Quizzes" value="18" icon={FileText} description="Across all courses" />
+              <StatCard 
+                title="Learning Materials" 
+                value={dashboardStats?.total_documents || "0"} 
+                icon={BookOpen} 
+                description="Uploaded documents" 
+                colorClass="bg-gradient-to-br from-indigo-400 to-indigo-600 shadow-indigo-500/20"
+              />
+              <StatCard 
+                title="Total Students" 
+                value={dashboardStats?.total_students || "0"} 
+                icon={Users} 
+                description="enrolled recently" 
+                colorClass="bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-emerald-500/20"
+              />
+              <StatCard 
+                title="Generated Quizzes" 
+                value={dashboardStats?.total_quizzes || "0"} 
+                icon={FileText} 
+                description="Across all courses" 
+                colorClass="bg-gradient-to-br from-violet-400 to-violet-600 shadow-violet-500/20"
+              />
+              <StatCard 
+                title="Avg Class Score" 
+                value={dashboardStats?.avg_class_score ? `${dashboardStats.avg_class_score}%` : "0%"} 
+                icon={TrendingUp} 
+                description="Overall performance" 
+                colorClass="bg-gradient-to-br from-sky-400 to-sky-600 shadow-sky-500/20"
+              />
+            </div>
+
+            {/* TOP 3 AND LEAST 3 STUDENTS */}
+            <div className="grid gap-6 md:grid-cols-2 mt-8">
+              <div className="rounded-2xl border border-emerald-200/50 p-6 shadow-md bg-gradient-to-br from-emerald-50/80 to-white relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl -mr-10 -mt-10 transition-all duration-500 group-hover:bg-emerald-500/20"></div>
+                <h3 className="font-extrabold text-xl mb-4 flex items-center text-emerald-800 tracking-tight">
+                  <TrendingUp className="w-6 h-6 mr-2 text-emerald-600" /> Top Performers
+                </h3>
+                {recentRankings.quiz_topic && (
+                  <p className="text-sm font-medium text-emerald-800/60 mb-5 border-b border-emerald-100 pb-3 flex items-center">
+                    <BookOpen className="w-4 h-4 mr-2" /> Recent Quiz: <span className="ml-1 text-emerald-900 font-bold">{recentRankings.quiz_topic}</span>
+                  </p>
+                )}
+                <div className="space-y-3 relative z-10">
+                  {recentRankings.top_3.map((student, idx) => (
+                      <div key={student.user_id} className="flex justify-between items-center p-3 bg-white rounded-xl border border-emerald-100 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all">
+                        <div className="flex items-center">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm mr-4 ${idx === 0 ? 'bg-amber-100 text-amber-700 ring-2 ring-amber-400/50' : idx === 1 ? 'bg-slate-100 text-slate-600 ring-2 ring-slate-300/50' : 'bg-orange-100 text-orange-700 ring-2 ring-orange-300/50'}`}>
+                            {idx + 1}
+                          </div>
+                          <span className="font-bold text-emerald-950">{student.user_name}</span>
+                        </div>
+                        <div className="bg-emerald-100/80 px-3 py-1 rounded-md">
+                          <span className="font-black text-emerald-700">{student.score}%</span>
+                        </div>
+                      </div>
+                  ))}
+                  {recentRankings.top_3.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-6 text-emerald-600/60">
+                      <TrendingUp className="w-8 h-8 mb-2 opacity-20" />
+                      <p className="text-sm font-semibold">No data available</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-rose-200/50 p-6 shadow-md bg-gradient-to-br from-rose-50/80 to-white relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full blur-3xl -mr-10 -mt-10 transition-all duration-500 group-hover:bg-rose-500/20"></div>
+                <h3 className="font-extrabold text-xl mb-4 flex items-center text-rose-800 tracking-tight">
+                  <TrendingDown className="w-6 h-6 mr-2 text-rose-600" /> Needs Attention
+                </h3>
+                {recentRankings.quiz_topic && (
+                  <p className="text-sm font-medium text-rose-800/60 mb-5 border-b border-rose-100 pb-3 flex items-center">
+                    <BookOpen className="w-4 h-4 mr-2" /> Recent Quiz: <span className="ml-1 text-rose-900 font-bold">{recentRankings.quiz_topic}</span>
+                  </p>
+                )}
+                <div className="space-y-3 relative z-10">
+                  {recentRankings.bottom_3.map((student, idx) => (
+                      <div key={student.user_id} className="flex justify-between items-center p-3 bg-white rounded-xl border border-rose-100 shadow-sm hover:shadow-md hover:border-rose-300 transition-all">
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-sm mr-4 ring-2 ring-rose-200">
+                            !
+                          </div>
+                          <span className="font-bold text-rose-950">{student.user_name}</span>
+                        </div>
+                        <div className="bg-rose-100/80 px-3 py-1 rounded-md">
+                          <span className="font-black text-rose-700">{student.score}%</span>
+                        </div>
+                      </div>
+                  ))}
+                  {recentRankings.bottom_3.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-6 text-rose-600/60">
+                      <CheckCircle className="w-8 h-8 mb-2 opacity-20 text-emerald-500" />
+                      <p className="text-sm font-semibold">Everyone is doing great!</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
           </div>
@@ -218,16 +409,29 @@ export default function FacultyDashboard() {
           <LearningMaterialsTab />
         ) : activeItem === "Multimodal Content" ? (
           <MultimodalUploadTab />
-        ) : activeItem === "Quizzes" ? (
+        ) : activeItem === "Quizzes/Assessments" ? (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {!selectedQuiz ? (
+            {!selectedQuiz && !selectedAssessmentId ? (
               <>
                 <div className="flex justify-between items-end mb-6">
                   <div>
-                    <h1 className="text-3xl font-black tracking-tight">Assessments</h1>
-                    <p className="text-muted-foreground">Manage and create AI quizzes.</p>
+                    <h1 className="text-3xl font-black tracking-tight">{quizMode === "Quiz" ? "Generate Quizzes" : "Generate Assessments"}</h1>
+                    <p className="text-muted-foreground">Manage and create AI-powered {quizMode === "Quiz" ? "quizzes" : "assessments"}.</p>
+                  </div>
+                  <div>
+                    <select 
+                      value={quizMode} 
+                      onChange={e => setQuizMode(e.target.value)} 
+                      className="rounded-xl border border-orange-200 bg-orange-50/50 px-4 py-2 text-sm font-semibold text-orange-900 focus:ring-2 focus:ring-orange-500 outline-none shadow-sm cursor-pointer"
+                    >
+                      <option value="Quiz">Quiz Mode</option>
+                      <option value="Assessment">Assessment Mode</option>
+                    </select>
                   </div>
                 </div>
+
+                {quizMode === "Quiz" ? (
+                  <>
 
                 <div className="mb-10 max-w-4xl mx-auto">
                   <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -237,8 +441,8 @@ export default function FacultyDashboard() {
                         <FileText className="w-8 h-8 text-orange-500" />
                       </div>
                       <div>
-                        <h2 className="text-2xl font-bold text-slate-900">Generate Assessments</h2>
-                        <p className="text-slate-500 mt-1">Upload your knowledge base and configure assessment details</p>
+                        <h2 className="text-2xl font-bold text-slate-900">Generate Quizzes</h2>
+                        <p className="text-slate-500 mt-1">Upload your knowledge base and configure quiz details</p>
                       </div>
                     </div>
 
@@ -352,13 +556,13 @@ export default function FacultyDashboard() {
                       <div className="space-y-6">
                         <div className="flex items-center gap-3">
                           <div className="bg-orange-100 text-orange-600 font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0">2</div>
-                          <h3 className="text-lg font-bold text-slate-900">Assessment Details</h3>
+                          <h3 className="text-lg font-bold text-slate-900">Quiz Details</h3>
                         </div>
 
                         <div className="grid md:grid-cols-3 gap-6">
                           <div>
                             <label className="text-sm font-bold text-slate-900 mb-2 block">
-                              Assessment Topic <span className="text-red-500">*</span>
+                              Quiz Topic <span className="text-red-500">*</span>
                             </label>
                             <input 
                               value={quizTopic} 
@@ -376,8 +580,9 @@ export default function FacultyDashboard() {
                               onChange={e => setQuizType(e.target.value)} 
                               className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
                             >
-                              <option value="MCQ">MCQ</option>
-                              <option value="Theory">Theory</option>
+                              <option value="MCQs">MCQs</option>
+                              <option value="Fill in the blanks">Fill in the blanks</option>
+                              <option value="One word questions">One word questions</option>
                             </select>
                           </div>
                           <div>
@@ -420,8 +625,8 @@ export default function FacultyDashboard() {
 
                 <h3 className="text-xl font-bold mb-4">Generated Quizzes</h3>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {quizzes.length === 0 && <p className="text-muted-foreground">No quizzes generated yet.</p>}
-                  {quizzes.map(q => (
+                  {regularQuizzes.length === 0 && <p className="text-muted-foreground">No quizzes generated yet.</p>}
+                  {regularQuizzes.map(q => (
                     <Card key={q.id} onClick={() => fetchQuizPerformance(q.id)} className="cursor-pointer hover:border-primary/50 transition-colors glass-card">
                       <CardContent className="p-6">
                         <h4 className="text-xl font-bold truncate mb-3">{q.topic_name}</h4>
@@ -435,7 +640,277 @@ export default function FacultyDashboard() {
                     </Card>
                   ))}
                 </div>
+                </>
+              ) : (
+                <>
+                <div className="mb-10 max-w-4xl mx-auto">
+                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    {/* Header */}
+                    <div className="p-6 md:p-8 border-b border-slate-100 flex gap-4 items-start">
+                      <div className="bg-indigo-50 p-3 rounded-2xl border border-indigo-100 shrink-0">
+                        <FileText className="w-8 h-8 text-indigo-500" />
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-bold text-slate-900">Generate Assessments</h2>
+                        <p className="text-slate-500 mt-1">Upload your knowledge base to generate comprehensive assessments</p>
+                      </div>
+                    </div>
+
+                    <div className="p-6 md:p-8 space-y-10">
+                      {/* Step 1 */}
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-indigo-100 text-indigo-600 font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0">1</div>
+                            <h3 className="text-lg font-bold text-slate-900">Knowledge Base</h3>
+                          </div>
+                          <div className="flex bg-slate-100 p-1 rounded-xl">
+                            <button 
+                              onClick={() => setAssessmentGenerationMethod("AI")}
+                              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${assessmentGenerationMethod === "AI" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                            >
+                              AI Generate (PDF)
+                            </button>
+                            <button 
+                              onClick={() => setAssessmentGenerationMethod("Manual")}
+                              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${assessmentGenerationMethod === "Manual" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                            >
+                              Manual Entry
+                            </button>
+                          </div>
+                        </div>
+
+                        {assessmentGenerationMethod === "AI" ? (
+                          <div className="grid md:grid-cols-2 gap-6">
+                            <div>
+                              <label className="text-sm font-bold text-slate-900 mb-2 block">
+                                Topic Name <span className="text-red-500">*</span>
+                              </label>
+                              <input 
+                                value={quizTopic}
+                                onChange={e => setQuizTopic(e.target.value)}
+                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                                placeholder="e.g., Software Engineering Principles"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-sm font-bold text-slate-900 mb-2 block">
+                                Reference PDF <span className="text-red-500">*</span>
+                              </label>
+                              <input 
+                                type="file" 
+                                accept=".pdf"
+                                onChange={(e) => {
+                                  const file = e.target.files[0];
+                                  if (file) {
+                                    setUploadFile(file);
+                                    handleUploadDocument(file);
+                                  }
+                                }}
+                                ref={pdfInputRef}
+                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"
+                              />
+                              <p className="text-xs text-slate-500 mt-2">Upload a PDF containing the reference material.</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <label className="text-sm font-bold text-slate-900 mb-2 block">
+                              Enter Questions Manually <span className="text-red-500">*</span>
+                            </label>
+                            <textarea 
+                              value={manualQuestionsText}
+                              onChange={e => setManualQuestionsText(e.target.value)}
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all min-h-[150px]"
+                              placeholder="Type or paste your questions here...&#10;Example:&#10;1. Explain polymorphism.&#10;2. What is the difference between an interface and an abstract class?"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Step 2 */}
+                      <div className="space-y-6">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-indigo-100 text-indigo-600 font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0">2</div>
+                          <h3 className="text-lg font-bold text-slate-900">Assessment Details</h3>
+                        </div>
+
+                        <div className="grid md:grid-cols-3 gap-6">
+                          <div>
+                            <label className="text-sm font-bold text-slate-900 mb-2 block">
+                              Assessment Type <span className="text-red-500">*</span>
+                            </label>
+                            <select 
+                              value={assessmentType}
+                              onChange={e => setAssessmentType(e.target.value)}
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                            >
+                              <option value="Essay">Essay & Short Answer</option>
+                              <option value="Coding">Coding Assessment</option>
+                              <option value="Scenario">Scenario Based</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-sm font-bold text-slate-900 mb-2 block">
+                              Difficulty <span className="text-red-500">*</span>
+                            </label>
+                            <select 
+                              value={assessmentDifficulty}
+                              onChange={e => setAssessmentDifficulty(e.target.value)}
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                            >
+                              <option value="Beginner">Beginner</option>
+                              <option value="Intermediate">Intermediate</option>
+                              <option value="Advanced">Advanced</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-sm font-bold text-slate-900 mb-2 block">
+                              Duration (Mins)
+                            </label>
+                            <input 
+                              type="number"
+                              value={assessmentDuration}
+                              onChange={e => setAssessmentDuration(e.target.value)}
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                              placeholder="e.g., 60"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="pt-6">
+                          <Button 
+                            onClick={handleGenerateAssessment}
+                            disabled={isGenerating || isUploading}
+                            className="w-full py-6 text-lg font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 disabled:opacity-50"
+                          >
+                            {isGenerating ? "Generating Assessment..." : <><Upload className="w-5 h-5 mr-2" /> Generate Assessment</>}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <h3 className="text-xl font-bold mb-4">Assessment History</h3>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {assessments.length === 0 && <p className="text-muted-foreground">No assessments generated yet.</p>}
+                  {assessments.map(q => (
+                    <Card key={q.id} onClick={() => fetchAssessmentSubmissions(q.id)} className="cursor-pointer hover:border-indigo-500/50 transition-colors bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+                      <CardContent className="p-6">
+                        <h4 className="text-xl font-bold text-slate-900 truncate mb-3">{q.topic_name}</h4>
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          <span className="px-2 py-1 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-bold uppercase tracking-wider">{q.difficulty}</span>
+                          <span className="px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase tracking-wider">{q.question_type}</span>
+                          <span className="px-2 py-1 rounded-md bg-amber-50 text-amber-700 text-[10px] font-bold uppercase tracking-wider">{q.num_questions} Qs</span>
+                        </div>
+                        <p className="text-xs text-slate-500">Created: {new Date(q.created_at).toLocaleDateString()}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                </>
+              )}
               </>
+            ) : selectedAssessmentId ? (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                <Button variant="ghost" onClick={() => setSelectedAssessmentId(null)} className="pl-0 hover:bg-transparent hover:text-indigo-600">← Back to Assessments</Button>
+                
+                <div className="flex justify-between items-end mb-6">
+                  <div>
+                    <h1 className="text-3xl font-black tracking-tight text-slate-900">Assessment Submissions</h1>
+                    <p className="text-slate-500">View and download completed assessments from students.</p>
+                  </div>
+                </div>
+
+                <div className="flex border-b border-slate-200 mb-6">
+                  <button 
+                    className={`py-3 px-6 font-semibold border-b-2 transition-colors ${activeAssessmentTab === "submissions" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-500 hover:text-slate-900"}`}
+                    onClick={() => setActiveAssessmentTab("submissions")}
+                  >
+                    Submissions
+                  </button>
+                  <button 
+                    className={`py-3 px-6 font-semibold border-b-2 transition-colors ${activeAssessmentTab === "questions" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-500 hover:text-slate-900"}`}
+                    onClick={() => setActiveAssessmentTab("questions")}
+                  >
+                    Questions
+                  </button>
+                </div>
+
+                {activeAssessmentTab === "submissions" ? (
+                  <Card className="bg-white border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+                    {assessmentSubmissions.length === 0 ? (
+                      <div className="p-10 text-center text-slate-500 font-medium">No students have submitted their assessment yet.</div>
+                    ) : (
+                      <table className="w-full text-left text-sm">
+                        <thead className="bg-slate-50 border-b border-slate-100">
+                          <tr>
+                            <th className="p-4 font-bold text-slate-700">Student Name</th>
+                            <th className="p-4 font-bold text-slate-700">Submitted On</th>
+                            <th className="p-4 font-bold text-slate-700">File Name</th>
+                            <th className="p-4 font-bold text-slate-700 text-center">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {assessmentSubmissions.map(sub => (
+                            <tr key={sub.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                              <td className="p-4 font-medium text-slate-900">{sub.student_name}</td>
+                              <td className="p-4 text-slate-500">{new Date(sub.submitted_at).toLocaleString()}</td>
+                              <td className="p-4 text-slate-600">
+                                <div className="flex items-center gap-2">
+                                  <FileText className="w-4 h-4 text-indigo-500" />
+                                  {sub.file_name}
+                                </div>
+                              </td>
+                              <td className="p-4 text-center">
+                                <div className="flex items-center justify-center gap-2">
+                                  <Button 
+                                    size="sm" 
+                                    onClick={() => handleViewSubmission(sub.id, sub.file_name)}
+                                    className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 shadow-none border-none font-semibold"
+                                  >
+                                    <Eye className="w-4 h-4 mr-2" /> View
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    onClick={() => handleDownloadSubmission(sub.id, sub.file_name)}
+                                    className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 shadow-none border-none font-semibold"
+                                  >
+                                    <Download className="w-4 h-4 mr-2" /> Download
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </Card>
+                ) : (
+                  <div className="space-y-4">
+                    {quizDetails?.questions?.map((q, idx) => (
+                      <Card key={idx} className="bg-white border-slate-200 shadow-sm rounded-xl">
+                        <CardContent className="p-6">
+                          <h4 className="font-bold text-lg mb-2"><span className="text-indigo-600 mr-2">Q{idx+1}.</span> {q.question || q.question_text}</h4>
+                          {q.options && q.options.length > 0 && (
+                            <div className="space-y-2 mt-4 ml-7">
+                              {q.options.map((opt, oIdx) => (
+                                <div key={oIdx} className={`p-3 rounded-lg border ${opt === q.correct_answer ? "bg-emerald-50 border-emerald-200 text-emerald-800 font-semibold" : "bg-slate-50 border-slate-100 text-slate-600"}`}>
+                                  {opt}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                    {!quizDetails?.questions?.length && (
+                      <div className="p-10 text-center text-slate-500 font-medium bg-white rounded-2xl border border-slate-200">No questions available for this assessment.</div>
+                    )}
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
                 <Button variant="ghost" onClick={() => setSelectedQuiz(null)} className="pl-0 hover:bg-transparent hover:text-primary">← Back to Quizzes</Button>

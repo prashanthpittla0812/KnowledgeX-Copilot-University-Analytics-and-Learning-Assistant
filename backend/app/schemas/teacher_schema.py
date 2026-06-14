@@ -9,6 +9,9 @@ class QuizGenerateRequest(BaseModel):
     question_type: str
     difficulty: str
     num_questions: int
+    is_assessment: Optional[bool] = False
+    manual_questions: Optional[str] = None
+    duration_mins: Optional[int] = 60
 
 
 class QuizGenerateResponse(BaseModel):
@@ -29,8 +32,14 @@ class StudentQuizSubmission(BaseModel):
     answers: List[StudentAnswer]
 
 
+from typing import List, Optional
+
 class StudentQuizResponse(BaseModel):
     quiz_id: int
+    topic_name: Optional[str] = None
+    question_type: Optional[str] = None
+    num_questions: Optional[int] = None
+    created_at: Optional[str] = None
     questions: List[dict]
 
 

@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { chatbotApi, documentApi, studentApi, materialApi } from "../api";
 import { DashboardLayout } from "../components/layout/DashboardLayout";
 import { LearningResourcesTab } from "../components/student/LearningResourcesTab";
+import { StudentAssessmentView } from "../components/student/StudentAssessmentView";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
 import { StatCard } from "../components/ui/stat-card";
 import { AnalyticsCard } from "../components/ui/analytics-card";
@@ -20,6 +21,7 @@ export default function StudentDashboard() {
   const [userName, setUserName] = useState("Student");
   const [studentId, setStudentId] = useState(null);
   const [activeItem, setActiveItem] = useState("Dashboard");
+  const [activeAssessmentTab, setActiveAssessmentTab] = useState("Active");
   const [selectedQuizPeriod, setSelectedQuizPeriod] = useState("All Time");
   const [selectedTrendPeriod, setSelectedTrendPeriod] = useState("All Time");
   const [selectedSkillSubject, setSelectedSkillSubject] = useState("All Subjects");
@@ -242,7 +244,7 @@ export default function StudentDashboard() {
       fetchRecentMaterials();
       fetchDashboardStats();
     }
-    if (activeItem === "Quizzes" || activeItem === "Analytics") {
+    if (activeItem === "Quizzes" || activeItem === "Assessments" || activeItem === "Analytics") {
       fetchQuizHistory();
       fetchAssignedQuizzes();
     }
@@ -748,14 +750,14 @@ export default function StudentDashboard() {
                   </AnalyticsCard>
                 </div>
 
-                {assignedQuizzes.length > 0 && (
+                {assignedQuizzes.filter(q => !q.question_type || q.question_type === 'MCQ').length > 0 && (
                   <div className="mb-10">
                     <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
                       <BookOpen className="text-primary w-6 h-6" />
                       Assigned Quizzes (From Faculty)
                     </h3>
                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {assignedQuizzes.map((q, i) => (
+                      {assignedQuizzes.filter(q => !q.question_type || q.question_type === 'MCQ').map((q, i) => (
                         <Card key={i} className="glass-card border-primary/30 bg-primary/5 hover:border-primary transition-colors">
                           <CardContent className="p-6">
                             <h4 className="text-lg font-bold truncate">{formatTopicForDisplay(q.topic_name)}</h4>
@@ -777,6 +779,63 @@ export default function StudentDashboard() {
                   </div>
                 )}
               </>
+            )}
+          </div>
+        ) : activeItem === "Assessments" ? (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex justify-between items-end mb-6">
+              <div>
+                <h1 className="text-3xl font-black tracking-tight">Assessments</h1>
+                <p className="text-muted-foreground">View and submit your assigned assessments.</p>
+              </div>
+            </div>
+
+            <div className="flex space-x-2 border-b border-slate-200 mb-6">
+              <button
+                className={`py-2 px-4 font-semibold text-sm transition-colors ${activeAssessmentTab === "Active" ? "border-b-2 border-indigo-600 text-indigo-600" : "text-slate-500 hover:text-slate-700"}`}
+                onClick={() => setActiveAssessmentTab("Active")}
+              >
+                Active
+              </button>
+              <button
+                className={`py-2 px-4 font-semibold text-sm transition-colors ${activeAssessmentTab === "Completed" ? "border-b-2 border-indigo-600 text-indigo-600" : "text-slate-500 hover:text-slate-700"}`}
+                onClick={() => setActiveAssessmentTab("Completed")}
+              >
+                Completed
+              </button>
+            </div>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {assignedQuizzes
+                .filter(q => q.question_type && q.question_type !== 'MCQ')
+                .filter(q => activeAssessmentTab === "Active" ? !q.is_completed : q.is_completed)
+                .map((q, i) => (
+                  <Card key={i} className="glass-card border-slate-200 bg-white hover:border-indigo-400 hover:shadow-md transition-all cursor-pointer" onClick={() => setActiveItem(`Assessment_${q.id}`)}>
+                    <CardContent className="p-6">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-xs font-bold px-2 py-1 bg-indigo-50 text-indigo-600 rounded-md">
+                          {q.question_type}
+                        </span>
+                        {q.is_completed && <CheckCircle className="w-5 h-5 text-emerald-500" />}
+                      </div>
+                      <h4 className="text-lg font-bold text-slate-900 mb-1 line-clamp-2">{q.topic_name}</h4>
+                      <p className="text-xs text-slate-500 mb-4">By {q.teacher_name}</p>
+                      
+                      <div className="flex items-center text-xs text-slate-600 font-medium">
+                        <FileText className="w-4 h-4 mr-1.5" />
+                        {q.num_questions} Questions
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+            </div>
+            
+            {assignedQuizzes.filter(q => q.question_type && q.question_type !== 'MCQ').filter(q => activeAssessmentTab === "Active" ? !q.is_completed : q.is_completed).length === 0 && (
+              <div className="text-center py-12">
+                <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                <h3 className="text-lg font-medium text-slate-900 mb-1">No {activeAssessmentTab.toLowerCase()} assessments</h3>
+                <p className="text-slate-500">You don't have any {activeAssessmentTab.toLowerCase()} assessments right now.</p>
+              </div>
             )}
           </div>
         ) : activeItem === "Learning Resources" ? (
@@ -1723,8 +1782,8 @@ export default function StudentDashboard() {
 
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}>
                       <AnalyticsCard 
-                        title="Skill Matrix" 
-                        className="border-slate-100 shadow-sm rounded-3xl bg-white/80 backdrop-blur-xl"
+                        title="Topic Mastery Heatmap" 
+                        className="border-slate-100 shadow-sm rounded-3xl bg-white/80 backdrop-blur-xl h-full flex flex-col"
                         action={
                           <select 
                             value={selectedSkillSubject} 
@@ -1739,20 +1798,68 @@ export default function StudentDashboard() {
                           </select>
                         }
                       >
-                        <div className="h-[300px] mt-4">
-                          {filteredSkillData.length > 2 ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                              <RadarChart cx="50%" cy="50%" outerRadius="70%" data={filteredSkillData}>
-                                <PolarGrid stroke="#94a3b8" strokeWidth={1.5} />
-                                <PolarAngleAxis dataKey="topic" tick={{ fill: '#334155', fontSize: 12, fontWeight: 600 }} />
-                                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                                <Radar name="Mastery" dataKey="score" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.5} />
-                                <Tooltip content={<CustomTooltip />} />
-                              </RadarChart>
-                            </ResponsiveContainer>
+                        <div className="mt-4 flex-1 flex flex-col min-h-[300px]">
+                          {filteredSkillData.length > 0 ? (
+                            <>
+                              <div className="flex-1 overflow-auto custom-scrollbar pr-2">
+                                <table className="w-full text-left border-collapse">
+                                  <thead>
+                                    <tr>
+                                      <th className="p-2 text-xs font-semibold text-slate-500 border-b border-slate-100 sticky top-0 bg-white/90 backdrop-blur-sm z-10">Topic</th>
+                                      {(selectedSkillSubject === "All Subjects" ? Object.keys(subjectMap) : [selectedSkillSubject]).map(col => (
+                                        <th key={col} className="p-2 text-xs font-semibold text-slate-500 text-center border-b border-slate-100 sticky top-0 bg-white/90 backdrop-blur-sm z-10">
+                                          {col === "Computer Science" ? "CS" : col === "General Knowledge" ? "GK" : col}
+                                        </th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {filteredSkillData.map((t, idx) => {
+                                      const cols = selectedSkillSubject === "All Subjects" ? Object.keys(subjectMap) : [selectedSkillSubject];
+                                      return (
+                                        <tr key={idx} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                                          <td className="p-2 text-xs font-medium text-slate-700 truncate max-w-[120px]" title={t.fullTopic}>
+                                            {t.fullTopic}
+                                          </td>
+                                          {cols.map(col => {
+                                            const belongs = (subjectMap[col] || []).some(sub => t.fullTopic.toLowerCase().includes(sub));
+                                            // Fallback: if it belongs to nothing, put it in General Knowledge so it doesn't just disappear
+                                            const isUncategorized = !Object.keys(subjectMap).some(k => subjectMap[k].some(sub => t.fullTopic.toLowerCase().includes(sub)));
+                                            const shouldShow = belongs || (isUncategorized && col === "General Knowledge");
+                                            
+                                            if (shouldShow) {
+                                              let colorClass = "bg-slate-100 text-slate-500";
+                                              if (t.score >= 75) colorClass = "bg-emerald-100 text-emerald-700";
+                                              else if (t.score >= 50) colorClass = "bg-amber-100 text-amber-700";
+                                              else if (t.score >= 25) colorClass = "bg-rose-100 text-rose-700";
+                                              
+                                              return (
+                                                <td key={col} className="p-2 text-center">
+                                                  <div className={`py-1 px-1.5 rounded text-[11px] font-bold inline-block min-w-[36px] ${colorClass}`}>
+                                                    {t.score}%
+                                                  </div>
+                                                </td>
+                                              );
+                                            } else {
+                                              return <td key={col} className="p-2 text-center text-slate-300 font-medium">-</td>;
+                                            }
+                                          })}
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                              <div className="flex items-center gap-4 text-[10px] sm:text-xs mt-4 pt-3 border-t border-slate-100 text-slate-500 flex-wrap">
+                                <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-emerald-400 rounded-sm"></div> 75-100%</div>
+                                <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-amber-400 rounded-sm"></div> 50-74%</div>
+                                <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-rose-400 rounded-sm"></div> 25-49%</div>
+                                <div className="flex items-center gap-1.5 border border-slate-200 w-3 h-3 rounded-sm bg-white"></div> &lt;25%
+                              </div>
+                            </>
                           ) : (
-                            <div className="h-full flex flex-col items-center justify-center text-slate-400">
-                              <p className="font-semibold px-4 text-center">Not enough topics in this subject. Take more diverse quizzes!</p>
+                            <div className="h-full flex flex-col items-center justify-center text-slate-400 flex-1">
+                              <p className="font-semibold px-4 text-center">No topic data available yet.</p>
                             </div>
                           )}
                         </div>
@@ -1890,6 +1997,8 @@ export default function StudentDashboard() {
               </div>
             </div>
           </div>
+        ) : activeItem?.startsWith("Assessment_") ? (
+          <StudentAssessmentView quizId={activeItem.split("_")[1]} />
         ) : (
           <div className="flex h-full flex-col items-center justify-center text-center animate-in fade-in duration-500">
             <h2 className="text-2xl font-bold text-muted-foreground">Under Construction</h2>
