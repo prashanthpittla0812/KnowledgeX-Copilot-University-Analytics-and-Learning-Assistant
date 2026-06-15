@@ -59,15 +59,16 @@ class TeacherQuizService:
             )
 
     def _get_prompt(self, question_type: str, context: str, difficulty: str, num_questions: int) -> str:
-        if question_type.lower() == "mcq":
+        q_type = question_type.lower()
+        if "mcq" in q_type:
             return TEACHER_MCQ_PROMPT_TEMPLATE.format(
                 context=context, difficulty=difficulty, num_questions=num_questions
             )
-        elif question_type.lower() == "fill_blanks":
+        elif "fill" in q_type or "blank" in q_type:
             return TEACHER_FILL_BLANKS_PROMPT_TEMPLATE.format(
                 context=context, difficulty=difficulty, num_questions=num_questions
             )
-        elif question_type.lower() == "theory":
+        elif "theory" in q_type or "word" in q_type:
             return TEACHER_THEORY_PROMPT_TEMPLATE.format(
                 context=context, difficulty=difficulty, num_questions=num_questions
             )
@@ -135,6 +136,24 @@ class TeacherQuizService:
                     questions = json.loads(content[start:end+1])
                 except json.JSONDecodeError:
                     pass
+
+        if isinstance(questions, dict):
+            if "questions" in questions:
+                questions = questions["questions"]
+            else:
+                found_list = False
+                for v in questions.values():
+                    if isinstance(v, list):
+                        questions = v
+                        found_list = True
+                        break
+                if not found_list:
+                    extracted_questions = []
+                    for v in questions.values():
+                        if isinstance(v, dict) and "question" in v:
+                            extracted_questions.append(v)
+                    if extracted_questions:
+                        questions = extracted_questions
 
         if questions is None or not isinstance(questions, list):
             logger.error(f"Failed to extract JSON from LLM response: {content[:200]}")

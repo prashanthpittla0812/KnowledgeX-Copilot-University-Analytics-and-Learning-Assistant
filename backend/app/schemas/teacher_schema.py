@@ -55,6 +55,10 @@ class ResultItem(BaseModel):
 class ResultResponse(BaseModel):
     quiz_id: int
     results: List[ResultItem]
+    average_score: float = 0.0
+    highest_score: float = 0.0
+    lowest_score: float = 0.0
+    total_attempts: int = 0
 
 
 class UploadResponse(BaseModel):

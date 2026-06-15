@@ -750,14 +750,14 @@ export default function StudentDashboard() {
                   </AnalyticsCard>
                 </div>
 
-                {assignedQuizzes.filter(q => !q.question_type || q.question_type === 'MCQ').length > 0 && (
+                {assignedQuizzes.filter(q => !q.question_type || !q.question_type.startsWith('Assessment')).length > 0 && (
                   <div className="mb-10">
                     <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
                       <BookOpen className="text-primary w-6 h-6" />
                       Assigned Quizzes (From Faculty)
                     </h3>
                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {assignedQuizzes.filter(q => !q.question_type || q.question_type === 'MCQ').map((q, i) => (
+                      {assignedQuizzes.filter(q => !q.question_type || !q.question_type.startsWith('Assessment')).map((q, i) => (
                         <Card key={i} className="glass-card border-primary/30 bg-primary/5 hover:border-primary transition-colors">
                           <CardContent className="p-6">
                             <h4 className="text-lg font-bold truncate">{formatTopicForDisplay(q.topic_name)}</h4>
@@ -807,7 +807,7 @@ export default function StudentDashboard() {
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {assignedQuizzes
-                .filter(q => q.question_type && q.question_type !== 'MCQ')
+                .filter(q => q.question_type && q.question_type.startsWith('Assessment'))
                 .filter(q => activeAssessmentTab === "Active" ? !q.is_completed : q.is_completed)
                 .map((q, i) => (
                   <Card key={i} className="glass-card border-slate-200 bg-white hover:border-indigo-400 hover:shadow-md transition-all cursor-pointer" onClick={() => setActiveItem(`Assessment_${q.id}`)}>
@@ -830,7 +830,7 @@ export default function StudentDashboard() {
                 ))}
             </div>
             
-            {assignedQuizzes.filter(q => q.question_type && q.question_type !== 'MCQ').filter(q => activeAssessmentTab === "Active" ? !q.is_completed : q.is_completed).length === 0 && (
+            {assignedQuizzes.filter(q => q.question_type && q.question_type.startsWith('Assessment')).filter(q => activeAssessmentTab === "Active" ? !q.is_completed : q.is_completed).length === 0 && (
               <div className="text-center py-12">
                 <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
                 <h3 className="text-lg font-medium text-slate-900 mb-1">No {activeAssessmentTab.toLowerCase()} assessments</h3>

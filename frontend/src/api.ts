@@ -118,7 +118,7 @@ export const facultyApi = {
   },
 
   getQuizResults(quizId: string | number) {
-    return api.get(`/assessment/class-performance/${quizId}`);
+    return api.get(`/faculty/results/${quizId}`);
   },
 
   getLearningGaps(quizId?: string | number) {

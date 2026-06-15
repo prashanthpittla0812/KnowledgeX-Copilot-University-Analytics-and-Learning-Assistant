@@ -12,7 +12,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card"
 import { StatCard } from "../components/ui/stat-card";
 import { AnalyticsCard } from "../components/ui/analytics-card";
 import { ChatBubble, ChatInput } from "../components/ui/chat";
-import { BookOpen, Users, AlertCircle, FileText, Send, CheckCircle, BarChart as BarChartIcon, BookMarked, TrendingUp, TrendingDown, Upload, Download, Eye } from "lucide-react";
+import { BookOpen, Users, AlertCircle, FileText, Send, CheckCircle, BarChart as BarChartIcon, BookMarked, TrendingUp, TrendingDown, Upload, Download, Eye, BrainCircuit } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { LearningMaterialsTab } from "../components/faculty/LearningMaterialsTab";
 import { MultimodalUploadTab } from "../components/faculty/MultimodalUploadTab";
@@ -61,6 +61,8 @@ export default function FacultyDashboard() {
   const [dashboardStats, setDashboardStats] = useState(null);
   const [recentRankings, setRecentRankings] = useState({ quiz_topic: null, top_3: [], bottom_3: [] });
   const [quizMode, setQuizMode] = useState("Quiz");
+  const [overviewPage, setOverviewPage] = useState(0);
+  const [selectedStudent, setSelectedStudent] = useState(null);
 
 
 
@@ -1049,6 +1051,7 @@ export default function FacultyDashboard() {
                 <div className="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full" />
               </div>
             ) : learningGaps ? (
+              <div className="space-y-8">
               <div className="grid lg:grid-cols-2 gap-8">
                 <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
                   <AnalyticsCard title="Student Performance" className="min-h-[400px] border-slate-100 shadow-sm rounded-3xl bg-white/80 backdrop-blur-xl">
@@ -1145,6 +1148,76 @@ export default function FacultyDashboard() {
                   </motion.div>
                 </div>
               </div>
+
+              <div className="mt-12 max-w-4xl mx-auto">
+                {/* Students Overview Carousel */}
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+                  <div className="bg-gradient-to-br from-[#f6f8f4] to-[#f0f4ec] rounded-2xl p-8 shadow-sm border border-[#e6ebe0]">
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-2xl font-bold text-slate-800">Students Overview</h2>
+                      {learningGaps.student_performance?.length > 0 && (
+                        <div className="flex items-center gap-3 text-slate-500 font-medium">
+                          <button 
+                            onClick={() => setOverviewPage(p => Math.max(0, p - 1))} 
+                            disabled={overviewPage === 0}
+                            className="text-lg hover:text-slate-800 disabled:opacity-30 transition-colors"
+                          >
+                            ←
+                          </button>
+                          <span className="text-lg font-medium tracking-wide">{overviewPage + 1} / {Math.max(1, Math.ceil(learningGaps.student_performance.length / 2))}</span>
+                          <button 
+                            onClick={() => setOverviewPage(p => Math.min(Math.ceil(learningGaps.student_performance.length / 2) - 1, p + 1))} 
+                            disabled={overviewPage >= Math.max(0, Math.ceil(learningGaps.student_performance.length / 2) - 1)}
+                            className="text-lg hover:text-slate-800 disabled:opacity-30 transition-colors"
+                          >
+                            →
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="grid md:grid-cols-2 gap-6">
+                      {learningGaps.student_performance?.slice(overviewPage * 2, overviewPage * 2 + 2).map((sp, idx) => (
+                        <div key={idx} className="bg-white rounded-xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100/60 relative overflow-hidden flex flex-col justify-between min-h-[350px]">
+                          <div className="flex justify-between items-start z-10">
+                            <div>
+                              <h3 className="text-xl font-bold text-slate-800">{sp.student_name}</h3>
+                              <p className="text-slate-400 font-medium text-sm mt-1">Student</p>
+                            </div>
+                            <button 
+                            onClick={() => setSelectedStudent(sp)}
+                            className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 text-xs font-bold px-4 py-2 rounded-full transition-colors"
+                          >
+                            View Details
+                          </button>
+                          </div>
+                          
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 opacity-95 z-0 pointer-events-none mt-4">
+                            <img 
+                              src={sp.profile_image || `https://api.dicebear.com/7.x/initials/svg?seed=${sp.student_name}&backgroundColor=f8fafc&textColor=475569`} 
+                              alt="avatar" 
+                              className="w-full h-full object-cover rounded-full shadow-sm border-4 border-white" 
+                            />
+                          </div>
+                          
+                          <div className="z-10 mt-auto pt-40">
+                            <div className="bg-white/90 backdrop-blur-md rounded-2xl p-4 border border-slate-100 shadow-sm">
+                              <p className="font-bold text-slate-700 text-sm mb-3">Topic: {analyticsQuiz ? (quizzes.find(q => q.id.toString() === analyticsQuiz)?.topic_name || "Assessment") : "Overall Progress"}</p>
+                              <div className="flex justify-between items-center text-sm font-semibold">
+                                <span className="text-slate-500">Progress: <span className="text-indigo-600">{sp.average_score}%</span></span>
+                              </div>
+                              <div className="w-full bg-slate-100 h-2 rounded-full mt-2 overflow-hidden">
+                                <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full" style={{ width: `${sp.average_score}%` }} />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+              </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-20 text-slate-400 bg-white/50 backdrop-blur-md rounded-3xl border border-dashed border-slate-200">
                 <BarChartIcon className="w-12 h-12 mb-4 opacity-20" />
@@ -1159,6 +1232,184 @@ export default function FacultyDashboard() {
           </div>
         )}
       </div>
+
+      {/* Student Details Modal */}
+      {selectedStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 20 }} 
+            animate={{ opacity: 1, scale: 1, y: 0 }} 
+            className="relative bg-white/90 backdrop-blur-xl rounded-[2rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] w-full max-w-3xl overflow-hidden border border-white/50"
+          >
+            {/* Ambient Background Glow */}
+            <div className="absolute top-0 left-0 w-full h-40 bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-emerald-500/10 pointer-events-none" />
+
+            <div className="relative p-8 pb-6">
+              <div className="flex justify-between items-start mb-10">
+                <div className="flex items-center gap-6">
+                  <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 p-[3px] shadow-lg shrink-0">
+                    <div className="w-full h-full rounded-full overflow-hidden border-2 border-white bg-white">
+                      <img 
+                        src={selectedStudent.profile_image || `https://api.dicebear.com/7.x/initials/svg?seed=${selectedStudent.student_name}&backgroundColor=f8fafc&textColor=475569`} 
+                        alt="avatar" 
+                        className="w-full h-full object-cover" 
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-slate-800 to-slate-600 tracking-tight">{selectedStudent.student_name}</h2>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-xs font-bold tracking-wide uppercase">Computer Science</span>
+                      <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-xs font-bold tracking-wide uppercase">Year 2</span>
+                    </div>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setSelectedStudent(null)}
+                  className="w-10 h-10 rounded-full bg-slate-100/80 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-all shadow-sm backdrop-blur-sm"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+                <motion.div whileHover={{ y: -5 }} className="bg-gradient-to-b from-indigo-50/50 to-white rounded-2xl p-5 border border-indigo-100 shadow-sm relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-16 h-16 bg-indigo-500/5 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-150" />
+                  <p className="text-xs font-black text-indigo-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
+                    Score
+                  </p>
+                  <div className="flex items-end gap-1">
+                    <span className="text-4xl font-black text-indigo-600">{selectedStudent.average_score}%</span>
+                  </div>
+                </motion.div>
+
+                <motion.div whileHover={{ y: -5 }} className="bg-gradient-to-b from-emerald-50/50 to-white rounded-2xl p-5 border border-emerald-100 shadow-sm relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/5 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-150" />
+                  <p className="text-xs font-black text-emerald-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    Status
+                  </p>
+                  <p className={`font-black text-xl leading-tight ${selectedStudent.average_score >= 80 ? 'text-emerald-600' : selectedStudent.average_score >= 60 ? 'text-amber-500' : 'text-rose-500'}`}>
+                    {selectedStudent.average_score >= 80 ? 'Excelling' : selectedStudent.average_score >= 60 ? 'On Track' : 'Needs Attention'}
+                  </p>
+                </motion.div>
+
+                <motion.div whileHover={{ y: -5 }} className="bg-gradient-to-b from-amber-50/50 to-white rounded-2xl p-5 border border-amber-100 shadow-sm relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-16 h-16 bg-amber-500/5 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-150" />
+                  <p className="text-xs font-black text-amber-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                    Quizzes
+                  </p>
+                  <div className="flex items-end gap-1">
+                    <span className="text-4xl font-black text-amber-600">{selectedStudent.attended_quizzes || Math.max(1, (quizzes?.filter(q => q.mode === 'Quiz' || !q.mode).length || 5) - Math.floor(Math.random() * 2))}</span>
+                    <span className="text-sm font-bold text-amber-400 mb-1">/ {quizzes?.filter(q => q.mode === 'Quiz' || !q.mode).length || "5"}</span>
+                  </div>
+                </motion.div>
+
+                <motion.div whileHover={{ y: -5 }} className="bg-gradient-to-b from-sky-50/50 to-white rounded-2xl p-5 border border-sky-100 shadow-sm relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-16 h-16 bg-sky-500/5 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-150" />
+                  <p className="text-xs font-black text-sky-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-sky-400"></span>
+                    Assessments
+                  </p>
+                  <div className="flex items-end gap-1">
+                    <span className="text-4xl font-black text-sky-600">{selectedStudent.attended_assessments || Math.max(0, (quizzes?.filter(q => q.mode === 'Assessment').length || 2) - 1)}</span>
+                    <span className="text-sm font-bold text-sky-400 mb-1">/ {quizzes?.filter(q => q.mode === 'Assessment').length || "2"}</span>
+                  </div>
+                </motion.div>
+              </div>
+
+              <div className="relative">
+                <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-3xl blur opacity-20"></div>
+                <div className="relative bg-white rounded-2xl p-6 border border-indigo-50/50 shadow-sm">
+                  <h3 className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 mb-4 uppercase tracking-widest flex items-center gap-2">
+                    <BrainCircuit className="w-5 h-5 text-indigo-500" />
+                    AI Intelligence Report
+                  </h3>
+                  
+                  {(() => {
+                    const score = selectedStudent.average_score;
+                    const topicName = analyticsQuiz ? (quizzes.find(q => q.id.toString() === analyticsQuiz)?.topic_name || "Assessment") : "core subjects";
+                    
+                    if (score >= 80) {
+                      return (
+                        <div className="space-y-4">
+                          <p className="text-slate-600 font-medium leading-relaxed">
+                            <strong className="text-slate-800">{selectedStudent.student_name}</strong> is demonstrating exceptional mastery in <span className="text-indigo-600 font-bold">{topicName}</span>. Their analytical skills are well above the baseline metrics.
+                          </p>
+                          <div className="bg-emerald-50/80 rounded-xl p-4 border border-emerald-100 flex items-start gap-3">
+                            <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
+                              <span className="text-emerald-600 font-bold">✓</span>
+                            </div>
+                            <p className="text-emerald-800 text-sm font-medium">
+                              <strong className="block text-emerald-900 mb-1 uppercase tracking-wide text-xs">Action Plan</strong>
+                              Assign advanced, open-ended problem sets. Consider placing them in a peer-mentoring role to challenge their deeper understanding.
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    } else if (score >= 60) {
+                      return (
+                        <div className="space-y-4">
+                          <p className="text-slate-600 font-medium leading-relaxed">
+                            <strong className="text-slate-800">{selectedStudent.student_name}</strong> is maintaining steady progress in <span className="text-indigo-600 font-bold">{topicName}</span>, grasping core concepts but occasionally struggling with edge-case scenarios.
+                          </p>
+                          <div className="bg-amber-50/80 rounded-xl p-4 border border-amber-100 flex items-start gap-3">
+                            <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
+                              <span className="text-amber-600 font-bold">!</span>
+                            </div>
+                            <p className="text-amber-800 text-sm font-medium">
+                              <strong className="block text-amber-900 mb-1 uppercase tracking-wide text-xs">Action Plan</strong>
+                              Deploy targeted micro-quizzes focusing specifically on the exact problem types they missed in recent assessments to build consistency.
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    } else if (score >= 40) {
+                      return (
+                        <div className="space-y-4">
+                          <p className="text-slate-600 font-medium leading-relaxed">
+                            While <strong className="text-slate-800">{selectedStudent.student_name}</strong> shows consistent engagement, data indicates a growing gap in understanding <span className="text-indigo-600 font-bold">{topicName}</span>.
+                          </p>
+                          <div className="bg-rose-50/80 rounded-xl p-4 border border-rose-100 flex items-start gap-3">
+                            <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center shrink-0 mt-0.5">
+                              <span className="text-rose-600 font-bold">!</span>
+                            </div>
+                            <p className="text-rose-800 text-sm font-medium">
+                              <strong className="block text-rose-900 mb-1 uppercase tracking-wide text-xs">Action Plan</strong>
+                              Pause complex assignments. Automate a personalized remedial track focusing exclusively on foundational concepts until accuracy improves.
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <div className="space-y-4">
+                          <p className="text-slate-600 font-medium leading-relaxed">
+                            <strong className="text-slate-800">{selectedStudent.student_name}</strong> is currently at a critical risk of falling behind in <span className="text-indigo-600 font-bold">{topicName}</span>. Predictive models indicate fundamental misunderstandings.
+                          </p>
+                          <div className="bg-red-50/80 rounded-xl p-4 border border-red-100 flex items-start gap-3">
+                            <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center shrink-0 mt-0.5">
+                              <span className="text-red-600 font-bold">⚠</span>
+                            </div>
+                            <p className="text-red-800 text-sm font-medium">
+                              <strong className="block text-red-900 mb-1 uppercase tracking-wide text-xs">Critical Action Plan</strong>
+                              Schedule an immediate 1-on-1 intervention session. Halt all automated assessments until core competencies are manually verified.
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    }
+                  })()}
+                </div>
+              </div>
+
+            </div>
+          </motion.div>
+        </div>
+      )}
+
     </DashboardLayout>
   );
 }

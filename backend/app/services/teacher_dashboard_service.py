@@ -161,19 +161,28 @@ class TeacherDashboardService:
         if not attempts:
             return {"quiz_topic": quiz.topic_name, "top_3": [], "bottom_3": []}
 
-        # Sort attempts
+        # Sort attempts descending
         sorted_attempts = sorted(attempts, key=lambda x: x.best_score, reverse=True)
-        top_3 = [{"user_id": a.id, "user_name": a.name, "score": round(a.best_score, 2)} for a in sorted_attempts[:3]]
         
-        top_3_ids = {u["user_id"] for u in top_3}
-        
-        sorted_asc = sorted(attempts, key=lambda x: x.best_score)
-        bottom_3 = []
-        for a in sorted_asc:
-            if a.id not in top_3_ids:
-                bottom_3.append({"user_id": a.id, "user_name": a.name, "score": round(a.best_score, 2)})
-            if len(bottom_3) == 3:
-                break
+        n_total = len(sorted_attempts)
+        if n_total == 0:
+            top_3 = []
+            bottom_3 = []
+        elif n_total == 1:
+            top_3 = [{"user_id": sorted_attempts[0].id, "user_name": sorted_attempts[0].name, "score": round(sorted_attempts[0].best_score, 2)}]
+            bottom_3 = []
+        else:
+            # Dynamically split top and bottom
+            n_top = min(3, max(1, n_total // 2))
+            n_bottom = min(3, n_total - n_top)
+            
+            top_attempts = sorted_attempts[:n_top]
+            # Get bottom attempts and sort them ascending (lowest score first)
+            bottom_attempts = sorted_attempts[-n_bottom:]
+            bottom_attempts.reverse()
+            
+            top_3 = [{"user_id": a.id, "user_name": a.name, "score": round(a.best_score, 2)} for a in top_attempts]
+            bottom_3 = [{"user_id": a.id, "user_name": a.name, "score": round(a.best_score, 2)} for a in bottom_attempts]
 
         return {
             "quiz_topic": quiz.topic_name,
