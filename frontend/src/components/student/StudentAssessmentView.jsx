@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Download, FileText, Calendar, Clock, BookOpen, AlertCircle, Upload, CheckCircle2 } from "lucide-react";
+import { Download, FileText, Calendar, Clock, BookOpen, AlertCircle, Upload, CheckCircle2, X } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { studentApi } from "../../api";
@@ -231,14 +231,22 @@ export function StudentAssessmentView({ quizId }) {
             </div>
             {uploadFile && (
               <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <FileText className="w-5 h-5 text-indigo-600" />
-                  <span className="font-medium text-indigo-900">{uploadFile.name}</span>
+                <div className="flex items-center gap-3 min-w-0">
+                  <FileText className="w-5 h-5 text-indigo-600 shrink-0" />
+                  <span className="font-medium text-indigo-900 truncate">{uploadFile.name}</span>
+                  <button 
+                    onClick={() => setUploadFile(null)}
+                    disabled={isSubmitting}
+                    className="p-1 rounded-full hover:bg-indigo-100 text-indigo-400 hover:text-indigo-600 transition-colors shrink-0"
+                    title="Remove selected file"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
                 <Button 
                   onClick={handleUploadSubmit}
                   disabled={isSubmitting}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold shrink-0"
                 >
                   {isSubmitting ? "Uploading..." : "Submit Now"}
                 </Button>
