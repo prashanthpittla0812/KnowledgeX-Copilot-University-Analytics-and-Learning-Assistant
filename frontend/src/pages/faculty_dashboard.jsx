@@ -39,7 +39,8 @@ export default function FacultyDashboard() {
   const [assessmentGenerationMethod, setAssessmentGenerationMethod] = useState("AI");
   const [assessmentType, setAssessmentType] = useState("Essay");
   const [assessmentDifficulty, setAssessmentDifficulty] = useState("Beginner");
-  const [assessmentDuration, setAssessmentDuration] = useState(60);
+  const [assessmentDuration, setAssessmentDuration] = useState(1);
+  const [assessmentQuestionCount, setAssessmentQuestionCount] = useState(5);
   const [manualQuestionsText, setManualQuestionsText] = useState("");
 
   // Quiz Results State
@@ -136,20 +137,44 @@ export default function FacultyDashboard() {
       link.remove();
     } catch (e) {
       console.error(e);
-      alert("Failed to download submission.");
+      let errMsg = "Failed to download submission.";
+      if (e.response && e.response.data) {
+          if (e.response.data instanceof Blob) {
+              const text = await e.response.data.text();
+              errMsg = text;
+          } else {
+              errMsg = JSON.stringify(e.response.data);
+          }
+      }
+      alert(`Error: ${errMsg} | Message: ${e.message}`);
     }
   };
 
   const handleViewSubmission = async (submissionId, fileName) => {
+    const newWindow = window.open('', '_blank');
     try {
       const res = await facultyApi.downloadSubmission(submissionId);
       const isPdf = fileName.toLowerCase().endsWith('.pdf');
       const type = isPdf ? 'application/pdf' : 'application/octet-stream';
       const url = window.URL.createObjectURL(new Blob([res.data], { type }));
-      window.open(url, '_blank');
+      if (newWindow) {
+        newWindow.location.href = url;
+      } else {
+        window.open(url, '_blank');
+      }
     } catch (e) {
+      if (newWindow) newWindow.close();
       console.error(e);
-      alert("Failed to view submission.");
+      let errMsg = "Failed to view submission.";
+      if (e.response && e.response.data) {
+          if (e.response.data instanceof Blob) {
+              const text = await e.response.data.text();
+              errMsg = text;
+          } else {
+              errMsg = JSON.stringify(e.response.data);
+          }
+      }
+      alert(`Error: ${errMsg} | Message: ${e.message}`);
     }
   };
 
@@ -196,15 +221,18 @@ export default function FacultyDashboard() {
 
   const handleUploadDocument = async (file = null) => {
     const fileToUpload = file || uploadFile;
-    if (!fileToUpload || !uploadTopic) return alert("Provide file and topic");
+    const currentTopic = quizMode === "Assessment" ? quizTopic : uploadTopic;
+    if (!fileToUpload || !currentTopic) return alert("Provide file and topic");
     setIsUploading(true);
     try {
       const formData = new FormData();
       formData.append("file", fileToUpload);
-      await facultyApi.uploadDocument(formData, uploadTopic);
-      setUploadedDocs(prev => [...prev, { name: fileToUpload.name, topic: uploadTopic }]);
+      await facultyApi.uploadDocument(formData, currentTopic);
+      setUploadedDocs(prev => [...prev, { name: fileToUpload.name, topic: currentTopic }]);
       setUploadFile(null);
-      setUploadTopic("");
+      if (quizMode !== "Assessment") {
+        setUploadTopic("");
+      }
       if (pdfInputRef.current) pdfInputRef.current.value = "";
     } catch (e) {
       console.error(e);
@@ -259,10 +287,12 @@ export default function FacultyDashboard() {
         document_topic: uploadedDocs.length > 0 ? uploadedDocs[0].topic : undefined,
         question_type: assessmentType,
         difficulty: assessmentDifficulty,
-        num_questions: 5, // Generate 5 questions for AI assessments by default
+        num_questions: assessmentQuestionCount,
         is_assessment: true,
         manual_questions: assessmentGenerationMethod === "Manual" ? manualQuestionsText : undefined,
-        duration_mins: assessmentDuration
+        duration_mins: assessmentDuration * 1440 // converting days to minutes for backend if needed, or backend handles it? Wait!
+        // Actually the backend might still expect duration_mins, so multiplying by 1440. Or I can just pass the value.
+        // Let's pass duration_mins: assessmentDuration * 1440 
       });
       alert("Assessment generated and students notified!");
       
@@ -686,38 +716,61 @@ export default function FacultyDashboard() {
                         </div>
 
                         {assessmentGenerationMethod === "AI" ? (
-                          <div className="grid md:grid-cols-2 gap-6">
-                            <div>
-                              <label className="text-sm font-bold text-slate-900 mb-2 block">
-                                Topic Name <span className="text-red-500">*</span>
-                              </label>
-                              <input 
-                                value={quizTopic}
-                                onChange={e => setQuizTopic(e.target.value)}
-                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-                                placeholder="e.g., Software Engineering Principles"
-                              />
+                          <>
+                            <div className="grid md:grid-cols-2 gap-6">
+                              <div>
+                                <label className="text-sm font-bold text-slate-900 mb-2 block">
+                                  Topic Name <span className="text-red-500">*</span>
+                                </label>
+                                <input 
+                                  value={quizTopic}
+                                  onChange={e => setQuizTopic(e.target.value)}
+                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                                  placeholder="e.g., Software Engineering Principles"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-sm font-bold text-slate-900 mb-2 block">
+                                  Reference PDF <span className="text-red-500">*</span>
+                                </label>
+                                <input 
+                                  type="file" 
+                                  accept=".pdf"
+                                  onChange={(e) => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                      setUploadFile(file);
+                                      handleUploadDocument(file);
+                                    }
+                                  }}
+                                  ref={pdfInputRef}
+                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"
+                                />
+                                <p className="text-xs text-slate-500 mt-2">Upload a PDF containing the reference material.</p>
+                              </div>
                             </div>
-                            <div>
-                              <label className="text-sm font-bold text-slate-900 mb-2 block">
-                                Reference PDF <span className="text-red-500">*</span>
-                              </label>
-                              <input 
-                                type="file" 
-                                accept=".pdf"
-                                onChange={(e) => {
-                                  const file = e.target.files[0];
-                                  if (file) {
-                                    setUploadFile(file);
-                                    handleUploadDocument(file);
-                                  }
-                                }}
-                                ref={pdfInputRef}
-                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"
-                              />
-                              <p className="text-xs text-slate-500 mt-2">Upload a PDF containing the reference material.</p>
-                            </div>
-                          </div>
+                            {uploadedDocs.length > 0 && (
+                              <div className="mt-6 p-4 rounded-xl border border-indigo-100 bg-indigo-50/50 animate-in fade-in slide-in-from-top-2">
+                                <h5 className="text-xs font-bold text-indigo-800 uppercase mb-3">Successfully Uploaded</h5>
+                                <div className="space-y-2">
+                                  {uploadedDocs.map((doc, idx) => (
+                                    <div key={idx} className="flex justify-between items-center text-sm p-3 bg-white rounded-lg border border-indigo-100 shadow-sm">
+                                      <div className="flex items-center gap-2 text-indigo-700">
+                                        <CheckCircle className="w-4 h-4" />
+                                        <span className="font-semibold">{doc.topic}</span>
+                                      </div>
+                                      <div className="flex items-center gap-3">
+                                        <span className="text-indigo-600 truncate max-w-[150px] text-xs" title={doc.name}>{doc.name}</span>
+                                        <button onClick={() => setUploadedDocs(prev => prev.filter((_, i) => i !== idx))} className="text-indigo-400 hover:text-red-500 transition-colors p-1" title="Remove">
+                                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </>
                         ) : (
                           <div>
                             <label className="text-sm font-bold text-slate-900 mb-2 block">
@@ -740,7 +793,7 @@ export default function FacultyDashboard() {
                           <h3 className="text-lg font-bold text-slate-900">Assessment Details</h3>
                         </div>
 
-                        <div className="grid md:grid-cols-3 gap-6">
+                        <div className={`grid ${assessmentGenerationMethod === "Manual" ? "md:grid-cols-3" : "md:grid-cols-4"} gap-6`}>
                           <div>
                             <label className="text-sm font-bold text-slate-900 mb-2 block">
                               Assessment Type <span className="text-red-500">*</span>
@@ -769,16 +822,39 @@ export default function FacultyDashboard() {
                               <option value="Advanced">Advanced</option>
                             </select>
                           </div>
+                          {assessmentGenerationMethod !== "Manual" && (
+                            <div>
+                              <label className="text-sm font-bold text-slate-900 mb-2 block">
+                                No. of Questions <span className="text-red-500">*</span>
+                              </label>
+                              <input 
+                                type="number"
+                                min="1" max="25"
+                                value={assessmentQuestionCount}
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  if (val === "") setAssessmentQuestionCount("");
+                                  else {
+                                    const num = Number(val);
+                                    setAssessmentQuestionCount(num > 25 ? 25 : num);
+                                  }
+                                }}
+                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                                placeholder="e.g., 5"
+                              />
+                            </div>
+                          )}
                           <div>
                             <label className="text-sm font-bold text-slate-900 mb-2 block">
-                              Duration (Mins)
+                              Duration (Days)
                             </label>
                             <input 
                               type="number"
+                              min="1"
                               value={assessmentDuration}
                               onChange={e => setAssessmentDuration(e.target.value)}
                               className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-                              placeholder="e.g., 60"
+                              placeholder="e.g., 2"
                             />
                           </div>
                         </div>
@@ -806,7 +882,16 @@ export default function FacultyDashboard() {
                         <h4 className="text-xl font-bold text-slate-900 truncate mb-3">{q.topic_name}</h4>
                         <div className="flex flex-wrap gap-2 mb-4">
                           <span className="px-2 py-1 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-bold uppercase tracking-wider">{q.difficulty}</span>
-                          <span className="px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase tracking-wider">{q.question_type}</span>
+                          <span className="px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase tracking-wider">
+                            {q.question_type ? q.question_type.replace(/\((\d+)\s*mins?\)/i, (match, p1) => {
+                              const mins = parseInt(p1);
+                              if (mins >= 1440) {
+                                const days = Math.round(mins / 1440);
+                                return `(${days} ${days === 1 ? 'Day' : 'Days'})`;
+                              }
+                              return match;
+                            }) : ""}
+                          </span>
                           <span className="px-2 py-1 rounded-md bg-amber-50 text-amber-700 text-[10px] font-bold uppercase tracking-wider">{q.num_questions} Qs</span>
                         </div>
                         <p className="text-xs text-slate-500">Created: {new Date(q.created_at).toLocaleDateString()}</p>
@@ -861,7 +946,7 @@ export default function FacultyDashboard() {
                           {assessmentSubmissions.map(sub => (
                             <tr key={sub.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
                               <td className="p-4 font-medium text-slate-900">{sub.student_name}</td>
-                              <td className="p-4 text-slate-500">{new Date(sub.submitted_at).toLocaleString()}</td>
+                              <td className="p-4 text-slate-500">{new Date(sub.submitted_at + (sub.submitted_at.endsWith('Z') ? '' : 'Z')).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'short', timeStyle: 'medium' })} IST</td>
                               <td className="p-4 text-slate-600">
                                 <div className="flex items-center gap-2">
                                   <FileText className="w-4 h-4 text-indigo-500" />
