@@ -46,6 +46,27 @@ export default function StudentsTab() {
     }
   };
 
+  const handleResetPassword = async (id) => {
+    if (!confirm("Are you sure you want to reset this student's password?")) return;
+    try {
+      const response = await api.put(`/admin/students/${id}/reset-password`);
+      toast.success(`Password reset! New password: ${response.data.new_password}`, { duration: 10000 });
+    } catch (error) {
+      toast.error("Failed to reset password");
+    }
+  };
+
+  const handleRemove = async (id) => {
+    if (!confirm("Are you sure you want to completely remove this rejected student account?")) return;
+    try {
+      await api.delete(`/admin/students/${id}`);
+      toast.success("Student account removed");
+      fetchStudents();
+    } catch (error) {
+      toast.error("Failed to remove student account");
+    }
+  };
+
   const filterButtons = ["ALL", "PENDING", "APPROVED", "REJECTED"];
 
   return (
@@ -82,9 +103,9 @@ export default function StudentsTab() {
               <tr>
                 <th className="px-6 py-4 font-semibold">Name</th>
                 <th className="px-6 py-4 font-semibold">Email</th>
-                <th className="px-6 py-4 font-semibold">Status</th>
-                <th className="px-6 py-4 font-semibold">Registered</th>
-                <th className="px-6 py-4 font-semibold text-right">Actions</th>
+                <th className="px-6 py-4 font-semibold text-center">Status</th>
+                <th className="px-6 py-4 font-semibold text-center">Registered</th>
+                <th className="px-6 py-4 font-semibold text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/30">
@@ -106,7 +127,7 @@ export default function StudentsTab() {
                   <tr key={student.id} className="hover:bg-muted/20 transition-colors">
                     <td className="px-6 py-4 font-medium text-foreground">{student.name}</td>
                     <td className="px-6 py-4 text-muted-foreground">{student.email}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 text-center">
                       <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                         student.status === "APPROVED" ? "bg-emerald-500/10 text-emerald-600" :
                         student.status === "REJECTED" ? "bg-red-500/10 text-red-600" :
@@ -115,20 +136,32 @@ export default function StudentsTab() {
                         {student.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-muted-foreground">
+                    <td className="px-6 py-4 text-muted-foreground text-center">
                       {new Date(student.created_at).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      {student.status === "PENDING" && (
-                        <div className="flex justify-end gap-2">
-                          <Button size="sm" variant="outline" className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl" onClick={() => handleReject(student.id)}>
-                            Reject
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex justify-center gap-2">
+                        {student.status === "APPROVED" && (
+                          <Button size="sm" variant="outline" className="rounded-xl" onClick={() => handleResetPassword(student.id)}>
+                            Reset Pwd
                           </Button>
-                          <Button size="sm" className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md shadow-orange-500/20" onClick={() => handleApprove(student.id)}>
-                            Approve
+                        )}
+                        {student.status === "REJECTED" && (
+                          <Button size="sm" variant="outline" className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl" onClick={() => handleRemove(student.id)}>
+                            Remove
                           </Button>
-                        </div>
-                      )}
+                        )}
+                        {student.status === "PENDING" && (
+                          <>
+                            <Button size="sm" variant="outline" className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl" onClick={() => handleReject(student.id)}>
+                              Reject
+                            </Button>
+                            <Button size="sm" className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md shadow-orange-500/20" onClick={() => handleApprove(student.id)}>
+                              Approve
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))

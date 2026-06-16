@@ -84,9 +84,9 @@ export default function FacultyTab() {
               <tr>
                 <th className="px-6 py-4 font-semibold">Name</th>
                 <th className="px-6 py-4 font-semibold">Email</th>
-                <th className="px-6 py-4 font-semibold">Department</th>
-                <th className="px-6 py-4 font-semibold">Status</th>
-                <th className="px-6 py-4 font-semibold text-right">Actions</th>
+                <th className="px-6 py-4 font-semibold text-center">Department</th>
+                <th className="px-6 py-4 font-semibold text-center">Status</th>
+                <th className="px-6 py-4 font-semibold text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/30">
@@ -106,16 +106,16 @@ export default function FacultyTab() {
                   <tr key={f.id} className="hover:bg-muted/20 transition-colors">
                     <td className="px-6 py-4 font-medium text-foreground">{f.name}</td>
                     <td className="px-6 py-4 text-muted-foreground">{f.email}</td>
-                    <td className="px-6 py-4 text-muted-foreground">{f.department || "-"}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 text-muted-foreground text-center">{f.department || "-"}</td>
+                    <td className="px-6 py-4 text-center">
                       <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                         f.is_active ? "bg-emerald-500/10 text-emerald-600" : "bg-red-500/10 text-red-600"
                       }`}>
                         {f.is_active ? "ACTIVE" : "INACTIVE"}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2">
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex justify-center gap-2">
                         <Button size="sm" variant="outline" className="rounded-xl" onClick={() => handleResetPassword(f.id)}>Reset Pwd</Button>
                         {f.is_active && (
                           <Button size="sm" variant="outline" className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl" onClick={() => handleDeactivate(f.id)}>

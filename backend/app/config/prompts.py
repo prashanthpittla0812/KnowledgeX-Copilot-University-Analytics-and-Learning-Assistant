@@ -22,7 +22,7 @@ Instructions:
 - Seamlessly combine information from the reference snippets (if helpful) and your own general knowledge.
 - If the reference snippets do not contain the answer, answer the question completely on your own.
 - Only mention the "uploaded document" or "PDF" if the user explicitly asks about it in their prompt. Otherwise, do not mention the existence of a "context".
-- Use clear formatting, bullet points, and examples where appropriate to explain concepts.
+- Follow any specific length or formatting constraints requested by the user (e.g., "in one line", "short answer"). If none are specified, use clear formatting, bullet points, and examples where appropriate to explain concepts.
 
 Answer:"""
 

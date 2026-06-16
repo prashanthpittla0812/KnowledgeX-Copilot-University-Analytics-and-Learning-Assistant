@@ -75,6 +75,39 @@ async def reject_student(student_id: int, db: AsyncSession = Depends(get_db), cu
     await db.commit()
     return {"message": "Student rejected successfully"}
 
+@router.put("/students/{student_id}/reset-password", response_model=AdminResetPasswordResponse)
+async def reset_student_password(student_id: int, db: AsyncSession = Depends(get_db), current_admin: User = Depends(get_current_admin)):
+    result = await db.execute(select(User).where(User.id == student_id, User.role == "student"))
+    student = result.scalar_one_or_none()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    
+    temp_password = "Student@123"
+    student.password_hash = hash_password(temp_password)
+    student.must_change_password = True
+    
+    log_audit(db, "reset_student_password", current_admin.id, student.id)
+    await db.commit()
+    
+    return AdminResetPasswordResponse(
+        id=student.id,
+        new_password=temp_password
+    )
+
+@router.delete("/students/{student_id}")
+async def delete_student(student_id: int, db: AsyncSession = Depends(get_db), current_admin: User = Depends(get_current_admin)):
+    result = await db.execute(select(User).where(User.id == student_id, User.role == "student"))
+    student = result.scalar_one_or_none()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    
+    await db.delete(student)
+    log_audit(db, "delete_student", current_admin.id, student.id)
+    await db.commit()
+    return {"message": "Student deleted successfully"}
+
+
+
 @router.post("/faculty", response_model=FacultyCreateResponse)
 async def create_faculty(request: FacultyCreateRequest, db: AsyncSession = Depends(get_db), current_admin: User = Depends(get_current_admin)):
     result = await db.execute(select(User).where(User.email == request.email))

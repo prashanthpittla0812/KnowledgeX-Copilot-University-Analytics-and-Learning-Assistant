@@ -77,6 +77,13 @@ export default function StudentDashboard() {
   const [chatHistoryCollapsed, setChatHistoryCollapsed] = useState(false);
 
   const messagesEndRef = useRef(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+
+  const handleChatScroll = (e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.target;
+    setIsAtBottom(scrollHeight - scrollTop - clientHeight < 20);
+  };
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [previousChats, selectedChatId, isChatSending]);
@@ -1957,8 +1964,11 @@ export default function StudentDashboard() {
             </div>
 
             {/* Main Chat Area */}
-            <div className="flex-1 flex flex-col bg-background/50">
-              <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar">
+            <div className="flex-1 flex flex-col bg-background/50 relative">
+              <div 
+                className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar"
+                onScroll={handleChatScroll}
+              >
                 {selectedMessages.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center opacity-70">
                     <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
@@ -1985,7 +1995,7 @@ export default function StudentDashboard() {
 
               <button 
                 onClick={() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })}
-                className="absolute bottom-32 right-8 p-3 bg-white text-black hover:bg-slate-100 rounded-full shadow-md border border-slate-200 transition-all z-10"
+                className={`absolute bottom-36 right-8 p-3 bg-white text-black hover:bg-slate-100 rounded-full shadow-md border border-slate-200 transition-all duration-300 z-10 ${isAtBottom ? 'opacity-0 pointer-events-none scale-90' : 'opacity-100 scale-100'}`}
                 title="Scroll to bottom"
               >
                 <ArrowDown className="w-5 h-5" />
@@ -2157,7 +2167,10 @@ export default function StudentDashboard() {
 
             {/* Main Chat Area */}
             <div className="flex-1 flex flex-col relative bg-background/50">
-              <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 pb-4 custom-scrollbar">
+              <div 
+                className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 pb-4 custom-scrollbar"
+                onScroll={handleChatScroll}
+              >
                 {selectedMessages.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center opacity-70">
                     <Bot className="w-12 h-12 text-primary mb-3 opacity-50" />
@@ -2180,7 +2193,7 @@ export default function StudentDashboard() {
               </div>
               <button 
                 onClick={() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })}
-                className="absolute bottom-24 right-6 p-2 bg-white text-black hover:bg-slate-100 rounded-full shadow-md border border-slate-200 transition-all z-10"
+                className={`absolute bottom-28 right-6 p-2 bg-white text-black hover:bg-slate-100 rounded-full shadow-md border border-slate-200 transition-all duration-300 z-10 ${isAtBottom ? 'opacity-0 pointer-events-none scale-90' : 'opacity-100 scale-100'}`}
                 title="Scroll to bottom"
               >
                 <ArrowDown className="w-4 h-4" />
