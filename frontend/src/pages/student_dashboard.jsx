@@ -1581,11 +1581,12 @@ export default function StudentDashboard() {
               const weakTopics = topicMasteryData.filter(t => t.score < 60);
 
               const subjectMap = {
-                "Data Structures & Algorithms": ["data structures", "algorithms", "dsa", "tree", "graph", "sorting", "searching"],
+                "Data Structures & Algorithms": ["data structures", "algorithms", "dsa", "tree", "graph", "sorting", "searching", "stack", "queue", "array", "arrays", "linked list"],
                 "Computer Networks": ["network", "networks", "physical layer", "osi", "tcp", "ip", "ethernet", "routing"],
                 "Operating Systems": ["operating system", "operating systems", "os", "process", "thread", "memory management", "scheduling"],
                 "Database Management Systems": ["database", "dbms", "sql", "query", "schema", "normalization", "nosql"],
-                "Java Programming": ["java", "object oriented", "oop", "class", "inheritance", "polymorphism", "exception"]
+                "Java Programming": ["java", "object oriented", "oop", "class", "inheritance", "polymorphism", "exception"],
+                "Other": []
               };
               
               const filteredSkillData = selectedSkillSubject === "All Subjects" 
@@ -1601,14 +1602,19 @@ export default function StudentDashboard() {
               };
 
               const getSubjectForTopic = (topic) => {
-                if (!topic) return "default";
+                if (!topic) return "Other";
                 const match = topic.match(/Category: (.*?)\)/i);
                 if (match && subjectMap[match[1]]) return match[1];
                 const t = topic.toLowerCase();
                 for (const [subject, keywords] of Object.entries(subjectMap)) {
-                  if (t.includes(subject.toLowerCase()) || keywords.some(k => t.includes(k))) return subject;
+                  if (subject === "Other") continue;
+                  if (t.includes(subject.toLowerCase())) return subject;
+                  for (const k of keywords) {
+                    const regex = new RegExp(`\\b${k}\\b`, 'i');
+                    if (regex.test(t)) return subject;
+                  }
                 }
-                return "default";
+                return "Other";
               };
               
               const CustomTooltip = ({ active, payload, label, isDate = false }) => {
@@ -1686,6 +1692,9 @@ export default function StudentDashboard() {
                     const filteredTrendHistory = selectedTrendPeriod === "All Time" 
                       ? quizHistory 
                       : quizHistory.filter(q => getWeeklyLabel(q.created_at) === selectedTrendPeriod);
+                      
+                    // Inject subject into filtered histories for BarChart colors
+                    const chartQuizHistory = filteredQuizHistory.map(q => ({ ...q, subject: getSubjectForTopic(q.topic) }));
 
                     return (
                       <div className="grid lg:grid-cols-2 gap-8 pb-10">
@@ -1711,7 +1720,7 @@ export default function StudentDashboard() {
                                   <div className="flex-1 min-h-0">
                                     <ResponsiveContainer width="100%" height="100%">
                                   <BarChart 
-                                    data={selectedQuizPeriod === "All Time" ? filteredQuizHistory.slice(0, 15).reverse() : [...filteredQuizHistory].reverse()} 
+                                    data={selectedQuizPeriod === "All Time" ? chartQuizHistory.slice(0, 15).reverse() : [...chartQuizHistory].reverse()} 
                                     margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
                                   >
                                     <defs>
@@ -1741,7 +1750,7 @@ export default function StudentDashboard() {
                                     <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} />
                                     <Tooltip content={<CustomTooltip />} cursor={{ fill: '#e2e8f0' }} />
                                     <Bar dataKey="score" fill="url(#barGradient)" radius={[6, 6, 0, 0]} maxBarSize={40}>
-                                      {(selectedQuizPeriod === "All Time" ? filteredQuizHistory.slice(0, 15).reverse() : [...filteredQuizHistory].reverse()).map((entry, index) => (
+                                      {(selectedQuizPeriod === "All Time" ? chartQuizHistory.slice(0, 15).reverse() : [...chartQuizHistory].reverse()).map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={subjectColors[entry.subject] || subjectColors["default"]} />
                                       ))}
                                     </Bar>
@@ -1834,7 +1843,7 @@ export default function StudentDashboard() {
                         <div className="mt-4 flex-1 flex flex-col min-h-[300px]">
                           {filteredSkillData.length > 0 ? (
                             <>
-                              <div className="flex-1 overflow-auto custom-scrollbar pr-2">
+                              <div className="flex-1 overflow-auto custom-scrollbar pr-2 max-h-[300px]">
                                 <table className="w-full text-left border-collapse">
                                   <thead>
                                     <tr>
@@ -1855,10 +1864,8 @@ export default function StudentDashboard() {
                                             {t.fullTopic}
                                           </td>
                                           {cols.map(col => {
-                                            const belongs = (subjectMap[col] || []).some(sub => t.fullTopic.toLowerCase().includes(sub));
-                                            // Fallback: if it belongs to nothing, put it in Computer Networks so it doesn't just disappear
-                                            const isUncategorized = !Object.keys(subjectMap).some(k => subjectMap[k].some(sub => t.fullTopic.toLowerCase().includes(sub)));
-                                            const shouldShow = belongs || (isUncategorized && col === "Computer Networks");
+                                            const subjectForThisTopic = getSubjectForTopic(t.fullTopic);
+                                            const shouldShow = subjectForThisTopic === col;
                                             
                                             if (shouldShow) {
                                               let colorClass = "bg-slate-100 text-slate-500";
