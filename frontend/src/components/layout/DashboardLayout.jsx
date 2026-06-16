@@ -22,11 +22,17 @@ import {
   GraduationCap,
   Users,
   History,
-  FileText
+  FileText,
+  Camera,
+  User as UserIcon,
+  Lock,
+  Loader2
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
-import { materialApi } from "../../api";
+import { Input } from "../ui/input";
+import { materialApi, API_BASE_URL, api, USER_STORAGE_KEY } from "../../api";
+import toast from "react-hot-toast";
 
 export function DashboardLayout({ children, role = "student", activeItem, setActiveItem, userName = "User", handleLogout }) {
   const [sidebarOpen, setSidebarOpen] = useState(() => {
@@ -34,6 +40,174 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
     return stored !== null ? JSON.parse(stored) : true;
   });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // --- Profile / Settings State & Management ---
+  const [currentUser, setCurrentUser] = useState(() => {
+    const raw = localStorage.getItem("knowledgex_user") || localStorage.getItem(USER_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  });
+
+  const displayUserName = currentUser?.name || userName;
+  const userPhotoUrl = currentUser?.profile_photo_path
+    ? `${API_BASE_URL.replace("/api/v1", "")}/${currentUser.profile_photo_path}`
+    : null;
+
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("profile");
+  const [profileName, setProfileName] = useState("");
+  const [profileDept, setProfileDept] = useState("");
+  const [profileDesg, setProfileDesg] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState(null);
+
+  useEffect(() => {
+    if (currentUser) {
+      setProfileName(currentUser.name || "");
+      setProfileDept(currentUser.department || "");
+      setProfileDesg(currentUser.designation || "");
+      setPhotoPreviewUrl(
+        currentUser.profile_photo_path
+          ? `${API_BASE_URL.replace("/api/v1", "")}/${currentUser.profile_photo_path}`
+          : null
+      );
+    }
+  }, [currentUser, settingsOpen]);
+
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("File must be an image");
+      return;
+    }
+
+    const localUrl = URL.createObjectURL(file);
+    setPhotoPreviewUrl(localUrl);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await api.post("/auth/profile/photo", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      
+      const relativePath = response.data.profile_photo_path;
+      
+      const existingUserStr = localStorage.getItem("knowledgex_user");
+      let mergedUser = {};
+      if (existingUserStr) {
+        mergedUser = JSON.parse(existingUserStr);
+      }
+      mergedUser.profile_photo_path = relativePath;
+      localStorage.setItem("knowledgex_user", JSON.stringify(mergedUser));
+      setCurrentUser(mergedUser);
+
+      setPhotoPreviewUrl(`${API_BASE_URL.replace("/api/v1", "")}/${relativePath}`);
+      toast.success("Profile photo updated successfully!");
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to upload photo");
+      setPhotoPreviewUrl(
+        currentUser?.profile_photo_path
+          ? `${API_BASE_URL.replace("/api/v1", "")}/${currentUser.profile_photo_path}`
+          : null
+      );
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    try {
+      await api.delete("/auth/profile/photo");
+      
+      const existingUserStr = localStorage.getItem("knowledgex_user");
+      let mergedUser = {};
+      if (existingUserStr) {
+        mergedUser = JSON.parse(existingUserStr);
+      }
+      mergedUser.profile_photo_path = null;
+      localStorage.setItem("knowledgex_user", JSON.stringify(mergedUser));
+      setCurrentUser(mergedUser);
+      setPhotoPreviewUrl(null);
+      
+      toast.success("Profile photo removed successfully!");
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to remove photo");
+    }
+  };
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    if (!profileName.trim()) {
+      toast.error("Name cannot be empty");
+      return;
+    }
+    setIsSavingProfile(true);
+    try {
+      const response = await api.put("/auth/profile", {
+        name: profileName,
+        department: profileDept
+      });
+      const updatedUser = response.data;
+      
+      const existingUserStr = localStorage.getItem("knowledgex_user");
+      let mergedUser = updatedUser;
+      if (existingUserStr) {
+        mergedUser = { ...JSON.parse(existingUserStr), ...updatedUser };
+      }
+      localStorage.setItem("knowledgex_user", JSON.stringify(mergedUser));
+      setCurrentUser(mergedUser);
+      
+      const curUserStr = localStorage.getItem("currentUser");
+      if (curUserStr) {
+        const parsed = JSON.parse(curUserStr);
+        parsed.name = mergedUser.name;
+        localStorage.setItem("currentUser", JSON.stringify(parsed));
+      }
+
+      toast.success("Profile updated successfully!");
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to update profile");
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const handleSavePassword = async (e) => {
+    e.preventDefault();
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("New passwords do not match");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("New password must be at least 6 characters");
+      return;
+    }
+    setIsSavingPassword(true);
+    try {
+      await api.put("/auth/change-password", {
+        current_password: currentPassword,
+        new_password: newPassword
+      });
+      
+      toast.success("Password changed successfully!");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to change password");
+    } finally {
+      setIsSavingPassword(false);
+    }
+  };
 
   // --- Notification Functional State Management ---
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -373,9 +547,13 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
             <div className="relative" ref={profileRef}>
               <button
                 onClick={() => setProfileOpen(!profileOpen)}
-                className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white font-bold shrink-0 shadow-sm hover:ring-2 hover:ring-orange-500/50 transition-all cursor-pointer"
+                className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-white font-bold shrink-0 shadow-sm hover:ring-2 hover:ring-orange-500/50 transition-all cursor-pointer bg-gradient-to-br from-amber-500 to-orange-500"
               >
-                {userName.charAt(0).toUpperCase()}
+                {userPhotoUrl ? (
+                  <img src={userPhotoUrl} alt={displayUserName} className="w-full h-full object-cover" />
+                ) : (
+                  displayUserName.charAt(0).toUpperCase()
+                )}
               </button>
 
               <AnimatePresence>
@@ -388,15 +566,23 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
                     className="absolute right-0 mt-2.5 w-64 rounded-2xl border border-slate-100 bg-white shadow-2xl shadow-slate-900/10 overflow-hidden text-slate-800 z-50"
                   >
                     <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm">
-                        {userName.charAt(0).toUpperCase()}
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm">
+                        {userPhotoUrl ? (
+                          <img src={userPhotoUrl} alt={displayUserName} className="w-full h-full object-cover" />
+                        ) : (
+                          displayUserName.charAt(0).toUpperCase()
+                        )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-base font-bold text-slate-900 truncate">{userName}</p>
+                        <p className="text-base font-bold text-slate-900 truncate">{displayUserName}</p>
                         <p className="text-xs text-slate-500 capitalize">{role}</p>
                       </div>
                     </div>
-                    <div className="p-2">
+                    <div className="p-2 space-y-1">
+                      <Button variant="ghost" onClick={() => { setSettingsOpen(true); setProfileOpen(false); }} className="w-full text-slate-700 hover:bg-slate-50 justify-start cursor-pointer rounded-xl font-medium">
+                        <Settings className="w-4 h-4 mr-3 text-slate-500" />
+                        <span>Profile Settings</span>
+                      </Button>
                       <Button variant="ghost" onClick={handleLogout} className="w-full text-red-500 hover:bg-red-50 hover:text-red-600 justify-start cursor-pointer rounded-xl">
                         <LogOut className="w-4 h-4 mr-3" />
                         <span className="font-semibold">Log out</span>
@@ -413,7 +599,7 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
         {/* Router View Port Outlet Container Area */}
         <div className={cn(
           "flex-1 p-6 lg:p-8 custom-scrollbar",
-          (activeItem === "Chatbot" || activeItem === "Study Plan") ? "overflow-hidden p-4 lg:p-4" : "overflow-y-auto"
+          activeItem === "Chatbot" ? "overflow-hidden p-4 lg:p-4" : "overflow-y-auto"
         )}>
           <motion.div
             key={activeItem}
@@ -502,6 +688,228 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
               </div>
             </motion.aside>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* Settings Modal */}
+      <AnimatePresence>
+        {settingsOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSettingsOpen(false)}
+              className="absolute inset-0 bg-transparent"
+            />
+            
+            {/* Modal Content */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: "spring", duration: 0.4 }}
+              className="relative w-full max-w-2xl rounded-[2rem] border border-slate-200 bg-white/95 p-6 sm:p-8 shadow-[0_20px_50px_rgba(15,23,42,0.15)] border-t-4 border-t-orange-500 backdrop-blur-xl flex flex-col max-h-[90vh] overflow-hidden z-50"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900">Account Settings</h2>
+                  <p className="text-xs text-slate-500">Manage your profile details and security settings</p>
+                </div>
+                <button
+                  onClick={() => setSettingsOpen(false)}
+                  className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Tabs Selector */}
+              <div className="flex gap-2 p-1 bg-slate-100 rounded-xl mt-4 shrink-0">
+                <button
+                  onClick={() => setActiveTab("profile")}
+                  className={cn(
+                    "flex-1 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer flex items-center justify-center gap-2",
+                    activeTab === "profile"
+                      ? "bg-white text-slate-900 shadow-sm"
+                      : "text-slate-500 hover:text-slate-800"
+                  )}
+                >
+                  <UserIcon className="w-4 h-4" />
+                  <span>Profile Info</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab("password")}
+                  className={cn(
+                    "flex-1 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer flex items-center justify-center gap-2",
+                    activeTab === "password"
+                      ? "bg-white text-slate-900 shadow-sm"
+                      : "text-slate-500 hover:text-slate-800"
+                  )}
+                >
+                  <Lock className="w-4 h-4" />
+                  <span>Change Password</span>
+                </button>
+              </div>
+
+              {/* Tab Contents */}
+              <div className="flex-1 overflow-y-auto mt-6 custom-scrollbar pr-1">
+                {activeTab === "profile" && (
+                  <div className="space-y-6">
+                    {/* Photo upload section */}
+                    <div className="flex flex-col sm:flex-row items-center gap-6 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                      <div className="relative group w-24 h-24 rounded-full overflow-hidden shrink-0 bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white text-3xl font-bold border-4 border-white shadow-md">
+                        {photoPreviewUrl ? (
+                          <img src={photoPreviewUrl} alt="Preview" className="w-full h-full object-cover" />
+                        ) : (
+                          displayUserName.charAt(0).toUpperCase()
+                        )}
+                        <label className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-center">
+                          <Camera className="w-5 h-5 mb-0.5" />
+                          <span className="text-[10px] font-semibold">Upload</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handlePhotoChange}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                      <div className="text-center sm:text-left flex-1">
+                        <h4 className="font-bold text-slate-900 text-sm">Profile Picture</h4>
+                        <p className="text-xs text-slate-500 mt-1 mb-3">
+                          Click on the circle to upload a new profile photo. Supports PNG, JPG, or GIF up to 5MB.
+                        </p>
+                        {photoPreviewUrl && (
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={handleRemovePhoto}
+                            className="h-8 text-xs font-semibold px-3 rounded-lg cursor-pointer"
+                          >
+                            Remove Photo
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Profile details form */}
+                    <form onSubmit={handleSaveProfile} className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-slate-700">Full Name</label>
+                          <Input
+                            type="text"
+                            value={profileName}
+                            onChange={(e) => setProfileName(e.target.value)}
+                            placeholder="Enter your name"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-slate-500">Email Address (Read-only)</label>
+                          <Input
+                            type="email"
+                            value={currentUser?.email || ""}
+                            disabled
+                            className="bg-slate-50 text-slate-400 border-slate-200"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-slate-500">Role (Read-only)</label>
+                          <Input
+                            type="text"
+                            value={currentUser?.role || role}
+                            disabled
+                            className="bg-slate-50 text-slate-400 border-slate-200 capitalize"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-slate-700">Department</label>
+                          <Input
+                            type="text"
+                            value={profileDept}
+                            onChange={(e) => setProfileDept(e.target.value)}
+                            placeholder="e.g. Computer Science"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="pt-2">
+                        <Button
+                          type="submit"
+                          variant="gradient"
+                          className="w-full sm:w-auto px-6 h-11 text-sm font-semibold cursor-pointer"
+                          disabled={isSavingProfile}
+                        >
+                          {isSavingProfile ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              <span>Saving...</span>
+                            </>
+                          ) : (
+                            "Save Profile Details"
+                          )}
+                        </Button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                {activeTab === "password" && (
+                  <form onSubmit={handleSavePassword} className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-700">Current Password</label>
+                      <Input
+                        type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        placeholder="Enter current password"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-700">New Password</label>
+                      <Input
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Minimum 6 characters"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-700">Confirm New Password</label>
+                      <Input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Must match new password"
+                      />
+                    </div>
+
+                    <div className="pt-2">
+                      <Button
+                        type="submit"
+                        variant="gradient"
+                        className="w-full sm:w-auto px-6 h-11 text-sm font-semibold cursor-pointer"
+                        disabled={isSavingPassword}
+                      >
+                        {isSavingPassword ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            <span>Updating...</span>
+                          </>
+                        ) : (
+                          "Change Password"
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

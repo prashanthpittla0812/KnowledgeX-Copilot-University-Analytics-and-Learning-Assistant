@@ -867,13 +867,15 @@ export default function StudentDashboard() {
           <LearningResourcesTab />
         ) : activeItem === "Study Plan" ? (
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Header section */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-3xl font-black text-slate-800 tracking-tight">Study Plan</h1>
-                <p className="text-muted-foreground mt-1">Personalized study plan generated for you</p>
-              </div>
-              {activeStudyPlan && (() => {
+            {!isGenModalOpen ? (
+              <>
+                {/* Header section */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h1 className="text-3xl font-black text-slate-800 tracking-tight">Study Plan</h1>
+                    <p className="text-muted-foreground mt-1">Personalized study plan generated for you</p>
+                  </div>
+                  {activeStudyPlan && (() => {
                 const plan = activeStudyPlan.plan || activeStudyPlan;
                 const dailySchedule = plan.daily_schedule || plan.schedule || [];
                 
@@ -1213,7 +1215,7 @@ export default function StudentDashboard() {
                   {/* Main Grid Columns Layout */}
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
                     {/* Left Timeline Card (Col span 9) */}
-                    <Card className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm lg:col-span-9 flex flex-col lg:h-[calc(100vh-320px)]">
+                    <Card className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm lg:col-span-9 flex flex-col lg:h-[calc(100vh-200px)]">
                       {isPlanCompleted ? (
                         <div className="flex flex-col items-center justify-center h-full text-center p-6 animate-in fade-in duration-500">
                           <div className="w-16 h-16 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mb-4 shadow-sm border border-orange-200">
@@ -1319,7 +1321,7 @@ export default function StudentDashboard() {
                   </Card>
 
                     {/* Right Sidebar Column (Col span 3) */}
-                    <div className="lg:col-span-3 space-y-4 lg:h-[calc(100vh-320px)] lg:overflow-y-auto pr-1 custom-scrollbar">
+                    <div className="lg:col-span-3 space-y-4 lg:h-[calc(100vh-200px)] lg:overflow-y-auto pr-1 custom-scrollbar">
                       {/* Learning Goals Card */}
                       {!isPlanCompleted && learningGoals.length > 0 && (
                         <Card className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm">
@@ -1385,11 +1387,21 @@ export default function StudentDashboard() {
                 </Button>
               </div>
             )}
+              </>
+            ) : (
+              <div className="flex-1 min-h-[50vh]" />
+            )}
 
             {/* Regenerate Plan Modal Popup */}
-            {isGenModalOpen && (
-              <div className="fixed inset-0 bg-black/20 z-[999] flex items-center justify-center p-4">
-                <div className="bg-white rounded-3xl border border-slate-100 p-6 w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
+            {isGenModalOpen && createPortal(
+              <div 
+                className="absolute inset-0 bg-transparent z-[999] flex items-center justify-center p-4"
+                onClick={() => setIsGenModalOpen(false)}
+              >
+                <div 
+                  className="bg-white rounded-3xl border border-slate-200 p-6 w-full max-w-lg shadow-[0_20px_50px_rgba(15,23,42,0.15)] border-t-4 border-t-orange-500 animate-in zoom-in-95 duration-200"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <div className="flex justify-between items-center mb-6">
                     <div>
                       <h3 className="text-xl font-bold text-slate-800">Generate Study Plan</h3>
@@ -1461,7 +1473,8 @@ export default function StudentDashboard() {
                     </Button>
                   </div>
                 </div>
-              </div>
+              </div>,
+              document.getElementById("main-workspace") || document.body
             )}
           </div>
         ) : activeItem === "Recommendations" ? (

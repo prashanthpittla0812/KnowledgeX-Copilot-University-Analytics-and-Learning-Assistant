@@ -14,8 +14,17 @@ class UserDetailResponse(BaseModel):
     status: Optional[str] = None
     must_change_password: Optional[bool] = False
     created_at: datetime
+    department: Optional[str] = None
+    designation: Optional[str] = None
+    profile_photo_path: Optional[str] = None
 
     model_config = {"from_attributes": True}
+
+
+class UserUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    department: Optional[str] = None
+    designation: Optional[str] = None
 
 
 class UserListResponse(BaseModel):
