@@ -1,11 +1,20 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Bot, User, Paperclip, Send, Loader2, Mic, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Bot, User, Paperclip, Send, Loader2, Mic, ThumbsUp, ThumbsDown, Copy, Check } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Button } from './button';
 
 export function ChatBubble({ message, sources, isUser, isTyping = false }) {
   const [feedback, setFeedback] = React.useState(null);
+  const [isCopied, setIsCopied] = React.useState(false);
+
+  const handleCopy = () => {
+    if (message) {
+      navigator.clipboard.writeText(message);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    }
+  };
 
   return (
     <div className={cn("flex w-full gap-4 p-4 md:p-6 transition-all", isUser ? "justify-end" : "justify-start")}>
@@ -50,6 +59,13 @@ export function ChatBubble({ message, sources, isUser, isTyping = false }) {
               )}
               {!isUser && (
                 <div className="flex justify-end gap-2 mt-3 pt-2 border-t border-border/10">
+                  <button 
+                    onClick={handleCopy}
+                    className="p-1 rounded transition-colors text-muted-foreground opacity-60 hover:opacity-100 hover:text-foreground hover:bg-muted" 
+                    title="Copy message"
+                  >
+                    {isCopied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
                   <button 
                     onClick={() => setFeedback(feedback === 'up' ? null : 'up')}
                     className={cn("p-1 rounded transition-colors", feedback === 'up' ? "text-green-500 bg-green-500/10" : "text-muted-foreground opacity-60 hover:opacity-100 hover:text-green-500 hover:bg-green-500/10")} 
