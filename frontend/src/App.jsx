@@ -8,7 +8,7 @@ import StudentAttendance from "./pages/StudentAttendance";
 import ChangePassword from "./pages/change_password";
 import AdminDashboard from "./pages/admin_dashboard";
 
-function ProtectedRoute({ children, adminOnly = false }) {
+function ProtectedRoute({ children, allowedRoles }) {
   const userStr = localStorage.getItem("knowledgex_user");
   const user = userStr ? JSON.parse(userStr) : null;
 
@@ -20,7 +20,16 @@ function ProtectedRoute({ children, adminOnly = false }) {
     return <Navigate to="/change-password" replace />;
   }
   
-  if (adminOnly && user.role !== "admin") {
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    if (user.role === "student") {
+      return <Navigate to="/student-dashboard" replace />;
+    }
+    if (user.role === "faculty") {
+      return <Navigate to="/faculty-dashboard" replace />;
+    }
+    if (user.role === "admin") {
+      return <Navigate to="/admin-dashboard" replace />;
+    }
     return <Navigate to="/" replace />;
   }
 
@@ -35,15 +44,23 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/register" element={<Register />} />
         <Route path="/change-password" element={<ChangePassword />} />
-        <Route path="/student-dashboard" element={<StudentDashboard />} />
-        <Route path="/student-dashboard/attendance" element={<StudentAttendance />} />
+        <Route path="/student-dashboard" element={
+          <ProtectedRoute allowedRoles={["student"]}>
+            <StudentDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/student-dashboard/attendance" element={
+          <ProtectedRoute allowedRoles={["student"]}>
+            <StudentAttendance />
+          </ProtectedRoute>
+        } />
         <Route path="/faculty-dashboard" element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={["faculty"]}>
             <FacultyDashboard />
           </ProtectedRoute>
         } />
         <Route path="/admin-dashboard" element={
-          <ProtectedRoute adminOnly>
+          <ProtectedRoute allowedRoles={["admin"]}>
             <AdminDashboard />
           </ProtectedRoute>
         } />

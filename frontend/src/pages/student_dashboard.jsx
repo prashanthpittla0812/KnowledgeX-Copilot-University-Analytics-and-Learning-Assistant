@@ -30,6 +30,7 @@ export default function StudentDashboard() {
   const [chatInput, setChatInput] = useState("");
   const [isChatSending, setIsChatSending] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingQuizId, setLoadingQuizId] = useState(null);
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("Generate AI Quiz");
 
@@ -80,7 +81,7 @@ export default function StudentDashboard() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [previousChats, selectedChatId, isChatSending]);
   // Quiz States
-  const [quizSubject, setQuizSubject] = useState("Computer Science");
+  const [quizSubject, setQuizSubject] = useState("Computer Networks");
   const [quizTopic, setQuizTopic] = useState("");
   const [quizDifficulty, setQuizDifficulty] = useState("medium");
   const [quizNumQuestions, setQuizNumQuestions] = useState(0);
@@ -402,7 +403,7 @@ export default function StudentDashboard() {
   };
 
   const handleTakeAssignedQuiz = async (quiz) => {
-    setIsLoading(true);
+    setLoadingQuizId(quiz.id);
     try {
       const response = await studentApi.getAssignedQuiz(quiz.id);
       setActiveQuiz({
@@ -416,7 +417,7 @@ export default function StudentDashboard() {
     } catch (error) {
       alert("Failed to load assigned quiz");
     } finally {
-      setIsLoading(false);
+      setLoadingQuizId(null);
     }
   };
 
@@ -627,16 +628,28 @@ export default function StudentDashboard() {
                     <Card key={i} className="glass-card">
                       <CardContent className="p-6">
                         <p className="font-bold text-foreground mb-4"><span className="text-primary mr-2">Q{i + 1}.</span>{q.question}</p>
-                        <div className="space-y-3">
-                          {q.options.map((opt, j) => (
-                            <label key={j} className={`flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all border ${selectedAnswers[i] === opt ? "border-primary bg-primary/5 shadow-sm" : "border-border bg-background hover:border-primary/50"}`}>
-                              <input type="radio" name={`q-${i}`} value={opt} checked={selectedAnswers[i] === opt} onChange={() => setSelectedAnswers(prev => ({ ...prev, [i]: opt }))} className="text-primary" />
-                              <span className={`text-sm font-medium ${selectedAnswers[i] === opt ? "text-foreground" : "text-muted-foreground"}`}>
-                                <span className="font-bold mr-2 uppercase">{String.fromCharCode(97 + j)})</span> {opt}
-                              </span>
-                            </label>
-                          ))}
-                        </div>
+                        {!q.options || q.options.length === 0 ? (
+                          <div className="mt-2">
+                            <input 
+                              type="text" 
+                              value={selectedAnswers[i] || ""} 
+                              onChange={(e) => setSelectedAnswers(prev => ({ ...prev, [i]: e.target.value }))}
+                              placeholder="Type your answer here..."
+                              className="w-full max-w-md rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none transition-all text-slate-800"
+                            />
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {q.options.map((opt, j) => (
+                              <label key={j} className={`flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all border ${selectedAnswers[i] === opt ? "border-primary bg-primary/5 shadow-sm" : "border-border bg-background hover:border-primary/50"}`}>
+                                <input type="radio" name={`q-${i}`} value={opt} checked={selectedAnswers[i] === opt} onChange={() => setSelectedAnswers(prev => ({ ...prev, [i]: opt }))} className="text-primary" />
+                                <span className={`text-sm font-medium ${selectedAnswers[i] === opt ? "text-foreground" : "text-muted-foreground"}`}>
+                                  <span className="font-bold mr-2 uppercase">{String.fromCharCode(97 + j)})</span> {opt}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   ))}
@@ -677,10 +690,11 @@ export default function StudentDashboard() {
                         <div>
                           <label className="text-sm font-semibold mb-1 block">Subject</label>
                           <select value={quizSubject} onChange={e => setQuizSubject(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none">
-                            <option value="Mathematics">Mathematics</option>
-                            <option value="Computer Science">Computer Science</option>
-                            <option value="Data Science">Data Science</option>
-                            <option value="General Knowledge">General Knowledge</option>
+                            <option value="Data Structures & Algorithms">Data Structures & Algorithms</option>
+                            <option value="Computer Networks">Computer Networks</option>
+                            <option value="Operating Systems">Operating Systems</option>
+                            <option value="Database Management Systems">Database Management Systems</option>
+                            <option value="Java Programming">Java Programming</option>
                             <option value="Other">Other</option>
                           </select>
                         </div>
@@ -758,7 +772,7 @@ export default function StudentDashboard() {
                     </h3>
                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                       {assignedQuizzes.filter(q => !q.question_type || !q.question_type.startsWith('Assessment')).map((q, i) => (
-                        <Card key={i} className="glass-card border-primary/30 bg-primary/5 hover:border-primary transition-colors">
+                        <Card key={q.id} className="glass-card border-primary/30 bg-primary/5 hover:border-primary transition-colors">
                           <CardContent className="p-6">
                             <h4 className="text-lg font-bold truncate">{formatTopicForDisplay(q.topic_name)}</h4>
                             <p className="text-xs text-muted-foreground mt-1 mb-4">By {q.teacher_name} • {q.num_questions} Questions</p>
@@ -768,8 +782,12 @@ export default function StudentDashboard() {
                                 Quiz Taken
                               </Button>
                             ) : (
-                              <Button onClick={() => handleTakeAssignedQuiz(q)} className="w-full" disabled={isLoading}>
-                                Take Quiz
+                              <Button 
+                                onClick={() => handleTakeAssignedQuiz(q)} 
+                                className="w-full" 
+                                disabled={loadingQuizId === q.id}
+                              >
+                                {loadingQuizId === q.id ? "Loading..." : "Take Quiz"}
                               </Button>
                             )}
                           </CardContent>
@@ -810,7 +828,7 @@ export default function StudentDashboard() {
                 .filter(q => q.question_type && q.question_type.startsWith('Assessment'))
                 .filter(q => activeAssessmentTab === "Active" ? !q.is_completed : q.is_completed)
                 .map((q, i) => (
-                  <Card key={i} className="glass-card border-slate-200 bg-white hover:border-indigo-400 hover:shadow-md transition-all cursor-pointer" onClick={() => setActiveItem(`Assessment_${q.id}`)}>
+                  <Card key={q.id} className="glass-card border-slate-200 bg-white hover:border-indigo-400 hover:shadow-md transition-all cursor-pointer" onClick={() => setActiveItem(`Assessment_${q.id}`)}>
                     <CardContent className="p-6">
                       <div className="flex justify-between items-start mb-2">
                         <span className="text-xs font-bold px-2 py-1 bg-indigo-50 text-indigo-600 rounded-md">
@@ -1556,20 +1574,22 @@ export default function StudentDashboard() {
               const weakTopics = topicMasteryData.filter(t => t.score < 60);
 
               const subjectMap = {
-                "Mathematics": ["maths", "additions", "algebra", "geometry", "calculus", "math"],
-                "Computer Science": ["ai", "data structures", "algorithms", "programming", "python", "java", "cs"],
-                "Data Science": ["data", "machine learning", "statistics", "sql", "pandas"],
-                "General Knowledge": ["states and capitals", "history", "geography", "science", "gk"]
+                "Data Structures & Algorithms": ["data structures", "algorithms", "dsa", "tree", "graph", "sorting", "searching"],
+                "Computer Networks": ["network", "networks", "physical layer", "osi", "tcp", "ip", "ethernet", "routing"],
+                "Operating Systems": ["operating system", "operating systems", "os", "process", "thread", "memory management", "scheduling"],
+                "Database Management Systems": ["database", "dbms", "sql", "query", "schema", "normalization", "nosql"],
+                "Java Programming": ["java", "object oriented", "oop", "class", "inheritance", "polymorphism", "exception"]
               };
               
               const filteredSkillData = selectedSkillSubject === "All Subjects" 
                 ? topicMasteryData 
                 : topicMasteryData.filter(t => (subjectMap[selectedSkillSubject] || []).some(sub => t.fullTopic.toLowerCase().includes(sub)));
               const subjectColors = {
-                "Mathematics": "url(#mathGradient)",
-                "Computer Science": "url(#csGradient)",
-                "Data Science": "url(#dataGradient)",
-                "General Knowledge": "url(#gkGradient)",
+                "Data Structures & Algorithms": "url(#mathGradient)",
+                "Computer Networks": "url(#csGradient)",
+                "Operating Systems": "url(#dataGradient)",
+                "Database Management Systems": "url(#gkGradient)",
+                "Java Programming": "url(#barGradient)",
                 "default": "url(#barGradient)"
               };
 
@@ -1630,19 +1650,24 @@ export default function StudentDashboard() {
                   </div>
 
                   {(() => {
-                    const getHalfMonthLabel = (dateStr) => {
+                    const getWeeklyLabel = (dateStr) => {
                       const d = new Date(dateStr);
                       const month = d.toLocaleString('default', { month: 'short' });
                       const year = d.getFullYear();
-                      const half = d.getDate() <= 15 ? '1-15' : '16-31';
-                      return `${month} ${half}, ${year}`;
+                      const day = d.getDate();
+                      let weekRange = '';
+                      if (day <= 7) weekRange = '1-7';
+                      else if (day <= 14) weekRange = '8-14';
+                      else if (day <= 21) weekRange = '15-21';
+                      else weekRange = '22-31';
+                      return `${month} ${weekRange}, ${year}`;
                     };
 
-                    const periods = ["All Time", ...Array.from(new Set(quizHistory.map(q => getHalfMonthLabel(q.created_at))))];
+                    const periods = ["All Time", ...Array.from(new Set(quizHistory.map(q => getWeeklyLabel(q.created_at))))];
                     
                     const filteredQuizHistory = (selectedQuizPeriod === "All Time" 
                       ? quizHistory 
-                      : quizHistory.filter(q => getHalfMonthLabel(q.created_at) === selectedQuizPeriod))
+                      : quizHistory.filter(q => getWeeklyLabel(q.created_at) === selectedQuizPeriod))
                     .filter(q => q.score !== null)
                     .map(q => {
                       const displayTopic = formatTopicForDisplay(q.topic);
@@ -1653,7 +1678,7 @@ export default function StudentDashboard() {
 
                     const filteredTrendHistory = selectedTrendPeriod === "All Time" 
                       ? quizHistory 
-                      : quizHistory.filter(q => getHalfMonthLabel(q.created_at) === selectedTrendPeriod);
+                      : quizHistory.filter(q => getWeeklyLabel(q.created_at) === selectedTrendPeriod);
 
                     return (
                       <div className="grid lg:grid-cols-2 gap-8 pb-10">
@@ -1717,11 +1742,11 @@ export default function StudentDashboard() {
                                 </ResponsiveContainer>
                                   </div>
                                 <div className="flex flex-wrap justify-center gap-4 mt-2">
-                                  <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-pink-500 to-violet-500"></div><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Mathematics</span></div>
-                                  <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-emerald-500 to-blue-500"></div><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Data Science</span></div>
-                                  <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-amber-500 to-red-500"></div><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Computer Science</span></div>
-                                  <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-violet-500 to-indigo-500"></div><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">General Knowledge</span></div>
-                                  <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-red-400 to-red-600"></div><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Other</span></div>
+                                  <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-pink-500 to-violet-500"></div><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Data Structures & Algorithms</span></div>
+                                  <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-emerald-500 to-blue-500"></div><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Computer Networks</span></div>
+                                  <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-amber-500 to-red-500"></div><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Operating Systems</span></div>
+                                  <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-violet-500 to-indigo-500"></div><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Database Management Systems</span></div>
+                                  <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-red-400 to-red-600"></div><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Java Programming</span></div>
                                 </div>
                                 </div>
                               ) : (
@@ -1791,10 +1816,11 @@ export default function StudentDashboard() {
                             className="text-sm border border-slate-200 bg-white text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                           >
                             <option value="All Subjects">All Subjects</option>
-                            <option value="Mathematics">Mathematics</option>
-                            <option value="Computer Science">Computer Science</option>
-                            <option value="Data Science">Data Science</option>
-                            <option value="General Knowledge">General Knowledge</option>
+                            <option value="Data Structures & Algorithms">Data Structures & Algorithms</option>
+                            <option value="Computer Networks">Computer Networks</option>
+                            <option value="Operating Systems">Operating Systems</option>
+                            <option value="Database Management Systems">Database Management Systems</option>
+                            <option value="Java Programming">Java Programming</option>
                           </select>
                         }
                       >
@@ -1808,7 +1834,7 @@ export default function StudentDashboard() {
                                       <th className="p-2 text-xs font-semibold text-slate-500 border-b border-slate-100 sticky top-0 bg-white/90 backdrop-blur-sm z-10">Topic</th>
                                       {(selectedSkillSubject === "All Subjects" ? Object.keys(subjectMap) : [selectedSkillSubject]).map(col => (
                                         <th key={col} className="p-2 text-xs font-semibold text-slate-500 text-center border-b border-slate-100 sticky top-0 bg-white/90 backdrop-blur-sm z-10">
-                                          {col === "Computer Science" ? "CS" : col === "General Knowledge" ? "GK" : col}
+                                          {col === "Computer Networks" ? "CN" : col === "Data Structures & Algorithms" ? "DSA" : col === "Operating Systems" ? "OS" : col === "Database Management Systems" ? "DBMS" : col === "Java Programming" ? "Java" : col}
                                         </th>
                                       ))}
                                     </tr>
@@ -1823,9 +1849,9 @@ export default function StudentDashboard() {
                                           </td>
                                           {cols.map(col => {
                                             const belongs = (subjectMap[col] || []).some(sub => t.fullTopic.toLowerCase().includes(sub));
-                                            // Fallback: if it belongs to nothing, put it in General Knowledge so it doesn't just disappear
+                                            // Fallback: if it belongs to nothing, put it in Computer Networks so it doesn't just disappear
                                             const isUncategorized = !Object.keys(subjectMap).some(k => subjectMap[k].some(sub => t.fullTopic.toLowerCase().includes(sub)));
-                                            const shouldShow = belongs || (isUncategorized && col === "General Knowledge");
+                                            const shouldShow = belongs || (isUncategorized && col === "Computer Networks");
                                             
                                             if (shouldShow) {
                                               let colorClass = "bg-slate-100 text-slate-500";

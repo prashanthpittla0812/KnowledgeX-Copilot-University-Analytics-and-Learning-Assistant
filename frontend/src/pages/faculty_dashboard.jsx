@@ -420,15 +420,19 @@ export default function FacultyDashboard() {
                     <h1 className="text-3xl font-black tracking-tight">{quizMode === "Quiz" ? "Generate Quizzes" : "Generate Assessments"}</h1>
                     <p className="text-muted-foreground">Manage and create AI-powered {quizMode === "Quiz" ? "quizzes" : "assessments"}.</p>
                   </div>
-                  <div>
-                    <select 
-                      value={quizMode} 
-                      onChange={e => setQuizMode(e.target.value)} 
-                      className="rounded-xl border border-orange-200 bg-orange-50/50 px-4 py-2 text-sm font-semibold text-orange-900 focus:ring-2 focus:ring-orange-500 outline-none shadow-sm cursor-pointer"
+                  <div className="flex bg-orange-100/60 p-1 rounded-xl border border-orange-200/50 shadow-inner">
+                    <button 
+                      onClick={() => setQuizMode("Quiz")} 
+                      className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${quizMode === "Quiz" ? "bg-gradient-to-r from-orange-500 to-amber-500 shadow-md text-white" : "text-orange-900/60 hover:text-orange-900 hover:bg-orange-200/50"}`}
                     >
-                      <option value="Quiz">Quiz Mode</option>
-                      <option value="Assessment">Assessment Mode</option>
-                    </select>
+                      Quiz Mode
+                    </button>
+                    <button 
+                      onClick={() => setQuizMode("Assessment")} 
+                      className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${quizMode === "Assessment" ? "bg-gradient-to-r from-orange-500 to-amber-500 shadow-md text-white" : "text-orange-900/60 hover:text-orange-900 hover:bg-orange-200/50"}`}
+                    >
+                      Assessment Mode
+                    </button>
                   </div>
                 </div>
 
@@ -577,13 +581,12 @@ export default function FacultyDashboard() {
                             <label className="text-sm font-bold text-slate-900 mb-2 block">
                               Type <span className="text-red-500">*</span>
                             </label>
-                            <select 
+                             <select 
                               value={quizType} 
                               onChange={e => setQuizType(e.target.value)} 
                               className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
                             >
                               <option value="MCQs">MCQs</option>
-                              <option value="Fill in the blanks">Fill in the blanks</option>
                               <option value="One word questions">One word questions</option>
                             </select>
                           </div>

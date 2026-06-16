@@ -13,6 +13,10 @@ export function StudentAssessmentView({ quizId }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef(null);
 
+  const durationMatch = assessment?.question_type?.match(/\(([^)]+)\)/);
+  const duration = durationMatch ? durationMatch[1] : "Next Class";
+  const displayType = assessment?.question_type?.replace(/\s*\([^)]+\)/, "") || "Assessment";
+
   useEffect(() => {
     if (!quizId) return;
     const fetchAssessment = async () => {
@@ -71,7 +75,7 @@ export function StudentAssessmentView({ quizId }) {
       // Meta
       doc.setFontSize(12);
       doc.setTextColor(100, 116, 139);
-      doc.text(`Type: ${assessment.question_type || "Assessment"}`, 20, 30);
+      doc.text(`Type: ${displayType}`, 20, 30);
       doc.text(`Questions: ${assessment.num_questions}`, 100, 30);
       
       // Line separator
@@ -98,19 +102,7 @@ export function StudentAssessmentView({ quizId }) {
         const splitText = doc.splitTextToSize(q.question, 150);
         doc.text(splitText, 35, yPos);
         
-        yPos += (splitText.length * 7) + 5;
-        
-        if (yPos + 80 > 280) {
-          doc.addPage();
-          yPos = 20;
-        }
-        
-        doc.setDrawColor(203, 213, 225);
-        doc.setLineDashPattern([2, 2], 0);
-        doc.rect(20, yPos, 170, 80);
-        doc.setLineDashPattern([], 0);
-        
-        yPos += 95;
+        yPos += (splitText.length * 7) + 15;
       });
       
       doc.save(`${assessment.topic_name || 'Assessment'}.pdf`);
@@ -160,7 +152,7 @@ export function StudentAssessmentView({ quizId }) {
           </div>
           <div>
             <p className="text-sm font-medium text-slate-500">Type</p>
-            <p className="text-lg font-bold text-slate-900">{assessment.question_type || "Assessment"}</p>
+            <p className="text-lg font-bold text-slate-900">{displayType}</p>
           </div>
         </Card>
         
@@ -170,7 +162,7 @@ export function StudentAssessmentView({ quizId }) {
           </div>
           <div>
             <p className="text-sm font-medium text-slate-500">Deadline</p>
-            <p className="text-lg font-bold text-slate-900">Next Class</p>
+            <p className="text-lg font-bold text-slate-900">{duration}</p>
           </div>
         </Card>
         

@@ -164,7 +164,7 @@ export const studentApi = {
   },
 
   submitQuiz(data: any) {
-    return api.post("/student/submit", data);
+    return api.post("/quiz/submit", data);
   },
 
   submitAssessment(assessmentId: number | string, formData: FormData) {
