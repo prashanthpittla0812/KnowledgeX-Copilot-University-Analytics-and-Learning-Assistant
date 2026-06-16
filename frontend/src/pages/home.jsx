@@ -15,12 +15,14 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [loginError, setLoginError] = useState("");
 
   const motivityLogoPath = "/motivity.webp";
   const illustrationPath = "/student_ai_illustration.png";
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setLoginError("");
     if (!identifier.trim() || !password) {
       toast.error("Please enter your email and password.");
       return;
@@ -55,10 +57,10 @@ export default function Home() {
 
     } catch (error) {
       const message =
-        error?.response?.data?.detail ||
-        error?.message ||
-        "Invalid credentials. Please try again.";
-      toast.error(message);
+        error?.response?.status === 401 || error?.response?.status === 403
+          ? "Invalid password or email"
+          : (error?.response?.data?.detail || "Invalid password or email");
+      setLoginError(message);
     } finally {
       setIsLoading(false);
     }
@@ -206,7 +208,10 @@ export default function Home() {
                 <Input
                   type="email"
                   value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
+                  onChange={(e) => {
+                    setIdentifier(e.target.value);
+                    setLoginError("");
+                  }}
                   placeholder="student5@gmail.com"
                   className="pl-11 h-12 bg-slate-50/50 border-slate-200 focus:bg-white rounded-xl text-slate-900 font-medium placeholder:text-slate-400"
                 />
@@ -222,7 +227,10 @@ export default function Home() {
                 </div>
                 <Input
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setLoginError("");
+                  }}
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••••••"
                   className="pl-11 pr-11 h-12 bg-slate-50/50 border-slate-200 focus:bg-white rounded-xl text-slate-900 font-medium tracking-widest placeholder:tracking-normal placeholder:text-slate-400"
@@ -235,6 +243,11 @@ export default function Home() {
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
+              {loginError && (
+                <p className="text-xs font-bold text-red-500 mt-1 ml-1">
+                  {loginError}
+                </p>
+              )}
             </div>
 
             {/* Sign In Button */}

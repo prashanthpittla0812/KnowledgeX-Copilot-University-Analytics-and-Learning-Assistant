@@ -25,6 +25,7 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     last_login_date = Column(DateTime, nullable=True)
     current_streak = Column(Integer, default=0, nullable=False)
+    profile_photo_path = Column(String(500), nullable=True)
 
     documents = relationship("Document", back_populates="user", cascade="all, delete-orphan")
     quizzes = relationship("Quiz", back_populates="user", cascade="all, delete-orphan")
