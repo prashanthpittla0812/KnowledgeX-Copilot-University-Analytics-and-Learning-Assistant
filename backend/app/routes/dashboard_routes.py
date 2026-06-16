@@ -69,3 +69,12 @@ async def get_teacher_documents(
 ):
     service = TeacherDashboardService(db)
     return {"documents": await service.get_teacher_documents(current_user.id)}
+
+
+@router.get("/teacher/recent-quiz-rankings")
+async def get_recent_quiz_rankings(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_faculty),
+):
+    service = TeacherDashboardService(db)
+    return await service.get_recent_quiz_rankings(current_user.id)

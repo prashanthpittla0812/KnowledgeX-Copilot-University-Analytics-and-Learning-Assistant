@@ -121,3 +121,71 @@ class TeacherDashboardService:
             "lowest_score": round(row[2] or 0, 2),
             "quiz_breakdown": breakdown,
         }
+
+    async def get_recent_quiz_rankings(self, teacher_id: int) -> dict:
+        user_res = await self.db.execute(select(User.name).where(User.id == teacher_id))
+        teacher_name = user_res.scalar_one_or_none()
+
+        query = select(TeacherQuiz)
+        if teacher_name:
+            query = query.where(
+                or_(
+                    TeacherQuiz.teacher_id == teacher_id,
+                    (TeacherQuiz.teacher_id.is_(None)) & (TeacherQuiz.teacher_name == teacher_name)
+                )
+            )
+        else:
+            query = query.where(TeacherQuiz.teacher_id == teacher_id)
+
+        # Get the most recent quiz
+        recent_quiz = await self.db.execute(query.order_by(TeacherQuiz.created_at.desc()).limit(1))
+        quiz = recent_quiz.scalar_one_or_none()
+
+        if not quiz:
+            return {"quiz_topic": None, "top_3": [], "bottom_3": []}
+
+        # Get attempts for this quiz
+        attempts_res = await self.db.execute(
+            select(
+                User.id,
+                User.name,
+                func.max(QuizAttempt.percentage).label("best_score")
+            )
+            .join(QuizAttempt, QuizAttempt.student_id == User.id)
+            .where(QuizAttempt.quiz_id == quiz.id)
+            .where(User.role == "student")
+            .group_by(User.id)
+        )
+        attempts = attempts_res.all()
+
+        if not attempts:
+            return {"quiz_topic": quiz.topic_name, "top_3": [], "bottom_3": []}
+
+        # Sort attempts descending
+        sorted_attempts = sorted(attempts, key=lambda x: x.best_score, reverse=True)
+        
+        n_total = len(sorted_attempts)
+        if n_total == 0:
+            top_3 = []
+            bottom_3 = []
+        elif n_total == 1:
+            top_3 = [{"user_id": sorted_attempts[0].id, "user_name": sorted_attempts[0].name, "score": round(sorted_attempts[0].best_score, 2)}]
+            bottom_3 = []
+        else:
+            # Dynamically split top and bottom
+            n_top = min(3, max(1, n_total // 2))
+            n_bottom = min(3, n_total - n_top)
+            
+            top_attempts = sorted_attempts[:n_top]
+            # Get bottom attempts and sort them ascending (lowest score first)
+            bottom_attempts = sorted_attempts[-n_bottom:]
+            bottom_attempts.reverse()
+            
+            top_3 = [{"user_id": a.id, "user_name": a.name, "score": round(a.best_score, 2)} for a in top_attempts]
+            bottom_3 = [{"user_id": a.id, "user_name": a.name, "score": round(a.best_score, 2)} for a in bottom_attempts]
+
+        return {
+            "quiz_topic": quiz.topic_name,
+            "top_3": top_3,
+            "bottom_3": bottom_3
+        }

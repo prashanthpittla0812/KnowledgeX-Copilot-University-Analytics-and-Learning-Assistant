@@ -5,9 +5,13 @@ from typing import List, Optional
 class QuizGenerateRequest(BaseModel):
     faculty_name: str
     topic_name: str
+    document_topic: Optional[str] = None
     question_type: str
     difficulty: str
     num_questions: int
+    is_assessment: Optional[bool] = False
+    manual_questions: Optional[str] = None
+    duration_mins: Optional[int] = 60
 
 
 class QuizGenerateResponse(BaseModel):
@@ -28,8 +32,14 @@ class StudentQuizSubmission(BaseModel):
     answers: List[StudentAnswer]
 
 
+from typing import List, Optional
+
 class StudentQuizResponse(BaseModel):
     quiz_id: int
+    topic_name: Optional[str] = None
+    question_type: Optional[str] = None
+    num_questions: Optional[int] = None
+    created_at: Optional[str] = None
     questions: List[dict]
 
 
@@ -45,6 +55,10 @@ class ResultItem(BaseModel):
 class ResultResponse(BaseModel):
     quiz_id: int
     results: List[ResultItem]
+    average_score: float = 0.0
+    highest_score: float = 0.0
+    lowest_score: float = 0.0
+    total_attempts: int = 0
 
 
 class UploadResponse(BaseModel):

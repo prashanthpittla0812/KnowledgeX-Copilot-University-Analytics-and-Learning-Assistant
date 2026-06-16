@@ -40,6 +40,7 @@ export type LoginPayload = {
 export type QuizGenerationPayload = {
   faculty_name?: string;
   topic_name: string;
+  document_topic?: string;
   question_type?: string;
   difficulty: "easy" | "medium" | "hard" | string;
   num_questions: number;
@@ -117,7 +118,7 @@ export const facultyApi = {
   },
 
   getQuizResults(quizId: string | number) {
-    return api.get(`/assessment/class-performance/${quizId}`);
+    return api.get(`/faculty/results/${quizId}`);
   },
 
   getLearningGaps(quizId?: string | number) {
@@ -132,6 +133,10 @@ export const facultyApi = {
     return api.get("/faculty/dashboard");
   },
 
+  getRecentQuizRankings() {
+    return api.get("/dashboard/teacher/recent-quiz-rankings");
+  },
+
   getAttendance() {
     return api.get("/attendance/class");
   },
@@ -142,6 +147,14 @@ export const facultyApi = {
 
   getQuiz(quizId: string | number) {
     return api.get(`/faculty/quiz/${quizId}`);
+  },
+
+  getAssessmentSubmissions(assessmentId: number | string) {
+    return api.get(`/faculty/assessment/${assessmentId}/submissions`);
+  },
+
+  downloadSubmission(submissionId: number | string) {
+    return api.get(`/faculty/assessment/submission/${submissionId}/download`, { responseType: 'blob' });
   }
 };
 
@@ -150,8 +163,18 @@ export const studentApi = {
     return api.post("/quiz/generate", payload);
   },
 
-  submitQuiz(payload: { quiz_id: number; answers: string[] }) {
-    return api.post("/quiz/submit", payload);
+  submitQuiz(data: any) {
+    return api.post("/quiz/submit", data);
+  },
+
+  submitAssessment(assessmentId: number | string, formData: FormData) {
+    return api.post(`/student/assessment/${assessmentId}/submit`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+
+  getAssessmentStatus(assessmentId: number | string) {
+    return api.get(`/student/assessment/${assessmentId}/status`);
   },
 
   getQuizHistory() {

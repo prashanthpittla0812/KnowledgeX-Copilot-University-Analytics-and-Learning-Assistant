@@ -1,5 +1,5 @@
 from langchain_chroma import Chroma
-from langchain_community.embeddings import OllamaEmbeddings
+from langchain_ollama import OllamaEmbeddings
 from langchain_openai import AzureOpenAIEmbeddings, OpenAIEmbeddings
 
 from app.config.settings import settings
@@ -12,7 +12,7 @@ def get_teacher_embeddings():
     if settings.AI_PROVIDER == "openai":
         return OpenAIEmbeddings(
             model="text-embedding-ada-002",
-            openai_api_key=settings.OPENAI_API_KEY,
+            api_key=settings.OPENAI_API_KEY,
         )
     elif settings.AI_PROVIDER == "azure":
         return AzureOpenAIEmbeddings(

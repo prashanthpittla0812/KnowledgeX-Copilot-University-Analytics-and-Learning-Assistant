@@ -4,7 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.prompts import LEARNING_GAPS_PROMPT_TEMPLATE
-from app.database.models import Document, FacultyDocument, Quiz, QuizAttempt, TeacherQuiz, User, TopicPerformance
+from app.database.models import Document, FacultyDocument, LearningMaterial, Quiz, QuizAttempt, TeacherQuiz, User, TopicPerformance
 from app.services.rag_service import RAGService
 from app.utils.logger import get_logger
 
@@ -24,10 +24,10 @@ class AnalyticsService:
             select(func.count()).select_from(User).where(User.role == "faculty")
         )
         total_documents = await self.db.scalar(
-            select(func.count()).select_from(Document)
+            select(func.count()).select_from(LearningMaterial)
         )
         total_quizzes = await self.db.scalar(
-            select(func.count()).select_from(Quiz)
+            select(func.count()).select_from(TeacherQuiz)
         )
         return {
             "total_students": total_students or 0,

@@ -35,6 +35,7 @@ class User(Base):
     quiz_attempts = relationship("QuizAttempt", back_populates="student", cascade="all, delete-orphan")
     topic_performances = relationship("TopicPerformance", back_populates="student", cascade="all, delete-orphan")
     topic_summaries = relationship("StudentTopicSummary", back_populates="student", cascade="all, delete-orphan")
+    assessment_submissions = relationship("AssessmentSubmission", back_populates="student", cascade="all, delete-orphan")
     
     # Self-referential relationship for approver
     approved_users = relationship("User", back_populates="approver", foreign_keys=[approved_by])
@@ -121,6 +122,7 @@ class TeacherQuiz(Base):
     results = relationship("TeacherQuizResult", back_populates="quiz", cascade="all, delete-orphan")
     attempts = relationship("QuizAttempt", back_populates="quiz", cascade="all, delete-orphan")
     learning_gap_reports = relationship("LearningGapReport", back_populates="quiz", cascade="all, delete-orphan")
+    submissions = relationship("AssessmentSubmission", back_populates="assessment", cascade="all, delete-orphan")
 
 
 class TeacherQuizQuestion(Base):
@@ -152,6 +154,21 @@ class TeacherQuizResult(Base):
     submitted_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     quiz = relationship("TeacherQuiz", back_populates="results")
+
+
+class AssessmentSubmission(Base):
+    __tablename__ = "assessment_submissions"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    assessment_id = Column(Integer, ForeignKey("teacher_quizzes.id", ondelete="CASCADE"), nullable=False)
+    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    file_path = Column(String(500), nullable=False)
+    file_name = Column(String(255), nullable=False)
+    status = Column(String(50), nullable=False, default="submitted")
+    submitted_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    assessment = relationship("TeacherQuiz", back_populates="submissions")
+    student = relationship("User", back_populates="assessment_submissions")
 
 
 class StudentQuiz(Base):
@@ -220,6 +237,7 @@ class QuizAttempt(Base):
     total_questions = Column(Integer, nullable=False)
     correct_answers = Column(Integer, nullable=False)
     wrong_answers = Column(Integer, nullable=False)
+    attempt_type = Column(String(50), nullable=False, default="practice")
     submitted_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     quiz = relationship("TeacherQuiz", back_populates="attempts")
