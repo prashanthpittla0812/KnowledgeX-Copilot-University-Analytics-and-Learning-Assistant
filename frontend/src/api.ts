@@ -58,6 +58,7 @@ export const authApi = {
 
   async login(payload: LoginPayload) {
     const response = await api.post("/auth/login", payload);
+    
     const token =
       response.data?.access_token ||
       response.data?.token ||
@@ -80,6 +81,48 @@ export const authApi = {
     }
 
     return { ...response.data, user };
+  },
+
+  async verifyLoginOtp(payload: { email: string; otp_code: string }) {
+    const response = await api.post("/auth/verify-login-otp", payload);
+    
+    const token =
+      response.data?.access_token ||
+      response.data?.token ||
+      response.data?.jwt ||
+      response.data?.data?.access_token;
+
+    if (token) {
+      localStorage.setItem(TOKEN_STORAGE_KEY, token);
+    }
+
+    let user = response.data?.user;
+    if (!user && token) {
+      const meResponse = await api.get("/auth/me");
+      user = meResponse.data;
+    }
+
+    if (user) {
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+      localStorage.setItem("currentUser", JSON.stringify({ name: user.name, role: user.role, id: user.id }));
+    }
+
+    return { ...response.data, user };
+  },
+
+  async forgotPassword(payload: { email: string }) {
+    const response = await api.post("/auth/forgot-password", payload);
+    return response.data;
+  },
+
+  async verifyResetOtp(payload: { email: string; otp_code: string }) {
+    const response = await api.post("/auth/verify-reset-otp", payload);
+    return response.data;
+  },
+
+  async resetPassword(payload: { email: string; otp_code: string; new_password: string }) {
+    const response = await api.post("/auth/reset-password", payload);
+    return response.data;
   },
 
   logout() {

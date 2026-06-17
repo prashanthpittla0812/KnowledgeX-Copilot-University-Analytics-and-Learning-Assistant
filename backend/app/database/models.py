@@ -406,3 +406,29 @@ class SecurityLog(Base):
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     user = relationship("User")
+
+
+class OTPVerification(Base):
+    __tablename__ = "otp_verifications"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    otp_code = Column(String(10), nullable=False)
+    purpose = Column(String(50), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    is_verified = Column(Boolean, default=False, nullable=False)
+
+    user = relationship("User")
+
+class LoginAudit(Base):
+    __tablename__ = "login_audit"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    login_time = Column(DateTime, default=datetime.utcnow, nullable=False)
+    browser = Column(String(100), nullable=True)
+    operating_system = Column(String(100), nullable=True)
+    device_type = Column(String(100), nullable=True)
+    ip_address = Column(String(50), nullable=True)
+
+    user = relationship("User")
+

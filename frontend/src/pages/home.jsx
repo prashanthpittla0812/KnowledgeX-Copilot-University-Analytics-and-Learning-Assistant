@@ -32,6 +32,7 @@ export default function Home() {
         email: identifier.trim(),
         password,
       });
+
       const { user } = loginResponse;
 
       if (!user || !user.role) {
@@ -215,7 +216,12 @@ export default function Home() {
 
             {/* Password Field */}
             <div className="space-y-1.5">
-              <label className="text-sm font-bold text-slate-700 ml-1">Password</label>
+              <div className="flex items-center justify-between ml-1">
+                <label className="text-sm font-bold text-slate-700">Password</label>
+                <Link to="/forgot-password" className="text-xs font-bold text-orange-500 hover:text-orange-600 transition-colors">
+                  Forgot Password?
+                </Link>
+              </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-slate-400" />
