@@ -867,13 +867,15 @@ export default function StudentDashboard() {
           <LearningResourcesTab />
         ) : activeItem === "Study Plan" ? (
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Header section */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-3xl font-black text-slate-800 tracking-tight">Study Plan</h1>
-                <p className="text-muted-foreground mt-1">Personalized study plan generated for you</p>
-              </div>
-              {activeStudyPlan && (() => {
+            {!isGenModalOpen ? (
+              <>
+                {/* Header section */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h1 className="text-3xl font-black text-slate-800 tracking-tight">Study Plan</h1>
+                    <p className="text-muted-foreground mt-1">Personalized study plan generated for you</p>
+                  </div>
+                  {activeStudyPlan && (() => {
                 const plan = activeStudyPlan.plan || activeStudyPlan;
                 const dailySchedule = plan.daily_schedule || plan.schedule || [];
                 
@@ -1213,7 +1215,7 @@ export default function StudentDashboard() {
                   {/* Main Grid Columns Layout */}
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
                     {/* Left Timeline Card (Col span 9) */}
-                    <Card className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm lg:col-span-9 flex flex-col lg:h-[calc(100vh-320px)]">
+                    <Card className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm lg:col-span-9 flex flex-col lg:h-[calc(100vh-200px)]">
                       {isPlanCompleted ? (
                         <div className="flex flex-col items-center justify-center h-full text-center p-6 animate-in fade-in duration-500">
                           <div className="w-16 h-16 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mb-4 shadow-sm border border-orange-200">
@@ -1319,7 +1321,7 @@ export default function StudentDashboard() {
                   </Card>
 
                     {/* Right Sidebar Column (Col span 3) */}
-                    <div className="lg:col-span-3 space-y-4 lg:h-[calc(100vh-320px)] lg:overflow-y-auto pr-1 custom-scrollbar">
+                    <div className="lg:col-span-3 space-y-4 lg:h-[calc(100vh-200px)] lg:overflow-y-auto pr-1 custom-scrollbar">
                       {/* Learning Goals Card */}
                       {!isPlanCompleted && learningGoals.length > 0 && (
                         <Card className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm">
@@ -1385,11 +1387,21 @@ export default function StudentDashboard() {
                 </Button>
               </div>
             )}
+              </>
+            ) : (
+              <div className="flex-1 min-h-[50vh]" />
+            )}
 
             {/* Regenerate Plan Modal Popup */}
-            {isGenModalOpen && (
-              <div className="fixed inset-0 bg-black/20 z-[999] flex items-center justify-center p-4">
-                <div className="bg-white rounded-3xl border border-slate-100 p-6 w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
+            {isGenModalOpen && createPortal(
+              <div 
+                className="absolute inset-0 bg-transparent z-[999] flex items-center justify-center p-4"
+                onClick={() => setIsGenModalOpen(false)}
+              >
+                <div 
+                  className="bg-white rounded-3xl border border-slate-200 p-6 w-full max-w-lg shadow-[0_20px_50px_rgba(15,23,42,0.15)] border-t-4 border-t-orange-500 animate-in zoom-in-95 duration-200"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <div className="flex justify-between items-center mb-6">
                     <div>
                       <h3 className="text-xl font-bold text-slate-800">Generate Study Plan</h3>
@@ -1461,7 +1473,8 @@ export default function StudentDashboard() {
                     </Button>
                   </div>
                 </div>
-              </div>
+              </div>,
+              document.getElementById("main-workspace") || document.body
             )}
           </div>
         ) : activeItem === "Recommendations" ? (
@@ -1581,11 +1594,12 @@ export default function StudentDashboard() {
               const weakTopics = topicMasteryData.filter(t => t.score < 60);
 
               const subjectMap = {
-                "Data Structures & Algorithms": ["data structures", "algorithms", "dsa", "tree", "graph", "sorting", "searching"],
+                "Data Structures & Algorithms": ["data structures", "algorithms", "dsa", "tree", "graph", "sorting", "searching", "stack", "queue", "array", "arrays", "linked list"],
                 "Computer Networks": ["network", "networks", "physical layer", "osi", "tcp", "ip", "ethernet", "routing"],
                 "Operating Systems": ["operating system", "operating systems", "os", "process", "thread", "memory management", "scheduling"],
                 "Database Management Systems": ["database", "dbms", "sql", "query", "schema", "normalization", "nosql"],
-                "Java Programming": ["java", "object oriented", "oop", "class", "inheritance", "polymorphism", "exception"]
+                "Java Programming": ["java", "object oriented", "oop", "class", "inheritance", "polymorphism", "exception"],
+                "Other": []
               };
               
               const filteredSkillData = selectedSkillSubject === "All Subjects" 
@@ -1601,14 +1615,19 @@ export default function StudentDashboard() {
               };
 
               const getSubjectForTopic = (topic) => {
-                if (!topic) return "default";
+                if (!topic) return "Other";
                 const match = topic.match(/Category: (.*?)\)/i);
                 if (match && subjectMap[match[1]]) return match[1];
                 const t = topic.toLowerCase();
                 for (const [subject, keywords] of Object.entries(subjectMap)) {
-                  if (t.includes(subject.toLowerCase()) || keywords.some(k => t.includes(k))) return subject;
+                  if (subject === "Other") continue;
+                  if (t.includes(subject.toLowerCase())) return subject;
+                  for (const k of keywords) {
+                    const regex = new RegExp(`\\b${k}\\b`, 'i');
+                    if (regex.test(t)) return subject;
+                  }
                 }
-                return "default";
+                return "Other";
               };
               
               const CustomTooltip = ({ active, payload, label, isDate = false }) => {
@@ -1686,6 +1705,9 @@ export default function StudentDashboard() {
                     const filteredTrendHistory = selectedTrendPeriod === "All Time" 
                       ? quizHistory 
                       : quizHistory.filter(q => getWeeklyLabel(q.created_at) === selectedTrendPeriod);
+                      
+                    // Inject subject into filtered histories for BarChart colors
+                    const chartQuizHistory = filteredQuizHistory.map(q => ({ ...q, subject: getSubjectForTopic(q.topic) }));
 
                     return (
                       <div className="grid lg:grid-cols-2 gap-8 pb-10">
@@ -1711,7 +1733,7 @@ export default function StudentDashboard() {
                                   <div className="flex-1 min-h-0">
                                     <ResponsiveContainer width="100%" height="100%">
                                   <BarChart 
-                                    data={selectedQuizPeriod === "All Time" ? filteredQuizHistory.slice(0, 15).reverse() : [...filteredQuizHistory].reverse()} 
+                                    data={selectedQuizPeriod === "All Time" ? chartQuizHistory.slice(0, 15).reverse() : [...chartQuizHistory].reverse()} 
                                     margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
                                   >
                                     <defs>
@@ -1741,7 +1763,7 @@ export default function StudentDashboard() {
                                     <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} />
                                     <Tooltip content={<CustomTooltip />} cursor={{ fill: '#e2e8f0' }} />
                                     <Bar dataKey="score" fill="url(#barGradient)" radius={[6, 6, 0, 0]} maxBarSize={40}>
-                                      {(selectedQuizPeriod === "All Time" ? filteredQuizHistory.slice(0, 15).reverse() : [...filteredQuizHistory].reverse()).map((entry, index) => (
+                                      {(selectedQuizPeriod === "All Time" ? chartQuizHistory.slice(0, 15).reverse() : [...chartQuizHistory].reverse()).map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={subjectColors[entry.subject] || subjectColors["default"]} />
                                       ))}
                                     </Bar>
@@ -1834,7 +1856,7 @@ export default function StudentDashboard() {
                         <div className="mt-4 flex-1 flex flex-col min-h-[300px]">
                           {filteredSkillData.length > 0 ? (
                             <>
-                              <div className="flex-1 overflow-auto custom-scrollbar pr-2">
+                              <div className="flex-1 overflow-auto custom-scrollbar pr-2 max-h-[300px]">
                                 <table className="w-full text-left border-collapse">
                                   <thead>
                                     <tr>
@@ -1855,10 +1877,8 @@ export default function StudentDashboard() {
                                             {t.fullTopic}
                                           </td>
                                           {cols.map(col => {
-                                            const belongs = (subjectMap[col] || []).some(sub => t.fullTopic.toLowerCase().includes(sub));
-                                            // Fallback: if it belongs to nothing, put it in Computer Networks so it doesn't just disappear
-                                            const isUncategorized = !Object.keys(subjectMap).some(k => subjectMap[k].some(sub => t.fullTopic.toLowerCase().includes(sub)));
-                                            const shouldShow = belongs || (isUncategorized && col === "Computer Networks");
+                                            const subjectForThisTopic = getSubjectForTopic(t.fullTopic);
+                                            const shouldShow = subjectForThisTopic === col;
                                             
                                             if (shouldShow) {
                                               let colorClass = "bg-slate-100 text-slate-500";

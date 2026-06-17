@@ -137,6 +137,17 @@ class TeacherQuizService:
                 except json.JSONDecodeError:
                     pass
 
+        if questions is None:
+            start = content.find('[')
+            if start != -1:
+                last_brace = content.rfind('}')
+                if last_brace != -1 and last_brace > start:
+                    fixed_content = content[start:last_brace+1] + "\n]"
+                    try:
+                        questions = json.loads(fixed_content)
+                    except json.JSONDecodeError:
+                        pass
+
         if isinstance(questions, dict):
             if "questions" in questions:
                 questions = questions["questions"]
