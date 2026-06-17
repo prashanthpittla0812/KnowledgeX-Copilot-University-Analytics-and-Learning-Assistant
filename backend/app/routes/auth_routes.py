@@ -1,6 +1,6 @@
 import random
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from user_agents import parse
@@ -22,7 +22,7 @@ from app.schemas.auth_schema import (
     ResetPasswordRequest
 )
 from app.services.email_service import send_otp_email, send_login_notification
-
+from app.schemas.user_schema import UserUpdateRequest
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 def generate_otp() -> str:

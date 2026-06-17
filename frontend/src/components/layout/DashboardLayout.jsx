@@ -93,9 +93,7 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
     formData.append("file", file);
 
     try {
-      const response = await api.post("/auth/profile/photo", formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-      });
+      const response = await api.post("/auth/profile/photo", formData);
       
       const relativePath = response.data.profile_photo_path;
       
