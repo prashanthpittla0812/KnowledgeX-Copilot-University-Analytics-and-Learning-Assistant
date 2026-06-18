@@ -61,6 +61,11 @@ async def approve_student(student_id: int, db: AsyncSession = Depends(get_db), c
     student.approved_at = datetime.utcnow()
     log_audit(db, "approve_student", current_admin.id, student.id)
     await db.commit()
+    
+    # Send email notification
+    from app.services.email_service import send_approval_email
+    await send_approval_email(student.email, student.name)
+    
     return {"message": "Student approved successfully"}
 
 @router.put("/students/{student_id}/reject")

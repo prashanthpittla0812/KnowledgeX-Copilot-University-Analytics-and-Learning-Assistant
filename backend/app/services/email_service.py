@@ -65,3 +65,29 @@ async def send_login_notification(email: str, name: str, time_str: str, device: 
         await fast_mail.send_message(message)
     except Exception as e:
         print(f"Failed to send email: {e}")
+
+async def send_approval_email(email: str, name: str):
+    fast_mail = FastMail(get_mail_config())
+    html = f"""
+    <h2>KnowledgeX Copilot Account Approved</h2>
+    <p>Hello {name},</p>
+    <p>Great news! Your account has been reviewed and <strong>approved</strong> by an administrator.</p>
+    <p>You can now log in to the KnowledgeX Copilot platform using your registered email and password.</p>
+    <br>
+    <p>Welcome aboard!</p>
+    <p>Regards,<br>KnowledgeX Admin Team</p>
+    """
+    
+    message = MessageSchema(
+        subject="Your Account is Approved - KnowledgeX Copilot",
+        recipients=[email],
+        body=html,
+        subtype=MessageType.html
+    )
+    
+    print(f"\n{'='*50}\n[DEV] Approval Email sent to {email}\n{'='*50}\n")
+    
+    try:
+        await fast_mail.send_message(message)
+    except Exception as e:
+        print(f"Failed to send email: {e}")

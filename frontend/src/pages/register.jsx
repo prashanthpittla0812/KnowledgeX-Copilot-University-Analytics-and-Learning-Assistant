@@ -46,9 +46,15 @@ export default function Register() {
         password,
         role: "student",
       });
-      window.alert(
-        "Account created successfully!\n\nYour account is currently in a PENDING state. An administrator must approve your registration before you can log in."
-      );
+
+      if (email.trim().toLowerCase().endsWith("@ifheindia.org")) {
+        window.alert("Account created successfully!\n\nYour account has been automatically approved. You can now log in.");
+      } else {
+        window.alert(
+          "Account created successfully!\n\nYour account is currently in a PENDING state. An administrator must approve your registration before you can log in."
+        );
+      }
+
       navigate("/");
     } catch (error) {
       let message = "Failed to create account. Please try again.";

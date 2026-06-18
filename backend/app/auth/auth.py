@@ -23,11 +23,17 @@ class AuthService:
         if result.scalar_one_or_none():
             raise ValueError("Email already registered")
 
+        is_domain = email.lower().endswith("@ifheindia.org")
+        email_type = "DOMAIN" if is_domain else "EXTERNAL"
+        status = "APPROVED" if is_domain else "PENDING"
+
         user = User(
             name=name,
             email=email,
             password_hash=hash_password(password),
             role=role,
+            email_type=email_type,
+            status=status,
         )
         self.db.add(user)
         await self.db.flush()
@@ -41,7 +47,7 @@ class AuthService:
             raise ValueError("Invalid email or password")
         if not user.is_active:
             raise InactiveAccountError("Account is inactive")
-        if user.role == "student" and user.status != "APPROVED":
+        if user.status != "APPROVED":
             if user.status == "REJECTED":
                 raise UnapprovedAccountError("Your account was rejected by admin")
             raise UnapprovedAccountError("Your account is awaiting admin approval")

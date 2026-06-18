@@ -18,6 +18,7 @@ class AdminStudentResponse(BaseModel):
     id: int
     name: str
     email: str
+    email_type: Optional[str] = None
     department: Optional[str]
     status: str
     created_at: datetime
