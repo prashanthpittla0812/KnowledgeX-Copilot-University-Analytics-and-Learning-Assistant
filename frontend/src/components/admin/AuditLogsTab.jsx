@@ -7,15 +7,25 @@ import { Clock } from "lucide-react";
 export default function AuditLogsTab() {
   const [logs, setLogs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [timeRange, setTimeRange] = useState("All Time");
+  const [department, setDepartment] = useState("All Departments");
+
+  const TIME_RANGES = ["All Time", "Last 24 Hours", "Last 7 Days", "Last 30 Days"];
+  const DEPARTMENTS = ["All Departments", "CSE", "DSAI"];
 
   useEffect(() => {
     fetchLogs();
-  }, []);
+  }, [timeRange, department]);
 
   const fetchLogs = async () => {
     setIsLoading(true);
     try {
-      const response = await api.get("/admin/audit-logs");
+      const queryParams = new URLSearchParams();
+      if (timeRange !== "All Time") queryParams.append("time_range", timeRange);
+      if (department !== "All Departments") queryParams.append("department", department);
+      
+      const queryString = queryParams.toString() ? `?${queryParams.toString()}` : "";
+      const response = await api.get(`/admin/audit-logs${queryString}`);
       setLogs(response.data);
     } catch (error) {
       toast.error("Failed to load audit logs.");
@@ -26,9 +36,31 @@ export default function AuditLogsTab() {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div>
-        <h1 className="text-3xl font-black text-foreground tracking-tight">Audit Logs</h1>
-        <p className="text-muted-foreground mt-1">Track all system activities and administrative actions.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-foreground tracking-tight">Audit Logs</h1>
+          <p className="text-muted-foreground mt-1">Track all system activities and administrative actions.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <select
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value)}
+            className="px-4 py-2 border border-slate-200 rounded-xl bg-white text-sm font-medium shadow-sm outline-none focus:ring-2 focus:ring-orange-500/20"
+          >
+            {TIME_RANGES.map(tr => (
+              <option key={tr} value={tr}>{tr}</option>
+            ))}
+          </select>
+          <select
+            value={department}
+            onChange={(e) => setDepartment(e.target.value)}
+            className="px-4 py-2 border border-slate-200 rounded-xl bg-white text-sm font-medium shadow-sm outline-none focus:ring-2 focus:ring-orange-500/20"
+          >
+            {DEPARTMENTS.map(dept => (
+              <option key={dept} value={dept}>{dept}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <AnalyticsCard
