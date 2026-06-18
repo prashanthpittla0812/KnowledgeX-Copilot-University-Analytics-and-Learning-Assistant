@@ -85,18 +85,12 @@ async def login(request: LoginRequest, db: AsyncSession = Depends(get_db)):
         )
 
         from datetime import datetime
-        now = datetime.utcnow()
-        if user.last_login_date:
-            delta = now.date() - user.last_login_date.date()
-            if delta.days == 1:
-                user.current_streak += 1
-            elif delta.days > 1:
-                user.current_streak = 1
+        if user.role == "student":
+            from app.utils.streak import update_user_streak
+            await update_user_streak(user, db)
         else:
-            user.current_streak = 1
-
-        user.last_login_date = now
-        await db.commit()
+            user.last_login_date = datetime.utcnow()
+            await db.commit()
 
         token = auth_service.generate_token(user)
         return TokenResponse(access_token=token, must_change_password=user.must_change_password)

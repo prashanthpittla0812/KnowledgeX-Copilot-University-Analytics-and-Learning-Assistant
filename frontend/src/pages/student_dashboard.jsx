@@ -23,7 +23,7 @@ export default function StudentDashboard() {
   const [activeItem, setActiveItem] = useState("Dashboard");
   const [activeAssessmentTab, setActiveAssessmentTab] = useState("Active");
   const [selectedQuizPeriod, setSelectedQuizPeriod] = useState("All Time");
-  const [selectedTrendPeriod, setSelectedTrendPeriod] = useState("All Time");
+  const [selectedTrendPeriod, setSelectedTrendPeriod] = useState("Active Plan");
   const [selectedSkillSubject, setSelectedSkillSubject] = useState("All Subjects");
 
   // Chatbot State
@@ -520,7 +520,7 @@ export default function StudentDashboard() {
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               <StatCard title="Quizzes Taken" value={dashboardStats?.quizzes_taken ?? "0"} icon={CheckCircle} description="Total practice quizzes" colorClass="bg-gradient-to-br from-indigo-400 to-indigo-600 shadow-indigo-500/20" />
               <StatCard title="Average Score" value={`${dashboardStats?.average_quiz_score ?? 0}%`} icon={Target} description="All time average" colorClass="bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-emerald-500/20" />
-              <StatCard title="Study Streak" value={`${dashboardStats?.study_streak ?? 0} days`} icon={TrendingUp} description="Keep it up!" colorClass="bg-gradient-to-br from-sky-400 to-sky-600 shadow-sky-500/20" />
+              <StatCard title="Study Streak" value={`${dashboardStats?.study_streak ?? 0} ${dashboardStats?.study_streak === 1 ? 'day' : 'days'}`} icon={TrendingUp} description="Keep it up!" colorClass="bg-gradient-to-br from-sky-400 to-sky-600 shadow-sky-500/20" />
               <StatCard title="Docs Uploaded" value={dashboardStats?.documents_uploaded ?? "0"} icon={FileText} description="Total resources" colorClass="bg-gradient-to-br from-violet-400 to-violet-600 shadow-violet-500/20" />
             </div>
 
@@ -1624,15 +1624,16 @@ export default function StudentDashboard() {
                 return "default";
               };
               
-              const CustomTooltip = ({ active, payload, label, isDate = false }) => {
+              const CustomTooltip = ({ active, payload, label, isDate = false, isStreak = false }) => {
                 if (active && payload && payload.length) {
                   return (
                     <div className="bg-white/90 backdrop-blur-md border border-slate-200 p-4 rounded-2xl shadow-xl">
                       <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                        {isDate ? new Date(label).toLocaleDateString() : (payload[0].payload.subject ? `${payload[0].payload.subject}: ${label}` : label)}
+                        {isStreak ? (payload[0].payload.subject ? `${payload[0].payload.subject} (${label})` : label) : (isDate ? new Date(label).toLocaleDateString() : (payload[0].payload.subject ? `${payload[0].payload.subject}: ${label}` : label))}
                       </p>
                       <p className="text-lg font-black text-indigo-600">
-                        Score: <span className="text-slate-800">{payload[0].value}%</span>
+                        {isStreak ? "Study Time: " : "Score: "}
+                        <span className="text-slate-800">{payload[0].value}{isStreak ? " hrs" : "%"}</span>
                       </p>
                     </div>
                   );
@@ -1696,9 +1697,62 @@ export default function StudentDashboard() {
                       return { ...q, topic: displayTopic, subject: subjectName };
                     });
 
-                    const filteredTrendHistory = selectedTrendPeriod === "All Time" 
-                      ? quizHistory 
-                      : quizHistory.filter(q => getWeeklyLabel(q.created_at) === selectedTrendPeriod);
+                    const trendPeriods = ["Active Plan", "Last 7 Days"];
+
+                    const streakData = (() => {
+                      if (selectedTrendPeriod === "Active Plan" && activeStudyPlan) {
+                        const plan = activeStudyPlan.plan || activeStudyPlan;
+                        const schedule = plan.daily_schedule || [];
+                        return schedule.map(item => ({
+                          name: `Day ${item.day}`,
+                          hours: item.duration_hours || 0,
+                          subject: item.subject || "Study Session",
+                          date: item.date || ""
+                        }));
+                      } else {
+                        // "Last 7 Days"
+                        const data = [];
+                        const today = new Date();
+                        for (let i = 6; i >= 0; i--) {
+                          const d = new Date(today);
+                          d.setDate(today.getDate() - i);
+                          const dateString = d.toISOString().split('T')[0];
+                          
+                          let hours = 0;
+                          let subject = "Study Session";
+                          
+                          if (activeStudyPlan) {
+                            const plan = activeStudyPlan.plan || activeStudyPlan;
+                            const schedule = plan.daily_schedule || [];
+                            const match = schedule.find(item => {
+                              if (!item.date) return false;
+                              return item.date.startsWith(dateString);
+                            });
+                            if (match) {
+                              hours += match.duration_hours || 0;
+                              subject = match.subject || subject;
+                            }
+                          }
+                          
+                          const quizzesOnDay = quizHistory.filter(q => {
+                            if (!q.created_at) return false;
+                            return q.created_at.startsWith(dateString);
+                          });
+                          hours += quizzesOnDay.length * 0.5;
+                          if (quizzesOnDay.length > 0 && subject === "Study Session") {
+                            subject = formatTopicForDisplay(quizzesOnDay[0].topic) || "Quiz Practice";
+                          }
+                          
+                          data.push({
+                            name: d.toLocaleDateString('default', { weekday: 'short' }),
+                            hours: hours,
+                            subject: subject,
+                            date: dateString
+                          });
+                        }
+                        return data;
+                      }
+                    })();
 
                     return (
                       <div className="grid lg:grid-cols-2 gap-8 pb-10">
@@ -1781,7 +1835,7 @@ export default function StudentDashboard() {
 
                         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}>
                           <AnalyticsCard 
-                            title="Learning Trends" 
+                            title="Study Streaks" 
                             className="border-slate-100 shadow-sm rounded-3xl bg-white/80 backdrop-blur-xl"
                             action={
                               <select 
@@ -1789,41 +1843,45 @@ export default function StudentDashboard() {
                                 onChange={(e) => setSelectedTrendPeriod(e.target.value)}
                                 className="text-sm border border-slate-200 bg-white text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                               >
-                                {periods.map(p => (
+                                {trendPeriods.map(p => (
                                   <option key={p} value={p}>{p}</option>
                                 ))}
                               </select>
                             }
                           >
                             <div className="h-[220px] mt-4">
-                              {filteredTrendHistory.length > 0 ? (
+                              {streakData.length > 0 ? (
                                 <ResponsiveContainer width="100%" height="100%">
                                   <AreaChart 
-                                    data={selectedTrendPeriod === "All Time" ? filteredTrendHistory.slice(0, 15).reverse() : [...filteredTrendHistory].reverse()} 
+                                    data={streakData} 
                                     margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
                                   >
-                                <defs>
-                                  <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#0EA5E9" stopOpacity={0.4}/>
-                                    <stop offset="95%" stopColor="#0EA5E9" stopOpacity={0}/>
-                                  </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                                <XAxis dataKey="created_at" tickFormatter={(val) => new Date(val).toLocaleDateString()} stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                                <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                                <Tooltip content={<CustomTooltip isDate={true} />} />
-                                <Area type="monotone" dataKey="score" stroke="#0EA5E9" strokeWidth={4} fillOpacity={1} fill="url(#areaGradient)" activeDot={{ r: 8, fill: '#0EA5E9', stroke: '#fff', strokeWidth: 2 }} />
-                              </AreaChart>
-                            </ResponsiveContainer>
-                          ) : (
-                            <div className="h-full flex flex-col items-center justify-center text-slate-400">
-                              <TrendingUp className="w-10 h-10 mb-3 opacity-30" />
-                              <p className="font-semibold">Not enough data to show trends.</p>
+                                    <defs>
+                                      <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#0EA5E9" stopOpacity={0.4}/>
+                                        <stop offset="95%" stopColor="#0EA5E9" stopOpacity={0}/>
+                                      </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                                    <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} interval={0} />
+                                    <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}h`} />
+                                    <Tooltip content={<CustomTooltip isDate={true} isStreak={true} />} />
+                                    <Area type="monotone" dataKey="hours" stroke="#0EA5E9" strokeWidth={4} fillOpacity={1} fill="url(#areaGradient)" activeDot={{ r: 8, fill: '#0EA5E9', stroke: '#fff', strokeWidth: 2 }} />
+                                  </AreaChart>
+                                </ResponsiveContainer>
+                              ) : (
+                                <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                                  <TrendingUp className="w-10 h-10 mb-3 opacity-30" />
+                                  <p className="font-semibold">
+                                    {selectedTrendPeriod === "Active Plan" 
+                                      ? "No active study plan. Please generate one to view streaks." 
+                                      : "Not enough study data available."}
+                                  </p>
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      </AnalyticsCard>
-                    </motion.div>
+                          </AnalyticsCard>
+                        </motion.div>
 
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}>
                       <AnalyticsCard 
