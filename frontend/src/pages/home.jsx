@@ -57,10 +57,7 @@ export default function Home() {
       else navigate("/");
 
     } catch (error) {
-      const message =
-        error?.response?.status === 401 || error?.response?.status === 403
-          ? "Invalid password or email"
-          : (error?.response?.data?.detail || "Invalid password or email");
+      const message = error?.response?.data?.detail || "Invalid password or email";
       setLoginError(message);
     } finally {
       setIsLoading(false);

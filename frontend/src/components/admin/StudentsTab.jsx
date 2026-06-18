@@ -103,6 +103,7 @@ export default function StudentsTab() {
               <tr>
                 <th className="px-6 py-4 font-semibold">Name</th>
                 <th className="px-6 py-4 font-semibold">Email</th>
+                <th className="px-6 py-4 font-semibold text-center">Type</th>
                 <th className="px-6 py-4 font-semibold text-center">Status</th>
                 <th className="px-6 py-4 font-semibold text-center">Registered</th>
                 <th className="px-6 py-4 font-semibold text-center">Actions</th>
@@ -127,6 +128,14 @@ export default function StudentsTab() {
                   <tr key={student.id} className="hover:bg-muted/20 transition-colors">
                     <td className="px-6 py-4 font-medium text-foreground">{student.name}</td>
                     <td className="px-6 py-4 text-muted-foreground">{student.email}</td>
+                    <td className="px-6 py-4 text-center">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                        student.email_type === "DOMAIN" ? "bg-blue-500/10 text-blue-600 border border-blue-500/20" :
+                        "bg-slate-500/10 text-slate-600 border border-slate-500/20"
+                      }`}>
+                        {student.email_type || "EXTERNAL"}
+                      </span>
+                    </td>
                     <td className="px-6 py-4 text-center">
                       <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                         student.status === "APPROVED" ? "bg-emerald-500/10 text-emerald-600" :
