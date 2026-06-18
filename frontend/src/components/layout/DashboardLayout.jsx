@@ -26,7 +26,10 @@ import {
   Camera,
   User as UserIcon,
   Lock,
-  Loader2
+  Loader2,
+  Image,
+  Upload,
+  Eye
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
@@ -67,6 +70,53 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState(null);
+  const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
+  const photoMenuRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const [viewImageOpen, setViewImageOpen] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      setCameraOpen(true);
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      }, 100);
+    } catch (err) {
+      toast.error("Could not access camera. Please allow permissions.");
+    }
+  };
+
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject;
+      const tracks = stream.getTracks();
+      tracks.forEach(track => track.stop());
+    }
+    setCameraOpen(false);
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const context = canvasRef.current.getContext('2d');
+      canvasRef.current.width = videoRef.current.videoWidth;
+      canvasRef.current.height = videoRef.current.videoHeight;
+      context.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
+      
+      canvasRef.current.toBlob((blob) => {
+        if (blob) {
+          const file = new File([blob], "camera_capture.jpg", { type: "image/jpeg" });
+          handlePhotoChange({ target: { files: [file] } });
+          stopCamera();
+        }
+      }, 'image/jpeg');
+    }
+  };
 
   useEffect(() => {
     if (currentUser) {
@@ -243,6 +293,9 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
       }
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setProfileOpen(false);
+      }
+      if (photoMenuRef.current && !photoMenuRef.current.contains(event.target)) {
+        setPhotoMenuOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -753,40 +806,104 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
                 {activeTab === "profile" && (
                   <div className="space-y-6">
                     {/* Photo upload section */}
-                    <div className="flex flex-col sm:flex-row items-center gap-6 p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                      <div className="relative group w-24 h-24 rounded-full overflow-hidden shrink-0 bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white text-3xl font-bold border-4 border-white shadow-md">
-                        {photoPreviewUrl ? (
-                          <img src={photoPreviewUrl} alt="Preview" className="w-full h-full object-cover" />
-                        ) : (
-                          displayUserName.charAt(0).toUpperCase()
-                        )}
-                        <label className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-center">
-                          <Camera className="w-5 h-5 mb-0.5" />
-                          <span className="text-[10px] font-semibold">Upload</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handlePhotoChange}
-                            className="hidden"
-                          />
-                        </label>
+                    <div className="flex flex-col sm:flex-row items-center gap-6 p-6 rounded-3xl bg-white border border-slate-200 shadow-sm relative overflow-visible z-10">
+                      {/* Decorative ambient background */}
+                      <div className="absolute top-0 right-0 w-40 h-40 bg-orange-100/50 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none z-[-1]"></div>
+                      
+                      <div className="relative">
+                        <div className="relative group w-24 h-24 rounded-full overflow-hidden shrink-0 bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white text-3xl font-bold border-4 border-white shadow-lg ring-4 ring-orange-50 transition-all duration-300 hover:ring-orange-100">
+                          {photoPreviewUrl ? (
+                            <img src={photoPreviewUrl} alt="Preview" className="w-full h-full object-cover" />
+                          ) : (
+                            displayUserName.charAt(0).toUpperCase()
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPhotoMenuOpen(!photoMenuOpen);
+                            }}
+                            className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-center w-full h-full"
+                          >
+                            <Camera className="w-5 h-5 mb-0.5" />
+                            <span className="text-[10px] font-semibold">Upload</span>
+                          </button>
+                        </div>
+                        
+                        {/* Hidden file input */}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            handlePhotoChange(e);
+                            setPhotoMenuOpen(false);
+                          }}
+                          className="hidden"
+                          ref={fileInputRef}
+                        />
+
+                        {/* Photo Action Menu */}
+                        <AnimatePresence>
+                          {photoMenuOpen && (
+                            <motion.div
+                              ref={photoMenuRef}
+                              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                              transition={{ duration: 0.15, ease: "easeOut" }}
+                              className="absolute top-full left-0 mt-4 w-64 rounded-3xl border border-slate-200/60 bg-white/95 backdrop-blur-xl shadow-2xl z-[100] ring-1 ring-black/5 p-3"
+                            >
+                              <div className="flex flex-col space-y-2">
+                                {photoPreviewUrl && (
+                                  <button
+                                    type="button"
+                                    onClick={() => { setViewImageOpen(true); setPhotoMenuOpen(false); }}
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm rounded-2xl transition-all cursor-pointer group"
+                                  >
+                                    <Eye className="w-5 h-5 text-slate-400 group-hover:text-slate-700 transition-colors" />
+                                    View image
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => { fileInputRef.current?.click(); setPhotoMenuOpen(false); }}
+                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm rounded-2xl transition-all cursor-pointer group"
+                                >
+                                  <Upload className="w-5 h-5 text-slate-400 group-hover:text-slate-700 transition-colors" />
+                                  Upload from device
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    startCamera();
+                                    setPhotoMenuOpen(false);
+                                  }}
+                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm rounded-2xl transition-all cursor-pointer group"
+                                >
+                                  <Camera className="w-5 h-5 text-slate-400 group-hover:text-slate-700 transition-colors" />
+                                  Take picture
+                                </button>
+                                {photoPreviewUrl && (
+                                  <button
+                                    type="button"
+                                    onClick={() => { handleRemovePhoto(); setPhotoMenuOpen(false); }}
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-red-600 bg-white border border-red-100 hover:border-red-200 hover:bg-red-50 hover:shadow-sm rounded-2xl transition-all cursor-pointer group mt-2"
+                                  >
+                                    <Trash2 className="w-5 h-5 text-red-400 group-hover:text-red-600 transition-colors" />
+                                    Delete
+                                  </button>
+                                )}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
-                      <div className="text-center sm:text-left flex-1">
-                        <h4 className="font-bold text-slate-900 text-sm">Profile Picture</h4>
-                        <p className="text-xs text-slate-500 mt-1 mb-3">
+                      <div className="text-center sm:text-left flex-1 relative z-10">
+                        <h4 className="font-extrabold text-slate-900 text-sm tracking-tight">Profile Picture</h4>
+                        <p className="text-xs text-slate-500 mt-1 mb-3 max-w-sm leading-relaxed">
                           Click on the circle to upload a new profile photo. Supports PNG, JPG, or GIF up to 5MB.
                         </p>
-                        {photoPreviewUrl && (
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            onClick={handleRemovePhoto}
-                            className="h-8 text-xs font-semibold px-3 rounded-lg cursor-pointer"
-                          >
-                            Remove Photo
-                          </Button>
-                        )}
+
                       </div>
                     </div>
 
@@ -901,6 +1018,61 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
                     </div>
                   </form>
                 )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+
+      {/* View Image Modal */}
+      <AnimatePresence>
+        {viewImageOpen && photoPreviewUrl && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="relative max-w-3xl max-h-[90vh] flex flex-col items-center"
+            >
+              <button
+                onClick={() => setViewImageOpen(false)}
+                className="absolute -top-12 right-0 p-2 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors cursor-pointer"
+              >
+                <X className="w-6 h-6" />
+              </button>
+              <img src={photoPreviewUrl} alt="Full size" className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl" />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Camera Modal */}
+      <AnimatePresence>
+        {cameraOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="relative bg-slate-900 rounded-3xl overflow-hidden shadow-2xl flex flex-col items-center p-6 max-w-2xl w-full border border-slate-800"
+            >
+              <h3 className="text-white font-semibold mb-4 w-full text-left flex items-center gap-2">
+                <Camera className="w-5 h-5 text-slate-400" />
+                Take Picture
+              </h3>
+              <div className="relative w-full rounded-2xl overflow-hidden bg-black aspect-video flex items-center justify-center border border-slate-800">
+                <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                <canvas ref={canvasRef} className="hidden" />
+              </div>
+              <div className="flex gap-4 mt-6 w-full justify-end">
+                <Button variant="outline" onClick={stopCamera} className="bg-transparent text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-white cursor-pointer">
+                  Cancel
+                </Button>
+                <Button variant="gradient" onClick={capturePhoto} className="flex gap-2 cursor-pointer shadow-lg shadow-orange-500/20">
+                  <Camera className="w-4 h-4" />
+                  Capture Photo
+                </Button>
               </div>
             </motion.div>
           </div>
