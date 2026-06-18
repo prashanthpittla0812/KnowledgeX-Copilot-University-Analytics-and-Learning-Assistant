@@ -349,26 +349,32 @@ async def upload_profile_photo(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    if not file.content_type.startswith("image/"):
+    # Allowed MIME types
+    allowed_types = ["image/jpeg", "image/png", "image/webp", "image/jpg"]
+    if file.content_type not in allowed_types:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File must be an image",
+            detail="File must be a valid image (JPEG, PNG, WebP).",
         )
 
-    import os
-    import uuid
-    import aiofiles
-    from pathlib import Path
-    from app.config.settings import settings
+    # Validate file size (max 5 MB)
+    MAX_SIZE = 5 * 1024 * 1024
+    content = await file.read()
+    if len(content) > MAX_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File size exceeds the 5MB limit.",
+        )
 
-    photo_dir = settings.UPLOAD_PATH / "profile_photos"
-    photo_dir.mkdir(parents=True, exist_ok=True)
+    import uuid
+    from pathlib import Path
+    from app.services.supabase_storage import SupabaseStorageService
+    from app.config.settings import settings
 
     file_extension = Path(file.filename).suffix or ".jpg"
     unique_filename = f"user_{current_user.id}_{uuid.uuid4().hex}{file_extension}"
-    file_path = photo_dir / unique_filename
 
-    # Delete old profile photo if it exists
+    # Delete old profile photo from local storage OR Supabase if it exists
     if current_user.profile_photo_path:
         try:
             relative_stored = current_user.profile_photo_path
@@ -376,15 +382,23 @@ async def upload_profile_photo(
                 old_file = settings.UPLOAD_PATH.parent / relative_stored
                 if old_file.exists():
                     old_file.unlink()
+            elif "supabase.co" in relative_stored:
+                # Extract filename from Supabase URL
+                old_filename = relative_stored.split("/")[-1]
+                await SupabaseStorageService.delete_file(old_filename)
         except Exception:
             pass
 
-    content = await file.read()
-    async with aiofiles.open(file_path, "wb") as f:
-        await f.write(content)
+    # Upload new file to Supabase
+    public_url = await SupabaseStorageService.upload_file(content, unique_filename, file.content_type)
+    
+    if not public_url:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to upload image to storage service.",
+        )
 
-    relative_path = f"uploads/profile_photos/{unique_filename}"
-    current_user.profile_photo_path = relative_path
+    current_user.profile_photo_path = public_url
 
     # Audit log
     from app.database.models import AuditLog
@@ -399,8 +413,9 @@ async def upload_profile_photo(
     await db.commit()
 
     return {
+        "success": True,
         "message": "Profile photo uploaded successfully",
-        "profile_photo_path": relative_path,
+        "profile_photo_path": public_url,
     }
 
 
@@ -416,11 +431,17 @@ async def remove_profile_photo(
         try:
             from pathlib import Path
             from app.config.settings import settings
+            from app.services.supabase_storage import SupabaseStorageService
             relative_stored = current_user.profile_photo_path
+            
             if relative_stored.startswith("uploads/"):
                 old_file = settings.UPLOAD_PATH.parent / relative_stored
                 if old_file.exists():
                     old_file.unlink()
+            elif "supabase.co" in relative_stored:
+                # Extract filename from Supabase URL
+                old_filename = relative_stored.split("/")[-1]
+                await SupabaseStorageService.delete_file(old_filename)
         except Exception:
             pass
 

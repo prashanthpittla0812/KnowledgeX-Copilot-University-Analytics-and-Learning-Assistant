@@ -55,6 +55,11 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     LOG_FILE: str = "./logs/knowledgex.log"
 
+    # Supabase Storage
+    SUPABASE_URL: str = ""
+    SUPABASE_KEY: str = ""
+    SUPABASE_STORAGE_BUCKET: str = "profile-pictures"
+
     @property
     def UPLOAD_PATH(self) -> Path:
         return Path(self.UPLOAD_DIRECTORY)
