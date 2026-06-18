@@ -33,6 +33,11 @@ export default function Register() {
       return;
     }
 
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters.");
+      return;
+    }
+
     setIsLoading(true);
     try {
       await authApi.register({
@@ -46,10 +51,16 @@ export default function Register() {
       );
       navigate("/");
     } catch (error) {
-      const message =
-        error?.response?.data?.detail ||
-        error?.message ||
-        "Failed to create account. Please try again.";
+      let message = "Failed to create account. Please try again.";
+      if (error?.response?.data?.detail) {
+        if (Array.isArray(error.response.data.detail)) {
+          message = error.response.data.detail[0].msg;
+        } else if (typeof error.response.data.detail === "string") {
+          message = error.response.data.detail;
+        }
+      } else if (error?.message) {
+        message = error.message;
+      }
       toast.error(message);
     } finally {
       setIsLoading(false);

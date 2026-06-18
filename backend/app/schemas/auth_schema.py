@@ -47,3 +47,27 @@ class ChangePasswordRequest(BaseModel):
         if len(v) < 6:
             raise ValueError("New password must be at least 6 characters")
         return v
+
+class LoginOtpResponse(BaseModel):
+    status: str = "otp_required"
+    email: str
+
+class VerifyOtpRequest(BaseModel):
+    email: EmailStr
+    otp_code: str
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    otp_code: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def password_min_length(cls, v: str) -> str:
+        if len(v) < 6:
+            raise ValueError("Password must be at least 6 characters")
+        return v
+

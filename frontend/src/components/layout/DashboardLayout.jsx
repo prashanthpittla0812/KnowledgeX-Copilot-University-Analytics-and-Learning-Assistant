@@ -48,9 +48,13 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
   });
 
   const displayUserName = currentUser?.name || userName;
-  const userPhotoUrl = currentUser?.profile_photo_path
-    ? `${API_BASE_URL.replace("/api/v1", "")}/${currentUser.profile_photo_path}`
-    : null;
+  const getPhotoUrl = (path) => {
+    if (!path) return null;
+    if (path.startsWith("http")) return path;
+    return `${API_BASE_URL.replace("/api/v1", "")}/${path}`;
+  };
+
+  const userPhotoUrl = getPhotoUrl(currentUser?.profile_photo_path);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
@@ -69,11 +73,7 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
       setProfileName(currentUser.name || "");
       setProfileDept(currentUser.department || "");
       setProfileDesg(currentUser.designation || "");
-      setPhotoPreviewUrl(
-        currentUser.profile_photo_path
-          ? `${API_BASE_URL.replace("/api/v1", "")}/${currentUser.profile_photo_path}`
-          : null
-      );
+      setPhotoPreviewUrl(getPhotoUrl(currentUser?.profile_photo_path));
     }
   }, [currentUser, settingsOpen]);
 
@@ -93,9 +93,7 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
     formData.append("file", file);
 
     try {
-      const response = await api.post("/auth/profile/photo", formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-      });
+      const response = await api.post("/auth/profile/photo", formData);
       
       const relativePath = response.data.profile_photo_path;
       
@@ -108,15 +106,11 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
       localStorage.setItem("knowledgex_user", JSON.stringify(mergedUser));
       setCurrentUser(mergedUser);
 
-      setPhotoPreviewUrl(`${API_BASE_URL.replace("/api/v1", "")}/${relativePath}`);
+      setPhotoPreviewUrl(getPhotoUrl(relativePath));
       toast.success("Profile photo updated successfully!");
     } catch (error) {
       toast.error(error.response?.data?.detail || "Failed to upload photo");
-      setPhotoPreviewUrl(
-        currentUser?.profile_photo_path
-          ? `${API_BASE_URL.replace("/api/v1", "")}/${currentUser.profile_photo_path}`
-          : null
-      );
+      setPhotoPreviewUrl(getPhotoUrl(currentUser?.profile_photo_path));
     }
   };
 

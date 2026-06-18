@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from app.config.settings import settings
 from app.database.db import get_db
 from app.auth.permissions import get_current_student
 from app.database.models import User, TeacherQuiz, AssessmentSubmission
@@ -116,15 +117,17 @@ async def submit_assessment(
     if existing:
         raise HTTPException(status_code=400, detail="Assessment already submitted")
         
-    os.makedirs("uploads/submissions", exist_ok=True)
-    file_path = f"uploads/submissions/{current_user.id}_{assessment_id}_{file.filename}"
+    upload_dir = settings.UPLOAD_PATH / "submissions"
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    file_path_relative = f"uploads/submissions/{current_user.id}_{assessment_id}_{file.filename}"
+    file_path = str(upload_dir / f"{current_user.id}_{assessment_id}_{file.filename}")
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
         
     submission = AssessmentSubmission(
         assessment_id=assessment_id,
         student_id=current_user.id,
-        file_path=file_path,
+        file_path=file_path_relative,
         file_name=file.filename,
     )
     db.add(submission)
