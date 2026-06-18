@@ -389,16 +389,23 @@ async def upload_profile_photo(
         except Exception:
             pass
 
-    # Upload new file to Supabase
-    public_url = await SupabaseStorageService.upload_file(content, unique_filename, file.content_type)
-    
-    if not public_url:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to upload image to storage service.",
-        )
-
-    current_user.profile_photo_path = public_url
+    # Try to upload to Supabase if configured, otherwise fallback to local
+    if settings.SUPABASE_URL and settings.SUPABASE_KEY:
+        public_url = await SupabaseStorageService.upload_file(content, unique_filename, file.content_type)
+        if not public_url:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to upload image to storage service.",
+            )
+        current_user.profile_photo_path = public_url
+    else:
+        # Local Fallback
+        profile_photos_dir = settings.UPLOAD_PATH / "profile_photos"
+        profile_photos_dir.mkdir(parents=True, exist_ok=True)
+        file_path = profile_photos_dir / unique_filename
+        with open(file_path, "wb") as f:
+            f.write(content)
+        current_user.profile_photo_path = f"uploads/profile_photos/{unique_filename}"
 
     # Audit log
     from app.database.models import AuditLog
