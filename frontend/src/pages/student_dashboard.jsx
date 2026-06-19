@@ -23,7 +23,7 @@ import {DashboardLayout} from "../components/layout/DashboardLayout";
       const [activeItem, setActiveItem] = useState("Dashboard");
       const [activeAssessmentTab, setActiveAssessmentTab] = useState("Active");
       const [selectedQuizPeriod, setSelectedQuizPeriod] = useState("All Time");
-      const [selectedTrendPeriod, setSelectedTrendPeriod] = useState("Active Plan");
+      const [selectedTrendPeriod, setSelectedTrendPeriod] = useState("All Time");
       const [selectedSkillSubject, setSelectedSkillSubject] = useState("All Subjects");
 
       // Chatbot State
@@ -655,6 +655,24 @@ import {DashboardLayout} from "../components/layout/DashboardLayout";
                                   </span>
                                 </label>
                               ))}
+                            </div>
+                          )}
+                          {selectedAnswers[i] && (
+                            <div className="flex justify-end mt-4">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedAnswers(prev => {
+                                    const newAnswers = { ...prev };
+                                    delete newAnswers[i];
+                                    return newAnswers;
+                                  });
+                                }}
+                                className="text-xs font-bold text-slate-400 hover:text-red-500 transition-colors flex items-center gap-1"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                                Clear
+                              </button>
                             </div>
                           )}
                         </CardContent>
@@ -1690,39 +1708,193 @@ import {DashboardLayout} from "../components/layout/DashboardLayout";
                         return `${month} ${weekRange}, ${year}`;
                       };
 
-                      const periods = ["All Time", ...Array.from(new Set(quizHistory.map(q => getWeeklyLabel(q.created_at))))];
+                      const currentMonthWeeks = (() => {
+                        const now = new Date();
+                        const year = now.getFullYear();
+                        const monthName = now.toLocaleString('default', { month: 'short' });
+                        const currentDay = now.getDate();
 
-                      const filteredQuizHistory = (selectedQuizPeriod === "All Time"
-                        ? quizHistory
-                        : quizHistory.filter(q => getWeeklyLabel(q.created_at) === selectedQuizPeriod))
-                        .filter(q => q.score !== null)
-                        .map(q => {
-                          const displayTopic = formatTopicForDisplay(q.topic);
-                          let subjectName = getSubjectForTopic(q.topic);
-                          if (subjectName === "default") subjectName = "Other";
-                          return { ...q, topic: displayTopic, subject: subjectName };
+                        const rawWeeks = [
+                          { num: 1, startDay: 1, endDay: 7, range: "1-7" },
+                          { num: 2, startDay: 8, endDay: 14, range: "8-14" },
+                          { num: 3, startDay: 15, endDay: 21, range: "15-21" },
+                          { num: 4, startDay: 22, endDay: 31, range: "22-31" }
+                        ];
+
+                        const weeks = [];
+                        for (const rw of rawWeeks) {
+                          if (currentDay >= rw.startDay) {
+                            const isCurrent = currentDay >= rw.startDay && currentDay <= rw.endDay;
+                            const weekLabel = isCurrent 
+                              ? `This Week (${monthName} ${rw.range})`
+                              : `Week ${rw.num} (${monthName} ${rw.range})`;
+                            
+                            weeks.push({
+                              label: weekLabel,
+                              value: `${monthName} ${rw.range}, ${year}`
+                            });
+                          }
+                        }
+                        return weeks.reverse();
+                      })();
+
+                      const periods = [
+                        { label: "All Time", value: "All Time" },
+                        ...currentMonthWeeks
+                      ];
+
+                      const filteredQuizHistory = (() => {
+                        let baseHistory = quizHistory;
+                        if (selectedQuizPeriod !== "All Time") {
+                          baseHistory = quizHistory.filter(q => getWeeklyLabel(q.created_at) === selectedQuizPeriod);
+                        }
+
+                        return baseHistory
+                          .filter(q => q.score !== null)
+                          .map(q => {
+                            const displayTopic = formatTopicForDisplay(q.topic);
+                            let subjectName = getSubjectForTopic(q.topic);
+                            if (subjectName === "default") subjectName = "Other";
+                            return { ...q, topic: displayTopic, subject: subjectName };
+                          });
+                      })();
+
+                      const currentStreak = (() => {
+                        const dateMap = {};
+                        studyPlans.forEach(planObj => {
+                          const plan = planObj.plan || planObj;
+                          const schedule = plan.daily_schedule || [];
+                          schedule.forEach(item => {
+                            if (item.date && (item.duration_hours || 0) > 0) {
+                              const dateStr = item.date.split('T')[0];
+                              dateMap[dateStr] = (dateMap[dateStr] || 0) + item.duration_hours;
+                            }
+                          });
+                        });
+                        quizHistory.forEach(q => {
+                          if (q.created_at) {
+                            const dateStr = q.created_at.split('T')[0];
+                            dateMap[dateStr] = (dateMap[dateStr] || 0) + 0.5;
+                          }
                         });
 
-                      const trendPeriods = ["Active Plan", "Last 7 Days"];
+                        const today = new Date();
+                        const formatDateStr = (d) => {
+                          const y = d.getFullYear();
+                          const m = String(d.getMonth() + 1).padStart(2, '0');
+                          const dayStr = String(d.getDate()).padStart(2, '0');
+                          return `${y}-${m}-${dayStr}`;
+                        };
+
+                        const todayStr = formatDateStr(today);
+                        const yesterday = new Date(today);
+                        yesterday.setDate(today.getDate() - 1);
+                        const yesterdayStr = formatDateStr(yesterday);
+
+                        if (!dateMap[todayStr] && !dateMap[yesterdayStr]) {
+                          return 0;
+                        }
+
+                        let streak = 0;
+                        let checkDate = dateMap[todayStr] ? today : yesterday;
+                        while (true) {
+                          const checkStr = formatDateStr(checkDate);
+                          if (dateMap[checkStr] && dateMap[checkStr] > 0) {
+                            streak++;
+                            checkDate.setDate(checkDate.getDate() - 1);
+                          } else {
+                            break;
+                          }
+                        }
+                        return streak;
+                      })();
+
+                      const trendPeriods = [
+                        { label: "All Time", value: "All Time" },
+                        ...currentMonthWeeks
+                      ];
 
                       const streakData = (() => {
-                        if (selectedTrendPeriod === "Active Plan" && activeStudyPlan) {
-                          const plan = activeStudyPlan.plan || activeStudyPlan;
-                          const schedule = plan.daily_schedule || [];
-                          return schedule.map(item => ({
-                            name: `Day ${item.day}`,
-                            hours: item.duration_hours || 0,
-                            subject: item.subject || "Study Session",
-                            date: item.date || ""
-                          }));
-                        } else {
-                          // "Last 7 Days"
+                        if (selectedTrendPeriod === "All Time") {
+                          const dateMap = {}; // dateStr -> { hours, subjects: Set }
+
+                          // 1. Process all study plans
+                          studyPlans.forEach(planObj => {
+                            const plan = planObj.plan || planObj;
+                            const schedule = plan.daily_schedule || [];
+                            schedule.forEach(item => {
+                              if (item.date) {
+                                const dateStr = item.date.split('T')[0];
+                                if (!dateMap[dateStr]) {
+                                  dateMap[dateStr] = { hours: 0, subjects: new Set() };
+                                }
+                                dateMap[dateStr].hours += item.duration_hours || 0;
+                                if (item.subject) {
+                                  dateMap[dateStr].subjects.add(item.subject);
+                                }
+                              }
+                            });
+                          });
+
+                          // 2. Process all quiz history
+                          quizHistory.forEach(q => {
+                            if (q.created_at) {
+                              const dateStr = q.created_at.split('T')[0];
+                              if (!dateMap[dateStr]) {
+                                dateMap[dateStr] = { hours: 0, subjects: new Set() };
+                              }
+                              dateMap[dateStr].hours += 0.5;
+                              if (q.topic) {
+                                dateMap[dateStr].subjects.add(formatTopicForDisplay(q.topic));
+                              }
+                            }
+                          });
+
+                          // Convert map to sorted array
+                          const rawDates = Object.keys(dateMap).sort();
+                          
+                          if (rawDates.length === 0) {
+                            return [];
+                          }
+
+                          const minDate = new Date(rawDates[0]);
+                          const today = new Date();
+                          const startDate = minDate < today ? minDate : today;
+                          const endDate = rawDates[rawDates.length - 1] > today ? new Date(rawDates[rawDates.length - 1]) : today;
+
+                          const data = [];
+                          const cur = new Date(startDate);
+                          
+                          while (cur <= endDate) {
+                            const y = cur.getFullYear();
+                            const m = String(cur.getMonth() + 1).padStart(2, '0');
+                            const dayVal = String(cur.getDate()).padStart(2, '0');
+                            const dateStr = `${y}-${m}-${dayVal}`;
+                            
+                            const dayData = dateMap[dateStr] || { hours: 0, subjects: new Set() };
+                            const subjectsArr = Array.from(dayData.subjects);
+                            const subjectLabel = subjectsArr.length > 0 ? subjectsArr.slice(0, 2).join(", ") : "Study Session";
+                            
+                            data.push({
+                              name: cur.toLocaleDateString('default', { month: 'short', day: 'numeric' }),
+                              hours: dayData.hours,
+                              subject: subjectLabel,
+                              date: dateStr
+                            });
+                            
+                            cur.setDate(cur.getDate() + 1);
+                          }
+                          return data;
+                        } else if (selectedTrendPeriod === "Last 7 Days") {
                           const data = [];
                           const today = new Date();
                           for (let i = 6; i >= 0; i--) {
                             const d = new Date(today);
                             d.setDate(today.getDate() - i);
-                            const dateString = d.toISOString().split('T')[0];
+                            const y = d.getFullYear();
+                            const m = String(d.getMonth() + 1).padStart(2, '0');
+                            const dayStr = String(d.getDate()).padStart(2, '0');
+                            const dateString = `${y}-${m}-${dayStr}`;
 
                             let hours = 0;
                             let subject = "Study Session";
@@ -1757,6 +1929,61 @@ import {DashboardLayout} from "../components/layout/DashboardLayout";
                             });
                           }
                           return data;
+                        } else {
+                          // A specific week selection
+                          const match = selectedTrendPeriod.match(/([a-zA-Z]+) (\d+)-(\d+), (\d+)/);
+                          if (match) {
+                            const monthName = match[1];
+                            const startDay = parseInt(match[2]);
+                            const endDay = parseInt(match[3]);
+                            const year = parseInt(match[4]);
+
+                            const dummyDate = new Date(`${monthName} 1, ${year}`);
+                            const monthIndex = dummyDate.getMonth();
+
+                            const data = [];
+                            for (let d = startDay; d <= endDay; d++) {
+                              const targetDate = new Date(year, monthIndex, d);
+                              const y = targetDate.getFullYear();
+                              const m = String(targetDate.getMonth() + 1).padStart(2, '0');
+                              const dayStr = String(targetDate.getDate()).padStart(2, '0');
+                              const dateString = `${y}-${m}-${dayStr}`;
+
+                              let hours = 0;
+                              let subject = "Study Session";
+
+                              if (activeStudyPlan) {
+                                const plan = activeStudyPlan.plan || activeStudyPlan;
+                                const schedule = plan.daily_schedule || [];
+                                const match = schedule.find(item => {
+                                  if (!item.date) return false;
+                                  return item.date.startsWith(dateString);
+                                });
+                                if (match) {
+                                  hours += match.duration_hours || 0;
+                                  subject = match.subject || subject;
+                                }
+                              }
+
+                              const quizzesOnDay = quizHistory.filter(q => {
+                                if (!q.created_at) return false;
+                                return q.created_at.startsWith(dateString);
+                              });
+                              hours += quizzesOnDay.length * 0.5;
+                              if (quizzesOnDay.length > 0 && subject === "Study Session") {
+                                subject = formatTopicForDisplay(quizzesOnDay[0].topic) || "Quiz Practice";
+                              }
+
+                              data.push({
+                                name: targetDate.toLocaleDateString('default', { weekday: 'short' }) + ` ${d}`,
+                                hours: hours,
+                                subject: subject,
+                                date: dateString
+                              });
+                            }
+                            return data;
+                          }
+                          return [];
                         }
                       })();
 
@@ -1773,7 +2000,7 @@ import {DashboardLayout} from "../components/layout/DashboardLayout";
                                   className="text-sm border border-slate-200 bg-white text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                                 >
                                   {periods.map(p => (
-                                    <option key={p} value={p}>{p}</option>
+                                    <option key={p.value} value={p.value}>{p.label}</option>
                                   ))}
                                 </select>
                               }
@@ -1841,7 +2068,16 @@ import {DashboardLayout} from "../components/layout/DashboardLayout";
 
                           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}>
                             <AnalyticsCard
-                              title="Study Streaks"
+                              title={
+                                <div className="flex items-center gap-3">
+                                  <span>Study Streaks</span>
+                                  {currentStreak > 0 && (
+                                    <span className="flex items-center gap-1.5 text-xs font-black px-2.5 py-1 rounded-full bg-orange-500/10 text-orange-600 border border-orange-500/20 shadow-sm animate-pulse">
+                                      🔥 {currentStreak} Day{currentStreak > 1 ? 's' : ''} Streak
+                                    </span>
+                                  )}
+                                </div>
+                              }
                               className="border-slate-100 shadow-sm rounded-3xl bg-white/80 backdrop-blur-xl"
                               action={
                                 <select
@@ -1850,7 +2086,7 @@ import {DashboardLayout} from "../components/layout/DashboardLayout";
                                   className="text-sm border border-slate-200 bg-white text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                                 >
                                   {trendPeriods.map(p => (
-                                    <option key={p} value={p}>{p}</option>
+                                    <option key={p.value} value={p.value}>{p.label}</option>
                                   ))}
                                 </select>
                               }
@@ -1869,7 +2105,7 @@ import {DashboardLayout} from "../components/layout/DashboardLayout";
                                         </linearGradient>
                                       </defs>
                                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                                      <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} interval={0} />
+                                      <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} interval="preserveStartEnd" />
                                       <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}h`} />
                                       <Tooltip content={<CustomTooltip isDate={true} isStreak={true} />} />
                                       <Area type="monotone" dataKey="hours" stroke="#0EA5E9" strokeWidth={4} fillOpacity={1} fill="url(#areaGradient)" activeDot={{ r: 8, fill: '#0EA5E9', stroke: '#fff', strokeWidth: 2 }} />
@@ -1879,8 +2115,8 @@ import {DashboardLayout} from "../components/layout/DashboardLayout";
                                   <div className="h-full flex flex-col items-center justify-center text-slate-400">
                                     <TrendingUp className="w-10 h-10 mb-3 opacity-30" />
                                     <p className="font-semibold">
-                                      {selectedTrendPeriod === "Active Plan"
-                                        ? "No active study plan. Please generate one to view streaks."
+                                      {selectedTrendPeriod === "All Time"
+                                        ? "No study history or plans available. Please generate a study plan or take a quiz."
                                         : "Not enough study data available."}
                                     </p>
                                   </div>

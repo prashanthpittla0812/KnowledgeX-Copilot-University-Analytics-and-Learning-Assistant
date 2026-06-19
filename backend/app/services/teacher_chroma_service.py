@@ -8,24 +8,11 @@ from app.utils.logger import get_logger
 logger = get_logger()
 
 
+from app.utils.embeddings import get_embeddings
+
+
 def get_teacher_embeddings():
-    if settings.AI_PROVIDER == "openai":
-        return OpenAIEmbeddings(
-            model="text-embedding-ada-002",
-            api_key=settings.OPENAI_API_KEY,
-        )
-    elif settings.AI_PROVIDER == "azure":
-        return AzureOpenAIEmbeddings(
-            model="text-embedding-ada-002",
-            azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
-            api_key=settings.AZURE_OPENAI_KEY,
-            api_version=settings.AZURE_OPENAI_API_VERSION,
-        )
-    else:
-        return OllamaEmbeddings(
-            model="nomic-embed-text",
-            base_url=settings.OLLAMA_BASE_URL,
-        )
+    return get_embeddings()
 
 
 def save_to_chroma(topic_name: str, chunks: list) -> Chroma:
