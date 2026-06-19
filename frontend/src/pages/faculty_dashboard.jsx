@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "../components/layout/DashboardLayout";
 import { facultyMenuItems } from "./faculty_menu";
-import { facultyApi } from "../api";
+import { facultyApi, API_BASE_URL } from "../api";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, Cell
@@ -18,6 +18,12 @@ import { LearningMaterialsTab } from "../components/faculty/LearningMaterialsTab
 import { MultimodalUploadTab } from "../components/faculty/MultimodalUploadTab";
 
 const defaultFacultyChats = [];
+
+const getPhotoUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  return `${API_BASE_URL.replace("/api/v1", "")}/${path}`;
+};
 
 export default function FacultyDashboard() {
   const navigate = useNavigate();
@@ -1259,7 +1265,7 @@ export default function FacultyDashboard() {
                             
                             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 opacity-95 z-0 pointer-events-none mt-4">
                               <img 
-                                src={sp.profile_image || `https://api.dicebear.com/7.x/initials/svg?seed=${sp.student_name}&backgroundColor=f8fafc&textColor=475569`} 
+                                src={getPhotoUrl(sp.profile_photo_path || sp.profile_image) || `https://api.dicebear.com/7.x/initials/svg?seed=${sp.student_name}&backgroundColor=f8fafc&textColor=475569`} 
                                 alt="avatar" 
                                 className="w-full h-full object-cover rounded-full shadow-sm border-4 border-white" 
                               />

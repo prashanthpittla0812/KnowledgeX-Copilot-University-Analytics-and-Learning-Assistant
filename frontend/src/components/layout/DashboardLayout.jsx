@@ -613,7 +613,16 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
                     className="absolute right-0 mt-2.5 w-64 rounded-2xl border border-slate-100 bg-white shadow-2xl shadow-slate-900/10 overflow-hidden text-slate-800 z-50"
                   >
                     <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm">
+                      <div 
+                        className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => {
+                          if (userPhotoUrl || photoPreviewUrl) {
+                            setPhotoPreviewUrl(userPhotoUrl || photoPreviewUrl);
+                            setViewImageOpen(true);
+                            setProfileOpen(false);
+                          }
+                        }}
+                      >
                         {userPhotoUrl ? (
                           <img src={userPhotoUrl} alt={displayUserName} className="w-full h-full object-cover" />
                         ) : (
@@ -762,7 +771,7 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
               {/* Header */}
               <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">Account Settings</h2>
+                  <h2 className="text-xl font-bold text-slate-900">Profile Settings</h2>
                   <p className="text-xs text-slate-500">Manage your profile details and security settings</p>
                 </div>
                 <button
