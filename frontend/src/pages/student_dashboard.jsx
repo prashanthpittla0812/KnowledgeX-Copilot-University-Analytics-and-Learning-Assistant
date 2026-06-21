@@ -2,14 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
+import { ChatBubble, ChatInput } from "../components/ui/chat";
 import { chatbotApi, documentApi, studentApi, materialApi } from "../api";
+import { ProctoredQuizSession } from "../components/student/ProctoredQuizSession";
 import { DashboardLayout } from "../components/layout/DashboardLayout";
 import { LearningResourcesTab } from "../components/student/LearningResourcesTab";
 import { StudentAssessmentView } from "../components/student/StudentAssessmentView";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
 import { StatCard } from "../components/ui/stat-card";
 import { AnalyticsCard } from "../components/ui/analytics-card";
-import { ChatBubble, ChatInput } from "../components/ui/chat";
+
 import { Button } from "../components/ui/button";
 import { BookOpen, AlertCircle, FileText, Calendar, CheckCircle, BarChart as BarChartIcon, GraduationCap, Target, Lightbulb, TrendingUp, X, Trash2, PanelLeftClose, PanelLeftOpen, Maximize, Minus, Plus, Bot, Paperclip, SquarePen, Search, MessageSquare, RotateCw, Sparkles, Play, Clock, History, Award, ChevronRight, ArrowDown } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, PieChart, Pie, RadialBarChart, RadialBar, Legend } from "recharts";
@@ -414,8 +416,9 @@ export default function StudentDashboard() {
     try {
       const response = await studentApi.getAssignedQuiz(quiz.id);
       setActiveQuiz({
+        ...quiz,
         id: quiz.id,
-        topic: quiz.topic_name,
+        topic: response.data.topic_name || quiz.topic_name,
         difficulty: quiz.difficulty,
         questions: response.data.questions,
         isAssigned: true
@@ -625,6 +628,55 @@ export default function StudentDashboard() {
                 </div>
               </div>
             ) : activeQuiz ? (
+              activeQuiz.isAssigned ? (
+                <ProctoredQuizSession 
+                  quiz={activeQuiz} 
+                  onActualSubmit={handleSubmitQuiz}
+                  onCancel={() => setActiveQuiz(null)}
+                  renderQuizContent={(submitWrapper) => (
+                    <div className="max-w-3xl mx-auto">
+                      <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-2xl font-bold text-slate-800">{formatTopicForDisplay(activeQuiz.topic)} Quiz</h2>
+                        <span className="px-3 py-1 rounded-md bg-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-wider">{activeQuiz.difficulty}</span>
+                      </div>
+                      <div className="space-y-6">
+                        {activeQuiz.questions.map((q, i) => (
+                          <Card key={i} className="bg-white border-slate-200 shadow-sm rounded-xl">
+                            <CardContent className="p-6">
+                              <p className="font-bold text-slate-800 mb-4 text-lg"><span className="text-indigo-600 mr-2">Q{i + 1}.</span>{q.question}</p>
+                              {!q.options || q.options.length === 0 ? (
+                                <div className="mt-2">
+                                  <input 
+                                    type="text" 
+                                    value={selectedAnswers[i] || ""} 
+                                    onChange={(e) => setSelectedAnswers(prev => ({ ...prev, [i]: e.target.value }))}
+                                    placeholder="Type your answer here..."
+                                    className="w-full max-w-md rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-slate-800"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="space-y-3">
+                                  {q.options.map((opt, j) => (
+                                    <label key={j} className={`flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all border ${selectedAnswers[i] === opt ? "border-indigo-500 bg-indigo-50 shadow-sm" : "border-slate-200 bg-white hover:border-indigo-300"}`}>
+                                      <input type="radio" name={`q-${i}`} value={opt} checked={selectedAnswers[i] === opt} onChange={() => setSelectedAnswers(prev => ({ ...prev, [i]: opt }))} className="text-indigo-600 w-4 h-4" />
+                                      <span className={`text-sm font-medium ${selectedAnswers[i] === opt ? "text-indigo-900 font-bold" : "text-slate-600"}`}>
+                                        <span className="font-bold mr-2 uppercase text-indigo-500">{String.fromCharCode(97 + j)})</span> {opt}
+                                      </span>
+                                    </label>
+                                  ))}
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        ))}
+                        <Button onClick={submitWrapper} disabled={isLoading} className="w-full h-14 text-lg font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-500/30">
+                          {isLoading ? "Submitting..." : "Submit Answers"}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                />
+              ) : (
               <div className="max-w-3xl mx-auto">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-bold">{formatTopicForDisplay(activeQuiz.topic)} Quiz</h2>
@@ -665,6 +717,7 @@ export default function StudentDashboard() {
                   </Button>
                 </div>
               </div>
+              )
             ) : showPastQuizzes ? (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
                 <Button variant="ghost" onClick={() => setShowPastQuizzes(false)} className="pl-0 hover:bg-transparent hover:text-primary mb-4">← Back to Practice Quizzes</Button>

@@ -21,6 +21,9 @@ def get_teacher_embeddings():
             api_key=settings.AZURE_OPENAI_KEY,
             api_version=settings.AZURE_OPENAI_API_VERSION,
         )
+    elif settings.AI_PROVIDER == "groq":
+        from langchain_community.embeddings import HuggingFaceEmbeddings
+        return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
     else:
         return OllamaEmbeddings(
             model="nomic-embed-text",

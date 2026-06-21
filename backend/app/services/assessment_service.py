@@ -81,17 +81,38 @@ class AssessmentService:
         total = len(answers)
         percentage = (correct / total * 100) if total > 0 else 0
 
-        attempt = QuizAttempt(
-            quiz_id=quiz_id,
-            student_id=student_id,
-            score=correct,
-            percentage=percentage,
-            total_questions=total,
-            correct_answers=correct,
-            wrong_answers=wrong,
-            attempt_type="practice",
+        from datetime import datetime
+        attempt_res = await self.db.execute(
+            select(QuizAttempt).where(
+                QuizAttempt.quiz_id == quiz_id,
+                QuizAttempt.student_id == student_id
+            ).order_by(QuizAttempt.id.desc())
         )
-        self.db.add(attempt)
+        attempt = attempt_res.scalars().first()
+
+        if attempt and attempt.status in ["IN_PROGRESS", "AUTO_SUBMITTED"]:
+            attempt.score = correct
+            attempt.percentage = percentage
+            attempt.total_questions = total
+            attempt.correct_answers = correct
+            attempt.wrong_answers = wrong
+            attempt.status = "COMPLETED" if attempt.status != "AUTO_SUBMITTED" else "AUTO_SUBMITTED"
+            if not attempt.submitted_at:
+                attempt.submitted_at = datetime.utcnow()
+        else:
+            attempt = QuizAttempt(
+                quiz_id=quiz_id,
+                student_id=student_id,
+                score=correct,
+                percentage=percentage,
+                total_questions=total,
+                correct_answers=correct,
+                wrong_answers=wrong,
+                attempt_type="practice",
+                status="COMPLETED",
+                submitted_at=datetime.utcnow()
+            )
+            self.db.add(attempt)
         await self.db.flush()
         await self.db.refresh(attempt)
 

@@ -116,6 +116,8 @@ class TeacherQuiz(Base):
     question_type = Column(String(50), nullable=False)
     difficulty = Column(String(50), nullable=False)
     num_questions = Column(Integer, nullable=False)
+    duration_minutes = Column(Integer, nullable=True, default=60)
+    max_violations = Column(Integer, nullable=True, default=3)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     teacher = relationship("User", back_populates="created_quizzes", foreign_keys=[teacher_id])
@@ -240,12 +242,29 @@ class QuizAttempt(Base):
     correct_answers = Column(Integer, nullable=False)
     wrong_answers = Column(Integer, nullable=False)
     attempt_type = Column(String(50), nullable=False, default="practice")
+    started_at = Column(DateTime, nullable=True)
     submitted_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    start_photo_url = Column(String(500), nullable=True)
+    recording_url = Column(String(500), nullable=True)
+    total_violations = Column(Integer, default=0, nullable=False)
+    status = Column(String(50), nullable=False, default="IN_PROGRESS")
 
     quiz = relationship("TeacherQuiz", back_populates="attempts")
     student = relationship("User", back_populates="quiz_attempts")
     answers = relationship("StudentAnswer", back_populates="attempt", cascade="all, delete-orphan")
     topic_performances = relationship("TopicPerformance", back_populates="attempt", cascade="all, delete-orphan")
+    violations = relationship("ExamViolation", back_populates="attempt", cascade="all, delete-orphan")
+
+class ExamViolation(Base):
+    __tablename__ = "exam_violations"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    attempt_id = Column(Integer, ForeignKey("quiz_attempts.id", ondelete="CASCADE"), nullable=False)
+    violation_type = Column(String(50), nullable=False)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    details = Column(Text, nullable=True)
+
+    attempt = relationship("QuizAttempt", back_populates="violations")
 
 
 class StudentAnswer(Base):

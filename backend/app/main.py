@@ -14,6 +14,7 @@ from app.routes import (
     dashboard_routes,
     document_routes,
     quiz_routes,
+    proctoring_routes,
     recommendation_routes,
     role_routes,
     student_routes,
@@ -70,6 +71,7 @@ app.include_router(auth_routes.router, prefix="/api/v1")
 app.include_router(chatbot_routes.router, prefix="/api/v1")
 app.include_router(document_routes.router, prefix="/api/v1")
 app.include_router(quiz_routes.router, prefix="/api/v1")
+app.include_router(proctoring_routes.router, prefix="/api/v1")
 app.include_router(studyplan_routes.router, prefix="/api/v1")
 app.include_router(recommendation_routes.router, prefix="/api/v1")
 app.include_router(dashboard_routes.router, prefix="/api/v1")
