@@ -194,7 +194,8 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
     try {
       const response = await api.put("/auth/profile", {
         name: profileName,
-        department: profileDept
+        department: profileDept,
+        designation: profileDesg
       });
       const updatedUser = response.data;
       
@@ -488,7 +489,7 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
 
 
             {/* 2. Notification Overlay Drawer Dropdown Node Context */}
-            {role !== "faculty" && (
+            {false && (
               <div className="relative" ref={notificationRef}>
                 <button
                   onClick={() => setNotificationsOpen(!notificationsOpen)}
@@ -955,6 +956,17 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
                             placeholder="e.g. Computer Science"
                           />
                         </div>
+                        {(currentUser?.role === "student" || role === "student") && (
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-slate-700">Year</label>
+                            <Input
+                              type="text"
+                              value={profileDesg}
+                              onChange={(e) => setProfileDesg(e.target.value)}
+                              placeholder="e.g. Year 2"
+                            />
+                          </div>
+                        )}
                       </div>
 
                       <div className="pt-2">

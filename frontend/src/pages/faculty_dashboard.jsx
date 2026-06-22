@@ -184,15 +184,15 @@ export default function FacultyDashboard() {
     }
   };
 
-  const fetchLearningGaps = async (quizId = "") => {
+  const fetchLearningGaps = async (quizId = "", showLoading = true) => {
     try {
-      setIsLoading(true);
+      if (showLoading) setIsLoading(true);
       const res = await facultyApi.getLearningGaps(quizId || undefined);
       setLearningGaps(res.data);
     } catch (e) {
       console.error(e);
     } finally {
-      setIsLoading(false);
+      if (showLoading) setIsLoading(false);
     }
   };
 
@@ -214,16 +214,25 @@ export default function FacultyDashboard() {
 
 
   useEffect(() => {
+    let intervalId;
     if (activeItem === "Dashboard") {
       fetchDashboardStats();
     } else if (activeItem === "Quizzes/Assessments") {
       fetchQuizzes();
     } else if (activeItem === "Analytics") {
       fetchQuizzes();
-      fetchLearningGaps(analyticsQuiz);
+      fetchLearningGaps(analyticsQuiz, true);
       fetchDashboardStats();
+      
+      intervalId = setInterval(() => {
+        fetchLearningGaps(analyticsQuiz, false);
+      }, 5000);
     }
-  }, [activeItem]);
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [activeItem, analyticsQuiz]);
 
   const handleUploadDocument = async (file = null) => {
     const fileToUpload = file || uploadFile;
@@ -1249,36 +1258,41 @@ export default function FacultyDashboard() {
                       
                       <div className="grid md:grid-cols-2 gap-6">
                         {learningGaps.student_performance?.slice(overviewPage * 2, overviewPage * 2 + 2).map((sp, idx) => (
-                          <div key={idx} className="bg-white rounded-xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100/60 relative overflow-hidden flex flex-col justify-between min-h-[350px]">
-                            <div className="flex justify-between items-start z-10">
+                          <div key={idx} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100/80 flex flex-col h-full hover:shadow-md transition-shadow">
+                            <div className="flex justify-between items-start w-full">
                               <div>
-                                <h3 className="text-xl font-bold text-slate-800">{sp.student_name}</h3>
-                                <p className="text-slate-400 font-medium text-sm mt-1">Student</p>
+                                <h3 className="text-lg font-bold text-slate-800">{sp.student_name}</h3>
+                                <p className="text-slate-400 font-medium text-xs mt-0.5">Student</p>
                               </div>
                               <button 
-                              onClick={() => setSelectedStudent(sp)}
-                              className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 text-xs font-bold px-4 py-2 rounded-full transition-colors"
-                            >
-                              View Details
-                            </button>
+                                onClick={() => setSelectedStudent(sp)}
+                                className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 text-xs font-bold px-3 py-1.5 rounded-full transition-colors shrink-0"
+                              >
+                                View Details
+                              </button>
                             </div>
                             
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 opacity-95 z-0 pointer-events-none mt-4">
-                              <img 
-                                src={getPhotoUrl(sp.profile_photo_path || sp.profile_image) || `https://api.dicebear.com/7.x/initials/svg?seed=${sp.student_name}&backgroundColor=f8fafc&textColor=475569`} 
-                                alt="avatar" 
-                                className="w-full h-full object-cover rounded-full shadow-sm border-4 border-white" 
-                              />
+                            <div className="flex justify-center my-6 flex-1">
+                              <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden shadow-sm border-4 border-slate-50 ring-1 ring-slate-100">
+                                <img 
+                                  src={getPhotoUrl(sp.profile_photo_path || sp.profile_image) || `https://api.dicebear.com/7.x/initials/svg?seed=${sp.student_name}&backgroundColor=f8fafc&textColor=475569`} 
+                                  alt={`${sp.student_name}'s avatar`} 
+                                  className="w-full h-full object-cover" 
+                                />
+                              </div>
                             </div>
                             
-                            <div className="z-10 mt-auto pt-40">
-                              <div className="bg-white/90 backdrop-blur-md rounded-2xl p-4 border border-slate-100 shadow-sm">
-                                <p className="font-bold text-slate-700 text-sm mb-3">Topic: {analyticsQuiz ? (quizzes.find(q => q.id.toString() === analyticsQuiz)?.topic_name || "Assessment") : "Overall Progress"}</p>
-                                <div className="flex justify-between items-center text-sm font-semibold">
-                                  <span className="text-slate-500">Progress: <span className="text-indigo-600">{sp.average_score}%</span></span>
+                            <div className="w-full mt-auto">
+                              <div className="bg-slate-50 rounded-xl p-4 border border-slate-100/50">
+                                <p className="font-bold text-slate-700 text-sm mb-2 truncate" title={analyticsQuiz ? (quizzes.find(q => q.id.toString() === analyticsQuiz)?.topic_name || "Assessment") : "Overall Progress"}>
+                                  Topic: {analyticsQuiz ? (quizzes.find(q => q.id.toString() === analyticsQuiz)?.topic_name || "Assessment") : "Overall Progress"}
+                                </p>
+                                <div className="flex justify-between items-center text-xs font-semibold mb-1.5">
+                                  <span className="text-slate-500">Progress</span>
+                                  <span className="text-indigo-600">{sp.average_score}%</span>
                                 </div>
-                                <div className="w-full bg-slate-100 h-2 rounded-full mt-2 overflow-hidden">
-                                  <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full" style={{ width: `${sp.average_score}%` }} />
+                                <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                                  <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full transition-all duration-500" style={{ width: `${sp.average_score}%` }} />
                                 </div>
                               </div>
                             </div>
@@ -1344,8 +1358,8 @@ export default function FacultyDashboard() {
                   <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 p-[3px] shadow-lg shrink-0">
                     <div className="w-full h-full rounded-full overflow-hidden border-2 border-white bg-white">
                       <img 
-                        src={selectedStudent.profile_image || `https://api.dicebear.com/7.x/initials/svg?seed=${selectedStudent.student_name}&backgroundColor=f8fafc&textColor=475569`} 
-                        alt="avatar" 
+                        src={getPhotoUrl(selectedStudent.profile_photo_path || selectedStudent.profile_image) || `https://api.dicebear.com/7.x/initials/svg?seed=${selectedStudent.student_name}&backgroundColor=f8fafc&textColor=475569`} 
+                        alt={`${selectedStudent.student_name}'s avatar`} 
                         className="w-full h-full object-cover" 
                       />
                     </div>
@@ -1353,8 +1367,12 @@ export default function FacultyDashboard() {
                   <div>
                     <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-slate-800 to-slate-600 tracking-tight">{selectedStudent.student_name}</h2>
                     <div className="flex items-center gap-2 mt-1.5">
-                      <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-xs font-bold tracking-wide uppercase">Computer Science</span>
-                      <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-xs font-bold tracking-wide uppercase">Year 2</span>
+                      {selectedStudent.department && (
+                        <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-xs font-bold tracking-wide uppercase">{selectedStudent.department}</span>
+                      )}
+                      {selectedStudent.designation && (
+                        <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-xs font-bold tracking-wide uppercase">{selectedStudent.designation}</span>
+                      )}
                     </div>
                   </div>
                 </div>

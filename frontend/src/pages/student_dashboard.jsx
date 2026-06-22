@@ -65,8 +65,7 @@ import {DashboardLayout} from "../components/layout/DashboardLayout";
     }
       const stored = localStorage.getItem(`studentChats_${userId}`);
       return stored ? JSON.parse(stored) : [
-      {id: 1, title: "Math revision plan", messages: [{text: "Help me revise calculus before quiz.", isUser: true }] },
-      {id: 2, title: "Physics doubts", messages: [{text: "Explain Newton's laws with examples.", isUser: true }] },
+        {id: Date.now(), title: "New chat", messages: [] }
       ];
   });
       const [selectedChatId, setSelectedChatId] = useState(previousChats[0]?.id || null);

@@ -45,8 +45,13 @@
     --success-foreground: #FFFFFF;
     --warning: #F59E0B;
     --warning-foreground: #FFFFFF;
-    --destructive: #EF4444;
     --destructive-foreground: #FFFFFF;
+  }
+
+  /* Hide native Edge password reveal icon since we use custom ones */
+  input::-ms-reveal,
+  input::-ms-clear {
+    display: none;
   }
 
   body {
