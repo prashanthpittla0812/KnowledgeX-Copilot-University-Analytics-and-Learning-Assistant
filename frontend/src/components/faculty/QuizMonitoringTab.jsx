@@ -49,10 +49,7 @@ export function QuizMonitoringTab({ quizId, onBack }) {
 
   return (
     <div className="space-y-6 animate-in fade-in">
-      <div className="flex items-center justify-between mb-6">
-        <Button variant="ghost" onClick={onBack} className="text-indigo-600 font-bold hover:bg-indigo-50">
-          ← Back to Quizzes
-        </Button>
+      <div className="flex items-center justify-end mb-6">
         <div className="flex items-center gap-2 text-slate-500 font-medium">
           <ShieldAlert className="w-5 h-5 text-indigo-500" />
           Proctoring Dashboard
@@ -143,11 +140,11 @@ export function QuizMonitoringTab({ quizId, onBack }) {
             </button>
           </div>
 
-          <div className="bg-black rounded-2xl overflow-hidden max-w-3xl w-full relative z-50 shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-slate-700 flex justify-center items-center p-2">
+          <div className="bg-black rounded-2xl overflow-hidden max-w-[90vw] w-full relative z-50 shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-slate-700 flex justify-center items-center p-2">
             {activeMedia.type === 'image' ? (
-              <img src={activeMedia.url} alt="Proctoring evidence" className="max-w-full max-h-[70vh] rounded-xl object-contain" />
+              <img src={activeMedia.url} alt="Proctoring evidence" className="max-w-full max-h-[85vh] rounded-xl object-contain" />
             ) : (
-              <video src={activeMedia.url} controls autoPlay className="max-w-full max-h-[70vh] rounded-xl bg-black"></video>
+              <video src={activeMedia.url} controls autoPlay className="w-full max-h-[85vh] rounded-xl bg-black object-contain"></video>
             )}
           </div>
         </div>

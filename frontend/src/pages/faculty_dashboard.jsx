@@ -36,8 +36,8 @@ export default function FacultyDashboard() {
   const [quizTopic, setQuizTopic] = useState("");
   const [quizType, setQuizType] = useState("MCQs");
   const [quizDifficulty, setQuizDifficulty] = useState("medium");
-  const [quizCount, setQuizCount] = useState(0);
-  const [quizDuration, setQuizDuration] = useState(60);
+  const [quizCount, setQuizCount] = useState("");
+  const [quizDuration, setQuizDuration] = useState("");
   const [quizMaxViolations, setQuizMaxViolations] = useState(3);
   const [assessmentGenerationMethod, setAssessmentGenerationMethod] = useState("AI");
   const [assessmentType, setAssessmentType] = useState("Essay");
@@ -633,7 +633,7 @@ export default function FacultyDashboard() {
                               type="number"
                               min="1"
                               value={quizDuration} 
-                              onChange={e => setQuizDuration(Number(e.target.value))} 
+                              onChange={e => setQuizDuration(e.target.value === "" ? "" : Number(e.target.value))} 
                               className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all placeholder:text-slate-400"
                               placeholder="e.g., 45"
                             />
@@ -642,15 +642,14 @@ export default function FacultyDashboard() {
                             <label className="text-sm font-bold text-slate-900 mb-2 block">
                               Max Violations
                             </label>
-                            <select 
+                            <input 
+                              type="number"
+                              min="1"
                               value={quizMaxViolations} 
-                              onChange={e => setQuizMaxViolations(Number(e.target.value))} 
+                              onChange={e => setQuizMaxViolations(e.target.value === "" ? "" : Number(e.target.value))} 
                               className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
-                            >
-                              <option value="3">3</option>
-                              <option value="5">5</option>
-                              <option value="10">10</option>
-                            </select>
+                              placeholder="e.g., 3"
+                            />
                           </div>
                         </div>
 

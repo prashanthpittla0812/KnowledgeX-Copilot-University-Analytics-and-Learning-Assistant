@@ -57,8 +57,16 @@ export function ProctoredQuizSession({ quiz, onActualSubmit, onCancel, renderQui
   }, []);
 
   // Log Violation
+  const lastViolationTimeRef = useRef(0);
+
   const logViolation = async (type, details) => {
     if (phase !== "active") return;
+    
+    const now = Date.now();
+    // 10 second cooldown between violations to prevent spam
+    if (now - lastViolationTimeRef.current < 10000) return;
+    lastViolationTimeRef.current = now;
+
     try {
       const formData = new FormData();
       formData.append("quiz_id", quiz.id);
@@ -122,12 +130,12 @@ export function ProctoredQuizSession({ quiz, onActualSubmit, onCancel, renderQui
 
         // Phone detection
         if (cocoModelRef.current) {
-          const predictions = await cocoModelRef.current.detect(video, 20, 0.35);
+          const predictions = await cocoModelRef.current.detect(video, 20, 0.20);
           const phoneDetected = predictions.some(p => 
-            p.class === "cell phone" || p.class === "remote"
+            p.class === "cell phone" || p.class === "remote" || p.class === "book"
           );
           if (phoneDetected) {
-            logViolation("MOBILE_PHONE", "Mobile phone detected in the frame.");
+            logViolation("UNAUTHORIZED_OBJECT", "Mobile phone, book, or unauthorized object detected.");
           }
         }
       } catch (err) {
@@ -202,7 +210,6 @@ export function ProctoredQuizSession({ quiz, onActualSubmit, onCancel, renderQui
         }
       };
       mediaRecorderRef.current.stop();
-      setRecordingStatus("Stopped");
     });
   };
 
@@ -226,7 +233,6 @@ export function ProctoredQuizSession({ quiz, onActualSubmit, onCancel, renderQui
         await document.documentElement.requestFullscreen().catch(e => console.log(e));
       }
 
-      startRecording();
       setPhase("active");
     } catch (err) {
       console.error(err);
@@ -236,12 +242,14 @@ export function ProctoredQuizSession({ quiz, onActualSubmit, onCancel, renderQui
   };
 
   const handleFinalSubmit = async (answers = null) => {
-    setPhase("submitting");
+    setRecordingStatus("Uploading");
     if (document.fullscreenElement) {
       await document.exitFullscreen().catch(e => console.log(e));
     }
     
     await stopRecordingAndUpload();
+    
+    setPhase("submitting");
     
     // Call the parent's actual submit function
     if (onActualSubmit) {
@@ -391,11 +399,18 @@ export function ProctoredQuizSession({ quiz, onActualSubmit, onCancel, renderQui
       </div>
 
       {/* Floating Webcam Thumbnail */}
-      <div className="absolute bottom-6 right-6 w-48 aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border-2 border-slate-700 z-50 group">
+      <div className="absolute bottom-6 right-6 w-48 aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border-2 border-slate-700 z-50 group pointer-events-none">
         <Webcam
           ref={webcamRef}
-          audio={false}
+          audio={true}
           muted={true}
+          width={1280}
+          height={720}
+          onUserMedia={() => {
+            if (recordingStatus !== "Recording") {
+              startRecording();
+            }
+          }}
           className="w-full h-full object-contain bg-slate-900"
           videoConstraints={{ width: 1280, height: 720, facingMode: "user" }}
         />
@@ -406,7 +421,14 @@ export function ProctoredQuizSession({ quiz, onActualSubmit, onCancel, renderQui
 
       {/* Actual Quiz Content */}
       <div className="flex-1 overflow-y-auto p-8 relative z-10">
-        {renderQuizContent(handleFinalSubmit)}
+        {recordingStatus === "Uploading" ? (
+           <div className="flex flex-col items-center justify-center py-16">
+             <span className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></span>
+             <h2 className="mt-4 text-xl font-bold text-slate-800">Uploading Recording...</h2>
+           </div>
+        ) : (
+           renderQuizContent(handleFinalSubmit)
+        )}
       </div>
     </div>,
     document.body
