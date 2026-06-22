@@ -187,7 +187,8 @@ Return ONLY valid JSON.
 Format:
 [
   {{
-    "question": ""
+    "question": "",
+    "answer": ""
   }}
 ]
 
@@ -201,7 +202,16 @@ Include:
 - Fill Blank
 - Theory
 
-Return ONLY JSON.
+Return ONLY valid JSON.
+
+Format:
+[
+  {{
+    "question": "",
+    "options": ["", "", "", ""], // empty for Fill Blank and Theory
+    "answer": ""
+  }}
+]
 
 Context:
 {context}"""
