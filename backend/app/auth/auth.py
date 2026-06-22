@@ -23,9 +23,21 @@ class AuthService:
         if result.scalar_one_or_none():
             raise ValueError("Email already registered")
 
-        is_domain = email.lower().endswith("@ifheindia.org")
+        from app.utils.domain import is_trusted_domain
+        from app.utils.logger import get_logger
+        
+        is_domain = is_trusted_domain(email)
         email_type = "DOMAIN" if is_domain else "EXTERNAL"
         status = "APPROVED" if is_domain else "PENDING"
+        
+        logger = get_logger()
+        try:
+            domain_part = email.split("@")[1].lower()
+        except IndexError:
+            domain_part = "unknown"
+            
+        approval_method = "AUTO_APPROVED_DOMAIN" if is_domain else "ADMIN_APPROVAL_REQUIRED"
+        logger.info(f"User registration - Email Domain: {domain_part}, Approval Method: {approval_method}")
 
         user = User(
             name=name,
@@ -50,7 +62,7 @@ class AuthService:
         if user.status != "APPROVED":
             if user.status == "REJECTED":
                 raise UnapprovedAccountError("Your account was rejected by admin")
-            raise UnapprovedAccountError("Your account is awaiting admin approval")
+            raise UnapprovedAccountError("Your account is pending administrator approval.")
         if not verify_password(password, user.password_hash):
             raise ValueError("Invalid email or password")
         return user
