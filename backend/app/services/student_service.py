@@ -10,14 +10,34 @@ class StudentQuizService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_all_quizzes(self, student_id: int = None) -> list:
+    async def get_all_quizzes(self, student=None) -> list:
         result = await self.db.execute(
             select(TeacherQuiz).order_by(TeacherQuiz.created_at.desc())
         )
-        quizzes = result.scalars().all()
+        all_quizzes = result.scalars().all()
+
+        import re
+        import math
+        student_year = None
+        if student and student.designation:
+            match = re.search(r'\d+', student.designation)
+            if match:
+                student_year = int(match.group())
+
+        quizzes = []
+        for q in all_quizzes:
+            if q.semester and student_year:
+                sem_match = re.search(r'\d+', q.semester)
+                if sem_match:
+                    sem_num = int(sem_match.group())
+                    req_year = math.ceil(sem_num / 2)
+                    if req_year != student_year:
+                        continue
+            quizzes.append(q)
 
         attempted_quiz_ids = set()
-        if student_id:
+        if student:
+            student_id = student.id
             from app.database.models import QuizAttempt, AssessmentSubmission
             attempts_result = await self.db.execute(
                 select(QuizAttempt.quiz_id).where(QuizAttempt.student_id == student_id)

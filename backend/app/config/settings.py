@@ -44,8 +44,8 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "llama-3.1-8b-instant"
 
-    # ChromaDB
-    CHROMA_PERSIST_DIRECTORY: str = "./chroma_db"
+    # ChromaDB Settings
+    CHROMA_PERSIST_DIRECTORY: str = "./chroma_db_v2"
 
     # File Uploads
     UPLOAD_DIRECTORY: str = "./uploads"

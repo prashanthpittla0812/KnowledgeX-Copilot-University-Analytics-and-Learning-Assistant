@@ -29,7 +29,7 @@ async def get_assigned_quizzes(
     current_user: User = Depends(get_current_student),
 ):
     service = StudentQuizService(db)
-    quizzes = await service.get_all_quizzes(student_id=current_user.id)
+    quizzes = await service.get_all_quizzes(student=current_user)
     return {"quizzes": quizzes}
 
 

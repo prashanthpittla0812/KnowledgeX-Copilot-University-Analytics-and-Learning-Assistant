@@ -36,11 +36,30 @@ async def check_role(current_user: User, allowed_roles: List[str]):
         raise HTTPException(status_code=403, detail=f"You do not have permission. Role: {role}")
 
 
-async def notify_students(db: AsyncSession, title: str, message: str, link: str = None):
+async def notify_students(db: AsyncSession, title: str, message: str, link: str = None, target_semester: str = None):
     result = await db.execute(select(User).where(User.role == "student", User.is_active == True))
     students = result.scalars().all()
 
+    import re
+    import math
+
+    req_year = None
+    if target_semester:
+        sem_match = re.search(r'\d+', target_semester)
+        if sem_match:
+            sem_num = int(sem_match.group())
+            req_year = math.ceil(sem_num / 2)
+
     for s in students:
+        if req_year is not None:
+            if not s.designation:
+                continue
+            match = re.search(r'\d+', s.designation)
+            if match:
+                student_year = int(match.group())
+                if student_year != req_year:
+                    continue
+
         db.add(Notification(user_id=s.id, title=title, message=message, link=link))
 
     await db.commit()
@@ -101,7 +120,8 @@ async def upload_material(
         db,
         "New Learning Material",
         f"{title} uploaded by {current_user.name}",
-        link="Learning Resources"
+        link="Learning Resources",
+        target_semester=str(semester) if semester is not None else None
     )
 
     return material

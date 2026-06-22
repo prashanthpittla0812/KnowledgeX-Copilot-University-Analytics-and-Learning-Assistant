@@ -152,6 +152,7 @@ async def faculty_generate_quiz(
         is_assessment=request.is_assessment,
         manual_questions=request.manual_questions,
         duration_mins=request.duration_mins,
+        semester=request.semester,
     )
 
     if result.get("status") == "error":
@@ -168,7 +169,8 @@ async def faculty_generate_quiz(
         db,
         title,
         message,
-        link=link
+        link=link,
+        target_semester=request.semester
     )
 
     return QuizGenerateResponse(**result)

@@ -118,6 +118,7 @@ class TeacherQuiz(Base):
     question_type = Column(String(50), nullable=False)
     difficulty = Column(String(50), nullable=False)
     num_questions = Column(Integer, nullable=False)
+    semester = Column(String(50), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     teacher = relationship("User", back_populates="created_quizzes", foreign_keys=[teacher_id])

@@ -89,6 +89,7 @@ class TeacherQuizService:
         is_assessment: bool = False,
         manual_questions: str = None,
         duration_mins: int = 60,
+        semester: str = None,
     ) -> dict:
         if manual_questions:
             # For manual questions, just format them into JSON via LLM
@@ -179,6 +180,7 @@ class TeacherQuizService:
             question_type=final_question_type,
             difficulty=difficulty,
             num_questions=num_questions if not manual_questions else len(questions),
+            semester=semester,
         )
         self.db.add(quiz)
         await self.db.flush()

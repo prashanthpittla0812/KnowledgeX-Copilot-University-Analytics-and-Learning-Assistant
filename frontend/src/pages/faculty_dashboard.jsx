@@ -42,6 +42,7 @@ export default function FacultyDashboard() {
   const [quizType, setQuizType] = useState("MCQs");
   const [quizDifficulty, setQuizDifficulty] = useState("medium");
   const [quizCount, setQuizCount] = useState(0);
+  const [quizSemester, setQuizSemester] = useState("1st Sem");
   const [assessmentGenerationMethod, setAssessmentGenerationMethod] = useState("AI");
   const [assessmentType, setAssessmentType] = useState("Essay");
   const [assessmentDifficulty, setAssessmentDifficulty] = useState("Beginner");
@@ -267,7 +268,8 @@ export default function FacultyDashboard() {
         document_topic: uploadedDocs.length > 0 ? uploadedDocs[0].topic : undefined,
         question_type: quizType,
         difficulty: quizDifficulty,
-        num_questions: quizCount
+        num_questions: quizCount,
+        semester: quizSemester
       });
       alert("Quiz generated!");
 
@@ -303,6 +305,7 @@ export default function FacultyDashboard() {
         question_type: assessmentType,
         difficulty: assessmentDifficulty,
         num_questions: assessmentQuestionCount,
+        semester: quizSemester,
         is_assessment: true,
         manual_questions: assessmentGenerationMethod === "Manual" ? manualQuestionsText : undefined,
         duration_mins: assessmentDuration * 1440 // converting days to minutes for backend if needed, or backend handles it? Wait!
@@ -610,7 +613,7 @@ export default function FacultyDashboard() {
                           <h3 className="text-lg font-bold text-slate-900">Quiz Details</h3>
                         </div>
 
-                        <div className="grid md:grid-cols-3 gap-6">
+                        <div className="grid md:grid-cols-4 gap-6">
                           <div>
                             <label className="text-sm font-bold text-slate-900 mb-2 block">
                               Quiz Topic <span className="text-red-500">*</span>
@@ -647,6 +650,25 @@ export default function FacultyDashboard() {
                               <option value="easy">Easy</option>
                               <option value="medium">Medium</option>
                               <option value="hard">Hard</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-sm font-bold text-slate-900 mb-2 block">
+                              Semester
+                            </label>
+                            <select 
+                              value={quizSemester} 
+                              onChange={e => setQuizSemester(e.target.value)} 
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
+                            >
+                              <option value="1st Sem">1st Sem</option>
+                              <option value="2nd Sem">2nd Sem</option>
+                              <option value="3rd Sem">3rd Sem</option>
+                              <option value="4th Sem">4th Sem</option>
+                              <option value="5th Sem">5th Sem</option>
+                              <option value="6th Sem">6th Sem</option>
+                              <option value="7th Sem">7th Sem</option>
+                              <option value="8th Sem">8th Sem</option>
                             </select>
                           </div>
                         </div>
@@ -808,7 +830,7 @@ export default function FacultyDashboard() {
                           <h3 className="text-lg font-bold text-slate-900">Assessment Details</h3>
                         </div>
 
-                        <div className={`grid ${assessmentGenerationMethod === "Manual" ? "md:grid-cols-3" : "md:grid-cols-4"} gap-6`}>
+                        <div className={`grid ${assessmentGenerationMethod === "Manual" ? "md:grid-cols-4" : "md:grid-cols-5"} gap-6`}>
                           <div>
                             <label className="text-sm font-bold text-slate-900 mb-2 block">
                               Assessment Type <span className="text-red-500">*</span>
@@ -871,6 +893,25 @@ export default function FacultyDashboard() {
                               className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                               placeholder="e.g., 2"
                             />
+                          </div>
+                          <div>
+                            <label className="text-sm font-bold text-slate-900 mb-2 block">
+                              Semester
+                            </label>
+                            <select 
+                              value={quizSemester} 
+                              onChange={e => setQuizSemester(e.target.value)} 
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                            >
+                              <option value="1st Sem">1st Sem</option>
+                              <option value="2nd Sem">2nd Sem</option>
+                              <option value="3rd Sem">3rd Sem</option>
+                              <option value="4th Sem">4th Sem</option>
+                              <option value="5th Sem">5th Sem</option>
+                              <option value="6th Sem">6th Sem</option>
+                              <option value="7th Sem">7th Sem</option>
+                              <option value="8th Sem">8th Sem</option>
+                            </select>
                           </div>
                         </div>
 

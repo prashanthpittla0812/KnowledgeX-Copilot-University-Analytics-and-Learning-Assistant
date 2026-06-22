@@ -488,7 +488,7 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
 
 
             {/* 2. Notification Overlay Drawer Dropdown Node Context */}
-            {role !== "admin" && (
+            {role === "student" && (
               <div className="relative" ref={notificationRef}>
                 <button
                   onClick={() => setNotificationsOpen(!notificationsOpen)}
