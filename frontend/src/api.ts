@@ -269,8 +269,8 @@ export const studentApi = {
 };
 
 export const chatbotApi = {
-  async askQuestion(question: string, content_ids: number[] = []) {
-    const response = await api.post("/chat/", { question, content_ids });
+  async askQuestion(question: string, content_ids: number[] = [], input_type: string = "TEXT") {
+    const response = await api.post("/chat/", { question, content_ids, input_type });
     return response.data;
   },
   async summarize(content_id: number, summary_type: string = "Short Summary") {

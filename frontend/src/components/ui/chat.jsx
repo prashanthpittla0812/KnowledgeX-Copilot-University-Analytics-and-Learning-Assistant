@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Bot, User, Paperclip, Send, Loader2, Mic, ThumbsUp, ThumbsDown, Copy, Check } from 'lucide-react';
+import { Bot, User, Paperclip, Send, Loader2, Mic, ThumbsUp, ThumbsDown, Copy, Check, Volume2, Square } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Button } from './button';
 
@@ -13,6 +13,20 @@ export function ChatBubble({ message, sources, isUser, isTyping = false }) {
       navigator.clipboard.writeText(message);
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
+    }
+  };
+
+  const handleReplay = () => {
+    if (message && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(message);
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  const handleStop = () => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
     }
   };
 
@@ -58,28 +72,49 @@ export function ChatBubble({ message, sources, isUser, isTyping = false }) {
                 </div>
               )}
               {!isUser && (
-                <div className="flex justify-end gap-2 mt-3 pt-2 border-t border-border/10">
-                  <button 
-                    onClick={handleCopy}
-                    className="p-1 rounded transition-colors text-muted-foreground opacity-60 hover:opacity-100 hover:text-foreground hover:bg-muted" 
-                    title="Copy message"
-                  >
-                    {isCopied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
-                  </button>
-                  <button 
-                    onClick={() => setFeedback(feedback === 'up' ? null : 'up')}
-                    className={cn("p-1 rounded transition-colors", feedback === 'up' ? "text-green-500 bg-green-500/10" : "text-muted-foreground opacity-60 hover:opacity-100 hover:text-green-500 hover:bg-green-500/10")} 
-                    title="Helpful"
-                  >
-                    <ThumbsUp className="w-3.5 h-3.5" />
-                  </button>
-                  <button 
-                    onClick={() => setFeedback(feedback === 'down' ? null : 'down')}
-                    className={cn("p-1 rounded transition-colors", feedback === 'down' ? "text-red-500 bg-red-500/10" : "text-muted-foreground opacity-60 hover:opacity-100 hover:text-red-500 hover:bg-red-500/10")} 
-                    title="Not helpful"
-                  >
-                    <ThumbsDown className="w-3.5 h-3.5" />
-                  </button>
+                <div className="flex justify-end mt-4 pt-3 border-t border-border/10">
+                  <div className="flex items-center gap-1 bg-muted/40 rounded-full p-1 border border-border/40 shadow-sm">
+                    <button 
+                      onClick={handleCopy}
+                      className={cn("p-1.5 rounded-full transition-all flex items-center justify-center", isCopied ? "bg-green-500/10 text-green-600" : "text-muted-foreground hover:text-foreground hover:bg-background hover:shadow-sm")}
+                      title="Copy message"
+                    >
+                      {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                    
+                    <button 
+                      onClick={handleReplay}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full transition-all text-muted-foreground hover:text-primary hover:bg-primary/5 hover:shadow-sm text-[11px] font-semibold uppercase tracking-wider" 
+                      title="Replay Response"
+                    >
+                      <Volume2 className="w-3.5 h-3.5" /> <span>Replay</span>
+                    </button>
+                    
+                    <button 
+                      onClick={handleStop}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full transition-all text-muted-foreground hover:text-red-500 hover:bg-red-500/5 hover:shadow-sm text-[11px] font-semibold uppercase tracking-wider" 
+                      title="Stop Speaking"
+                    >
+                      <Square className="w-3 h-3" fill="currentColor" /> <span>Stop</span>
+                    </button>
+                    
+                    <div className="w-[1px] h-4 bg-border/60 mx-0.5"></div>
+                    
+                    <button 
+                      onClick={() => setFeedback(feedback === 'up' ? null : 'up')}
+                      className={cn("p-1.5 rounded-full transition-all", feedback === 'up' ? "text-emerald-500 bg-emerald-500/10 shadow-sm" : "text-muted-foreground hover:text-emerald-500 hover:bg-background hover:shadow-sm")} 
+                      title="Helpful"
+                    >
+                      <ThumbsUp className="w-3.5 h-3.5" />
+                    </button>
+                    <button 
+                      onClick={() => setFeedback(feedback === 'down' ? null : 'down')}
+                      className={cn("p-1.5 rounded-full transition-all", feedback === 'down' ? "text-red-500 bg-red-500/10 shadow-sm" : "text-muted-foreground hover:text-red-500 hover:bg-background hover:shadow-sm")} 
+                      title="Not helpful"
+                    >
+                      <ThumbsDown className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               )}
             </>
@@ -98,12 +133,14 @@ export function ChatBubble({ message, sources, isUser, isTyping = false }) {
 
 export function ChatInput({ input, setInput, onSubmit, isSending = false, onAttachClick }) {
   const [isListening, setIsListening] = React.useState(false);
+  const [isVoiceSource, setIsVoiceSource] = React.useState(false);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       if (input.trim() && !isSending) {
-        onSubmit();
+        onSubmit(isVoiceSource);
+        setIsVoiceSource(false);
       }
     }
   };
@@ -124,8 +161,16 @@ export function ChatInput({ input, setInput, onSubmit, isSending = false, onAtta
     };
 
     recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setInput(prev => (prev ? prev + " " + transcript : transcript));
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        }
+      }
+      if (finalTranscript) {
+        setInput(prev => (prev ? prev + " " + finalTranscript : finalTranscript));
+        setIsVoiceSource(true);
+      }
     };
 
     recognition.onerror = (event) => {
@@ -158,7 +203,7 @@ export function ChatInput({ input, setInput, onSubmit, isSending = false, onAtta
     <div className="relative flex w-full flex-col overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)] shadow-lg focus-within:ring-2 focus-within:ring-[var(--primary)]/50 transition-all">
       <textarea
         value={input}
-        onChange={(e) => setInput(e.target.value)}
+        onChange={(e) => { setInput(e.target.value); setIsVoiceSource(false); }}
         onKeyDown={handleKeyDown}
         placeholder={isListening ? "Listening..." : "Message KnowledgeX Copilot..."}
         className="min-h-[60px] w-full resize-none bg-transparent px-4 pt-4 pb-12 focus:outline-none sm:text-sm custom-scrollbar text-[var(--foreground)]"
@@ -188,6 +233,7 @@ export function ChatInput({ input, setInput, onSubmit, isSending = false, onAtta
         >
           <Mic className="h-4 w-4" />
         </Button>
+
       </div>
       <div className="absolute right-2 bottom-2 flex items-center gap-2">
         <Button
@@ -198,7 +244,10 @@ export function ChatInput({ input, setInput, onSubmit, isSending = false, onAtta
             input.trim() ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-muted text-muted-foreground opacity-50 cursor-not-allowed"
           )}
           disabled={!input.trim() || isSending}
-          onClick={onSubmit}
+          onClick={() => {
+            onSubmit(isVoiceSource);
+            setIsVoiceSource(false);
+          }}
         >
           {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         </Button>
