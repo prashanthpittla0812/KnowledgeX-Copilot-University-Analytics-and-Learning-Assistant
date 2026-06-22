@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.config.settings import settings
@@ -14,6 +15,7 @@ from app.routes import (
     dashboard_routes,
     document_routes,
     quiz_routes,
+    proctoring_routes,
     recommendation_routes,
     role_routes,
     student_routes,
@@ -62,6 +64,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 app.mount("/uploads", StaticFiles(directory=str(settings.UPLOAD_PATH)), name="uploads")
 
@@ -70,6 +73,7 @@ app.include_router(auth_routes.router, prefix="/api/v1")
 app.include_router(chatbot_routes.router, prefix="/api/v1")
 app.include_router(document_routes.router, prefix="/api/v1")
 app.include_router(quiz_routes.router, prefix="/api/v1")
+app.include_router(proctoring_routes.router, prefix="/api/v1")
 app.include_router(studyplan_routes.router, prefix="/api/v1")
 app.include_router(recommendation_routes.router, prefix="/api/v1")
 app.include_router(dashboard_routes.router, prefix="/api/v1")

@@ -151,7 +151,8 @@ async def faculty_generate_quiz(
         teacher_id=current_user.id,
         is_assessment=request.is_assessment,
         manual_questions=request.manual_questions,
-        duration_mins=request.duration_mins,
+        duration_minutes=request.duration_minutes,
+        max_violations=request.max_violations,
     )
 
     if result.get("status") == "error":

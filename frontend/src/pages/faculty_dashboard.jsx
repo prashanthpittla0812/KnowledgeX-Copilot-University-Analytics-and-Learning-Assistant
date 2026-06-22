@@ -12,10 +12,11 @@ import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card"
 import { StatCard } from "../components/ui/stat-card";
 import { AnalyticsCard } from "../components/ui/analytics-card";
 import { ChatBubble, ChatInput } from "../components/ui/chat";
-import { BookOpen, Users, AlertCircle, FileText, Send, CheckCircle, BarChart as BarChartIcon, BookMarked, TrendingUp, TrendingDown, Upload, Download, Eye, BrainCircuit } from "lucide-react";
+import { BookOpen, Users, AlertCircle, FileText, Send, CheckCircle, BarChart as BarChartIcon, BookMarked, TrendingUp, TrendingDown, Upload, Download, Eye, BrainCircuit, ShieldAlert } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { LearningMaterialsTab } from "../components/faculty/LearningMaterialsTab";
 import { MultimodalUploadTab } from "../components/faculty/MultimodalUploadTab";
+import { QuizMonitoringTab } from "../components/faculty/QuizMonitoringTab";
 
 const defaultFacultyChats = [];
 
@@ -41,7 +42,9 @@ export default function FacultyDashboard() {
   const [quizTopic, setQuizTopic] = useState("");
   const [quizType, setQuizType] = useState("MCQs");
   const [quizDifficulty, setQuizDifficulty] = useState("medium");
-  const [quizCount, setQuizCount] = useState(0);
+  const [quizCount, setQuizCount] = useState("");
+  const [quizDuration, setQuizDuration] = useState("");
+  const [quizMaxViolations, setQuizMaxViolations] = useState(3);
   const [assessmentGenerationMethod, setAssessmentGenerationMethod] = useState("AI");
   const [assessmentType, setAssessmentType] = useState("Essay");
   const [assessmentDifficulty, setAssessmentDifficulty] = useState("Beginner");
@@ -267,7 +270,9 @@ export default function FacultyDashboard() {
         document_topic: uploadedDocs.length > 0 ? uploadedDocs[0].topic : undefined,
         question_type: quizType,
         difficulty: quizDifficulty,
-        num_questions: quizCount
+        num_questions: quizCount,
+        duration_minutes: quizDuration,
+        max_violations: quizMaxViolations
       });
       alert("Quiz generated!");
 
@@ -610,8 +615,8 @@ export default function FacultyDashboard() {
                           <h3 className="text-lg font-bold text-slate-900">Quiz Details</h3>
                         </div>
 
-                        <div className="grid md:grid-cols-3 gap-6">
-                          <div>
+                        <div className="grid md:grid-cols-5 gap-6">
+                          <div className="md:col-span-2">
                             <label className="text-sm font-bold text-slate-900 mb-2 block">
                               Quiz Topic <span className="text-red-500">*</span>
                             </label>
@@ -637,17 +642,29 @@ export default function FacultyDashboard() {
                           </div>
                           <div>
                             <label className="text-sm font-bold text-slate-900 mb-2 block">
-                              Difficulty <span className="text-red-500">*</span>
+                              Duration (Mins)
                             </label>
-                            <select 
-                              value={quizDifficulty} 
-                              onChange={e => setQuizDifficulty(e.target.value)} 
+                            <input 
+                              type="number"
+                              min="1"
+                              value={quizDuration} 
+                              onChange={e => setQuizDuration(e.target.value === "" ? "" : Number(e.target.value))} 
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all placeholder:text-slate-400"
+                              placeholder="e.g., 45"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-bold text-slate-900 mb-2 block">
+                              Max Violations
+                            </label>
+                            <input 
+                              type="number"
+                              min="1"
+                              value={quizMaxViolations} 
+                              onChange={e => setQuizMaxViolations(e.target.value === "" ? "" : Number(e.target.value))} 
                               className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
-                            >
-                              <option value="easy">Easy</option>
-                              <option value="medium">Medium</option>
-                              <option value="hard">Hard</option>
-                            </select>
+                              placeholder="e.g., 3"
+                            />
                           </div>
                         </div>
 
@@ -1033,6 +1050,13 @@ export default function FacultyDashboard() {
                   >
                     View Quiz
                   </button>
+                  <button 
+                    className={`py-3 px-6 font-semibold border-b-2 transition-colors flex items-center gap-2 ${activeQuizTab === "monitoring" ? "border-orange-500 text-orange-600" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                    onClick={() => setActiveQuizTab("monitoring")}
+                  >
+                    <ShieldAlert className="w-4 h-4" />
+                    Quiz Monitoring
+                  </button>
                 </div>
 
                 {activeQuizTab === "performance" ? (
@@ -1084,6 +1108,13 @@ export default function FacultyDashboard() {
                       </Card>
                     )}
                   </>
+                ) : activeQuizTab === "monitoring" ? (
+                  <div className="mt-8">
+                    <QuizMonitoringTab 
+                      quizId={selectedQuiz} 
+                      onBack={() => setSelectedQuiz(null)} 
+                    />
+                  </div>
                 ) : (
                   <div className="space-y-6">
                     {quizDetails?.questions?.map((q, idx) => (

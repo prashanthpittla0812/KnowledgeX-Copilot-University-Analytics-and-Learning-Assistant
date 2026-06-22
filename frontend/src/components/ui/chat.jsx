@@ -4,7 +4,7 @@ import { Bot, User, Paperclip, Send, Loader2, Mic, ThumbsUp, ThumbsDown, Copy, C
 import { cn } from '../../lib/utils';
 import { Button } from './button';
 
-export function ChatBubble({ message, sources, isUser, isTyping = false }) {
+export const ChatBubble = React.memo(function ChatBubble({ message, sources, isUser, isTyping = false }) {
   const [feedback, setFeedback] = React.useState(null);
   const [isCopied, setIsCopied] = React.useState(false);
 
@@ -129,7 +129,7 @@ export function ChatBubble({ message, sources, isUser, isTyping = false }) {
       )}
     </div>
   );
-}
+});
 
 export function ChatInput({ input, setInput, onSubmit, isSending = false, onAttachClick }) {
   const [isListening, setIsListening] = React.useState(false);

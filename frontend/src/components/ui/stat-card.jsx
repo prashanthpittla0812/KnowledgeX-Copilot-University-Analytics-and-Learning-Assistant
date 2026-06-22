@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
 
-export function StatCard({ title, value, icon: Icon, description, trend, trendColor, className, colorClass, ringClass }) {
+export const StatCard = React.memo(function StatCard({ title, value, icon: Icon, description, trend, trendColor, className, colorClass, ringClass }) {
   return (
     <div className={cn('glass-card group p-4 flex flex-col gap-2', className)}>
       {/* Header Row */}
@@ -31,4 +31,4 @@ export function StatCard({ title, value, icon: Icon, description, trend, trendCo
       )}
     </div>
   );
-}
+});

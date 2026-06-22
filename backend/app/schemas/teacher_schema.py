@@ -11,7 +11,8 @@ class QuizGenerateRequest(BaseModel):
     num_questions: int
     is_assessment: Optional[bool] = False
     manual_questions: Optional[str] = None
-    duration_mins: Optional[int] = 60
+    duration_minutes: Optional[int] = 60
+    max_violations: Optional[int] = 3
 
 
 class QuizGenerateResponse(BaseModel):
@@ -39,6 +40,8 @@ class StudentQuizResponse(BaseModel):
     topic_name: Optional[str] = None
     question_type: Optional[str] = None
     num_questions: Optional[int] = None
+    duration_minutes: Optional[int] = None
+    max_violations: Optional[int] = None
     created_at: Optional[str] = None
     questions: List[dict]
 

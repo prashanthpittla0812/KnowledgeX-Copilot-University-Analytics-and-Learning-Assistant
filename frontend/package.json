@@ -10,9 +10,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tensorflow-models/coco-ssd": "^2.2.3",
+    "@tensorflow/tfjs": "^4.22.0",
     "axios": "^1.17.0",
     "clsx": "^2.1.1",
     "esbuild": "^0.28.0",
+    "face-api.js": "^0.22.2",
     "framer-motion": "^12.40.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
@@ -22,6 +25,7 @@
     "react-hot-toast": "^2.6.0",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.16.0",
+    "react-webcam": "^7.2.0",
     "recharts": "^3.8.1",
     "tailwind-merge": "^3.6.0"
   },

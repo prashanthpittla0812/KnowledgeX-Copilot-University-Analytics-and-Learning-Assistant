@@ -13,7 +13,7 @@ class User(Base):
     name = Column(String(255), nullable=False)
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
-    role = Column(String(50), nullable=False, default="student")
+    role = Column(String(50), nullable=False, default="student", index=True)
     status = Column(String(50), nullable=False, default="PENDING")
     email_type = Column(String(50), nullable=True)
     approved_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
@@ -118,6 +118,8 @@ class TeacherQuiz(Base):
     question_type = Column(String(50), nullable=False)
     difficulty = Column(String(50), nullable=False)
     num_questions = Column(Integer, nullable=False)
+    duration_minutes = Column(Integer, nullable=True, default=60)
+    max_violations = Column(Integer, nullable=True, default=3)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     teacher = relationship("User", back_populates="created_quizzes", foreign_keys=[teacher_id])
@@ -235,19 +237,36 @@ class QuizAttempt(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     quiz_id = Column(Integer, ForeignKey("teacher_quizzes.id", ondelete="CASCADE"), nullable=False)
-    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     score = Column(Float, nullable=False)
     percentage = Column(Float, nullable=False)
     total_questions = Column(Integer, nullable=False)
     correct_answers = Column(Integer, nullable=False)
     wrong_answers = Column(Integer, nullable=False)
     attempt_type = Column(String(50), nullable=False, default="practice")
+    started_at = Column(DateTime, nullable=True)
     submitted_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    start_photo_url = Column(String(500), nullable=True)
+    recording_url = Column(String(500), nullable=True)
+    total_violations = Column(Integer, default=0, nullable=False)
+    status = Column(String(50), nullable=False, default="IN_PROGRESS")
 
     quiz = relationship("TeacherQuiz", back_populates="attempts")
     student = relationship("User", back_populates="quiz_attempts")
     answers = relationship("StudentAnswer", back_populates="attempt", cascade="all, delete-orphan")
     topic_performances = relationship("TopicPerformance", back_populates="attempt", cascade="all, delete-orphan")
+    violations = relationship("ExamViolation", back_populates="attempt", cascade="all, delete-orphan")
+
+class ExamViolation(Base):
+    __tablename__ = "exam_violations"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    attempt_id = Column(Integer, ForeignKey("quiz_attempts.id", ondelete="CASCADE"), nullable=False)
+    violation_type = Column(String(50), nullable=False)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    details = Column(Text, nullable=True)
+
+    attempt = relationship("QuizAttempt", back_populates="violations")
 
 
 class StudentAnswer(Base):
@@ -283,7 +302,7 @@ class StudentTopicSummary(Base):
     __tablename__ = "student_topic_summaries"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     topic = Column(String(255), nullable=False)
     subtopic = Column(String(255), nullable=True)
     total_attempts = Column(Integer, default=0)
@@ -312,7 +331,7 @@ class Attendance(Base):
     __tablename__ = "attendance"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     date = Column(DateTime, default=datetime.utcnow, nullable=False)
     status = Column(String(50), nullable=False) # "present" or "absent"
 
@@ -376,7 +395,7 @@ class MaterialBookmark(Base):
 class Notification(Base):
     __tablename__ = "notifications"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     title = Column(String(255), nullable=False)
     message = Column(Text, nullable=False)
     link = Column(String(500), nullable=True)
