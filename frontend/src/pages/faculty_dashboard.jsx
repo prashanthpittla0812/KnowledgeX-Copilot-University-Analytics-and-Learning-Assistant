@@ -691,7 +691,6 @@ export default function FacultyDashboard() {
                           <h3 className="text-lg font-bold text-slate-900">Quiz Details</h3>
                         </div>
 
-                        <div className="grid md:grid-cols-4 gap-6">
                         <div className={`grid ${quizGenerationMethod === "Manual" ? "md:grid-cols-4" : "md:grid-cols-5"} gap-6`}>
                           <div>
                             <label className="text-sm font-bold text-slate-900 mb-2 block">
@@ -740,7 +739,6 @@ export default function FacultyDashboard() {
                               <option value="7th Sem">7th Sem</option>
                               <option value="8th Sem">8th Sem</option>
                             </select>
-                          </div>
                           </div>
                           {quizGenerationMethod !== "Manual" && (
                             <div>

@@ -30,9 +30,10 @@ export function ProctoredQuizSession({ quiz, onActualSubmit, onCancel, renderQui
   useEffect(() => {
     const loadModels = async () => {
       try {
-        await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
-        await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
-        await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
+        const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+        await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+        await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
         const coco = await cocoSsd.load();
         cocoModelRef.current = coco;
         setModelsLoaded(true);
@@ -46,13 +47,13 @@ export function ProctoredQuizSession({ quiz, onActualSubmit, onCancel, renderQui
 
   // Request Camera
   const handleEnableCamera = useCallback(() => {
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
       .then((stream) => {
         setCameraEnabled(true);
       })
       .catch((err) => {
         console.error("Camera access denied:", err);
-        setErrorMsg("Camera and microphone access is required for proctored quizzes.");
+        setErrorMsg(`Camera/Mic access failed: ${err.message || err.name}. Please check your browser permissions.`);
       });
   }, []);
 
@@ -314,7 +315,7 @@ export function ProctoredQuizSession({ quiz, onActualSubmit, onCancel, renderQui
                   {cameraEnabled ? (
                     <Webcam
                       ref={webcamRef}
-                      audio={true}
+                      audio={false}
                       screenshotFormat="image/jpeg"
                       className="w-full h-full object-cover"
                       videoConstraints={{ width: 1280, height: 720, facingMode: "user" }}
@@ -402,7 +403,7 @@ export function ProctoredQuizSession({ quiz, onActualSubmit, onCancel, renderQui
       <div className="absolute bottom-6 right-6 w-48 aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border-2 border-slate-700 z-50 group pointer-events-none">
         <Webcam
           ref={webcamRef}
-          audio={true}
+          audio={false}
           muted={true}
           width={1280}
           height={720}

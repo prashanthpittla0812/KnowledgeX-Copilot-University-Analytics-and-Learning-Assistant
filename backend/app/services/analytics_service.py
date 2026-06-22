@@ -16,24 +16,39 @@ class AnalyticsService:
         self.db = db
         self.rag = RAGService()
 
-    async def get_dashboard_stats(self) -> dict:
-        total_students = await self.db.scalar(
-            select(func.count()).select_from(User).where(User.role == "student")
-        )
+    async def get_dashboard_stats(self, faculty: User | None = None) -> dict:
+        student_query = select(func.count()).select_from(User).where(User.role == "student")
+        if faculty and faculty.department:
+            student_query = student_query.where(func.lower(User.department) == func.lower(faculty.department))
+        total_students = await self.db.scalar(student_query)
+
         total_faculty = await self.db.scalar(
             select(func.count()).select_from(User).where(User.role == "faculty")
         )
-        total_documents = await self.db.scalar(
-            select(func.count()).select_from(LearningMaterial)
-        )
-        total_quizzes = await self.db.scalar(
-            select(func.count()).select_from(TeacherQuiz)
-        )
+
+        doc_query = select(func.count()).select_from(LearningMaterial)
+        if faculty:
+            doc_query = doc_query.where(LearningMaterial.faculty_id == faculty.id)
+        total_documents = await self.db.scalar(doc_query)
+
+        quiz_query = select(func.count()).select_from(TeacherQuiz)
+        if faculty:
+            quiz_query = quiz_query.where(TeacherQuiz.teacher_id == faculty.id)
+        total_quizzes = await self.db.scalar(quiz_query)
+
+        avg_score = 0.0
+        if faculty and faculty.department:
+            score_query = select(func.avg(QuizAttempt.percentage)).join(User, QuizAttempt.student_id == User.id).where(User.department == faculty.department)
+            avg_score = await self.db.scalar(score_query)
+        else:
+            avg_score = await self.db.scalar(select(func.avg(QuizAttempt.percentage)))
+
         return {
             "total_students": total_students or 0,
             "total_faculty": total_faculty or 0,
             "total_documents": total_documents or 0,
             "total_quizzes": total_quizzes or 0,
+            "avg_class_score": round(avg_score or 0, 2),
         }
 
     async def get_performance_metrics(self) -> list[dict]:

@@ -14,7 +14,15 @@ export function StudentAssessmentView({ quizId }) {
   const fileInputRef = useRef(null);
 
   const durationMatch = assessment?.question_type?.match(/\(([^)]+)\)/);
-  const duration = durationMatch ? durationMatch[1] : "Next Class";
+  let duration = durationMatch ? durationMatch[1] : "Next Class";
+  
+  if (duration.includes("mins")) {
+    const mins = parseInt(duration);
+    if (!isNaN(mins) && mins >= 1440 && mins % 1440 === 0) {
+      const days = mins / 1440;
+      duration = `${days} ${days === 1 ? 'Day' : 'Days'}`;
+    }
+  }
   const displayType = assessment?.question_type?.replace(/\s*\([^)]+\)/, "") || "Assessment";
 
   useEffect(() => {
@@ -139,7 +147,7 @@ export function StudentAssessmentView({ quizId }) {
         </div>
         <Button 
           onClick={handleDownloadPDF}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2 shadow-lg shadow-indigo-600/20 px-6 py-6 rounded-xl text-lg font-bold"
+          className="bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 hover:from-orange-500 hover:to-orange-700 text-white gap-2 shadow-xl shadow-orange-500/30 px-6 py-6 rounded-xl text-lg font-bold border border-orange-300/50 backdrop-blur-md transition-all hover:scale-105"
         >
           <Download className="w-5 h-5" /> Download PDF
         </Button>
@@ -246,7 +254,7 @@ export function StudentAssessmentView({ quizId }) {
                 <Button 
                   onClick={handleUploadSubmit}
                   disabled={isSubmitting}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold shrink-0"
+                  className="bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 hover:from-orange-500 hover:to-orange-700 text-white font-bold shrink-0 shadow-xl shadow-orange-500/30 border border-orange-300/50 backdrop-blur-md transition-all hover:scale-105"
                 >
                   {isSubmitting ? "Uploading..." : "Submit Now"}
                 </Button>

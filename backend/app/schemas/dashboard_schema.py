@@ -6,6 +6,7 @@ class DashboardStats(BaseModel):
     total_faculty: int
     total_documents: int
     total_quizzes: int
+    avg_class_score: float = 0.0
 
 
 class PerformanceMetric(BaseModel):

@@ -44,7 +44,7 @@ async def get_stats(
     current_user: User = Depends(get_current_faculty),
 ):
     analytics = AnalyticsService(db)
-    return await analytics.get_dashboard_stats()
+    return await analytics.get_dashboard_stats(faculty=current_user)
 
 
 @router.get("/performance", response_model=PerformanceResponse)

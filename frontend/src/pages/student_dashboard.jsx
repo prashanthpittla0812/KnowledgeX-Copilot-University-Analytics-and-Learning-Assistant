@@ -22,6 +22,21 @@ export default function StudentDashboard() {
   const navigate = useNavigate();
   const pdfInputRef = useRef(null);
   const [userName, setUserName] = useState("Student");
+  const [userEmail, setUserEmail] = useState("");
+  const [userRole, setUserRole] = useState("student");
+  
+  const formatQuestionType = (type) => {
+    if (!type) return type;
+    return type.replace(/\((\d+)\s*mins\)/i, (match, mins) => {
+      const m = parseInt(mins);
+      if (!isNaN(m) && m >= 1440 && m % 1440 === 0) {
+        const d = m / 1440;
+        return `(${d} Day${d > 1 ? 's' : ''})`;
+      }
+      return match;
+    });
+  };
+
   const [studentId, setStudentId] = useState(null);
   const [activeItem, setActiveItem] = useState("Dashboard");
   const [activeAssessmentTab, setActiveAssessmentTab] = useState("Active");
@@ -924,7 +939,7 @@ export default function StudentDashboard() {
                     <CardContent className="p-6">
                       <div className="flex justify-between items-start mb-2">
                         <span className="text-xs font-bold px-2 py-1 bg-indigo-50 text-indigo-600 rounded-md">
-                          {q.question_type}
+                          {formatQuestionType(q.question_type)}
                         </span>
                         {q.is_completed && <CheckCircle className="w-5 h-5 text-emerald-500" />}
                       </div>

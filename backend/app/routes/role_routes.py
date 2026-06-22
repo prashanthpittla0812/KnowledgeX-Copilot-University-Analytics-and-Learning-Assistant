@@ -87,11 +87,10 @@ async def faculty_dashboard(
     analytics = AnalyticsService(db)
     teacher_service = TeacherDashboardService(db)
     
-    stats = await analytics.get_dashboard_stats()
+    stats = await analytics.get_dashboard_stats(faculty=current_user)
     metrics = await analytics.get_performance_metrics()
     
     teacher_perf = await teacher_service.get_all_quiz_performance(current_user.id)
-    stats["avg_class_score"] = teacher_perf.get("average_score", 0)
     
     return {
         "name": current_user.name,
@@ -151,7 +150,7 @@ async def faculty_generate_quiz(
         teacher_id=current_user.id,
         is_assessment=request.is_assessment,
         manual_questions=request.manual_questions,
-        duration_mins=request.duration_mins,
+        duration_mins=request.duration_minutes,
         semester=request.semester,
         max_violations=request.max_violations,
     )
