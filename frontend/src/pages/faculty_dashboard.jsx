@@ -43,6 +43,8 @@ export default function FacultyDashboard() {
   const [quizTopic, setQuizTopic] = useState("");
   const [quizType, setQuizType] = useState("MCQs");
   const [quizDifficulty, setQuizDifficulty] = useState("medium");
+  const [quizCount, setQuizCount] = useState(0);
+  const [quizSemester, setQuizSemester] = useState("1st Sem");
   const [quizCount, setQuizCount] = useState("");
   const [quizDuration, setQuizDuration] = useState("");
   const [quizMaxViolations, setQuizMaxViolations] = useState(3);
@@ -302,6 +304,12 @@ export default function FacultyDashboard() {
         topic_name: quizTopic,
         question_type: quizQuestionType,
         difficulty: quizDifficulty,
+        num_questions: quizCount,
+        semester: quizSemester
+      });
+      alert("Quiz generated!");
+
+      // Reset form fields
         num_questions: Number(quizQuestionCount),
         document_topic: quizTopic,
         is_assessment: false,
@@ -365,6 +373,8 @@ export default function FacultyDashboard() {
         topic_name: quizTopic,
         question_type: assessmentType,
         difficulty: assessmentDifficulty,
+        num_questions: assessmentQuestionCount,
+        semester: quizSemester,
         num_questions: Number(assessmentQuestionCount) || 1, // Will be overridden by manual count in backend
         document_topic: quizTopic,
         is_assessment: true,
@@ -686,6 +696,7 @@ export default function FacultyDashboard() {
                           <h3 className="text-lg font-bold text-slate-900">Quiz Details</h3>
                         </div>
 
+                        <div className="grid md:grid-cols-4 gap-6">
                         <div className={`grid ${quizGenerationMethod === "Manual" ? "md:grid-cols-4" : "md:grid-cols-5"} gap-6`}>
                           <div>
                             <label className="text-sm font-bold text-slate-900 mb-2 block">
@@ -715,6 +726,26 @@ export default function FacultyDashboard() {
                               <option value="Medium">Medium</option>
                               <option value="Hard">Hard</option>
                             </select>
+                          </div>
+                          <div>
+                            <label className="text-sm font-bold text-slate-900 mb-2 block">
+                              Semester
+                            </label>
+                            <select 
+                              value={quizSemester} 
+                              onChange={e => setQuizSemester(e.target.value)} 
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
+                            >
+                              <option value="1st Sem">1st Sem</option>
+                              <option value="2nd Sem">2nd Sem</option>
+                              <option value="3rd Sem">3rd Sem</option>
+                              <option value="4th Sem">4th Sem</option>
+                              <option value="5th Sem">5th Sem</option>
+                              <option value="6th Sem">6th Sem</option>
+                              <option value="7th Sem">7th Sem</option>
+                              <option value="8th Sem">8th Sem</option>
+                            </select>
+                          </div>
                           </div>
                           {quizGenerationMethod !== "Manual" && (
                             <div>
@@ -927,7 +958,7 @@ export default function FacultyDashboard() {
                           <h3 className="text-lg font-bold text-slate-900">Assessment Details</h3>
                         </div>
 
-                        <div className={`grid ${assessmentGenerationMethod === "Manual" ? "md:grid-cols-3" : "md:grid-cols-4"} gap-6`}>
+                        <div className={`grid ${assessmentGenerationMethod === "Manual" ? "md:grid-cols-4" : "md:grid-cols-5"} gap-6`}>
                           <div>
                             <label className="text-sm font-bold text-slate-900 mb-2 block">
                               Assessment Type <span className="text-red-500">*</span>
@@ -990,6 +1021,25 @@ export default function FacultyDashboard() {
                               className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
                               placeholder="e.g., 2"
                             />
+                          </div>
+                          <div>
+                            <label className="text-sm font-bold text-slate-900 mb-2 block">
+                              Semester
+                            </label>
+                            <select 
+                              value={quizSemester} 
+                              onChange={e => setQuizSemester(e.target.value)} 
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                            >
+                              <option value="1st Sem">1st Sem</option>
+                              <option value="2nd Sem">2nd Sem</option>
+                              <option value="3rd Sem">3rd Sem</option>
+                              <option value="4th Sem">4th Sem</option>
+                              <option value="5th Sem">5th Sem</option>
+                              <option value="6th Sem">6th Sem</option>
+                              <option value="7th Sem">7th Sem</option>
+                              <option value="8th Sem">8th Sem</option>
+                            </select>
                           </div>
                         </div>
 
@@ -1165,13 +1215,13 @@ export default function FacultyDashboard() {
                   <>
                     {quizPerformance && (
                       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <StatCard title="Avg Score" value={`${quizPerformance.summary?.average_score?.toFixed(1) || 0}%`} icon={BarChart} />
-                        <StatCard title="High Score" value={`${quizPerformance.summary?.highest_score || 0}%`} icon={CheckCircle} trendColor="text-emerald-500" />
-                        <StatCard title="Low Score" value={`${quizPerformance.summary?.lowest_score || 0}%`} icon={AlertCircle} trendColor="text-red-500" />
-                        <StatCard title="Total Attempts" value={quizPerformance.summary?.total_attempts || 0} icon={Users} />
+                        <StatCard title="Avg Score" value={`${quizPerformance?.average_score?.toFixed(1) || 0}%`} icon={BarChart} />
+                        <StatCard title="High Score" value={`${quizPerformance?.highest_score || 0}%`} icon={CheckCircle} trendColor="text-emerald-500" />
+                        <StatCard title="Low Score" value={`${quizPerformance?.lowest_score || 0}%`} icon={AlertCircle} trendColor="text-red-500" />
+                        <StatCard title="Total Attempts" value={quizPerformance?.total_attempts || 0} icon={Users} />
                       </div>
                     )}
-                    {quizPerformance?.student_results?.length > 0 && (
+                    {quizPerformance?.results?.length > 0 && (
                       <Card className="glass-card mt-8">
                         <table className="w-full text-left text-sm">
                           <thead className="bg-muted/50 border-b border-border">
@@ -1182,7 +1232,7 @@ export default function FacultyDashboard() {
                             </tr>
                           </thead>
                           <tbody>
-                            {quizPerformance.student_results.map((r, i) => (
+                            {quizPerformance.results.map((r, i) => (
                               <tr key={i} className="border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors">
                                 <td className="p-4 font-medium">{r.student_name}</td>
                                 <td className="p-4 font-bold text-primary">{r.percentage}%</td>

@@ -118,6 +118,7 @@ class TeacherQuiz(Base):
     question_type = Column(String(50), nullable=False)
     difficulty = Column(String(50), nullable=False)
     num_questions = Column(Integer, nullable=False)
+    semester = Column(String(50), nullable=True)
     duration_minutes = Column(Integer, nullable=True, default=60)
     max_violations = Column(Integer, nullable=True, default=3)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

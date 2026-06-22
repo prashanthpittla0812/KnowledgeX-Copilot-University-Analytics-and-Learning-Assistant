@@ -9,6 +9,7 @@ class QuizGenerateRequest(BaseModel):
     question_type: str
     difficulty: str
     num_questions: int
+    semester: Optional[str] = None
     is_assessment: Optional[bool] = False
     manual_questions: Optional[str] = None
     duration_minutes: Optional[int] = 60

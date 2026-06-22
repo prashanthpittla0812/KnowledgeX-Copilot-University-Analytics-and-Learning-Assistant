@@ -151,7 +151,8 @@ async def faculty_generate_quiz(
         teacher_id=current_user.id,
         is_assessment=request.is_assessment,
         manual_questions=request.manual_questions,
-        duration_minutes=request.duration_minutes,
+        duration_mins=request.duration_mins,
+        semester=request.semester,
         max_violations=request.max_violations,
     )
 
@@ -169,7 +170,8 @@ async def faculty_generate_quiz(
         db,
         title,
         message,
-        link=link
+        link=link,
+        target_semester=request.semester
     )
 
     return QuizGenerateResponse(**result)

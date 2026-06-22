@@ -497,6 +497,7 @@ export default function StudentDashboard() {
       }
       setActiveQuiz(null);
       fetchQuizHistory();
+      fetchDashboardStats();
     } catch (error) {
       console.error(error);
       const errorMsg = error.response?.data?.detail || error.response?.data?.message || "Failed to submit quiz";
@@ -1676,14 +1677,16 @@ export default function StudentDashboard() {
               });
               const weakTopics = topicMasteryData.filter(t => t.score < 60);
 
-              const subjectMap = {
-                "Data Structures & Algorithms": ["data structures", "algorithms", "dsa", "tree", "graph", "sorting", "searching", "stack", "queue", "array", "arrays", "linked list"],
-                "Computer Networks": ["network", "networks", "physical layer", "osi", "tcp", "ip", "ethernet", "routing"],
-                "Operating Systems": ["operating system", "operating systems", "os", "process", "thread", "memory management", "scheduling"],
-                "Database Management Systems": ["database", "dbms", "sql", "query", "schema", "normalization", "nosql"],
-                "Java Programming": ["java", "object oriented", "oop", "class", "inheritance", "polymorphism", "exception"],
-                "Other": []
-              };
+                const subjectMap = {
+                  "Artificial Intelligence": ["artificial intelligence", "ai", "machine learning", "deep learning", "neural network", "natural language processing", "nlp"],
+                  "Data Structures & Algorithms": ["data structures", "algorithms", "dsa", "tree", "graph", "sorting", "searching", "stack", "queue", "array", "arrays", "linked list"],
+                  "Computer Networks": ["network", "networks", "physical layer", "osi", "tcp", "ip", "ethernet", "routing"],
+                  "Operating Systems": ["operating system", "operating systems", "os", "process", "thread", "memory management", "scheduling"],
+                  "Database Management Systems": ["database", "dbms", "sql", "query", "schema", "normalization", "nosql"],
+                  "Java Programming": ["java", "object oriented", "oop", "class", "inheritance", "polymorphism", "exception"],
+                  "Other": []
+                };
+
 
               const filteredSkillData = selectedSkillSubject === "All Subjects"
                 ? topicMasteryData
@@ -1713,6 +1716,22 @@ export default function StudentDashboard() {
                 return "Other";
               };
 
+                const CustomTooltip = ({ active, payload, label, isDate = false, isStreak = false }) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <div className="bg-white/90 backdrop-blur-md border border-slate-200 p-4 rounded-2xl shadow-xl">
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                          {isStreak ? (payload[0].payload.subject ? `${payload[0].payload.subject} (${label})` : label) : (isDate ? new Date(label).toLocaleDateString() : (payload[0].payload.subject ? `${payload[0].payload.subject}: ${payload[0].payload.topic || label}` : label))}
+                        </p>
+                        <p className="text-lg font-black text-indigo-600">
+                          {isStreak ? "Study Time: " : "Score: "}
+                          <span className="text-slate-800">{payload[0].value}{isStreak ? " hrs" : "%"}</span>
+                        </p>
+                      </div>
+                    );
+                  }
+                  return null;
+                };
               const CustomTooltip = ({ active, payload, label, isDate = false, isStreak = false }) => {
                 if (active && payload && payload.length) {
                   return (
@@ -1814,6 +1833,24 @@ export default function StudentDashboard() {
                         baseHistory = quizHistory.filter(q => getWeeklyLabel(q.created_at) === selectedQuizPeriod);
                       }
 
+                        return baseHistory
+                          .filter(q => q.score !== null)
+                          .map(q => {
+                            const displayTopic = formatTopicForDisplay(q.topic);
+                            let subjectName = getSubjectForTopic(q.topic);
+                            if (subjectName === "default") subjectName = "Other";
+                            const shortSubjectMap = {
+                              "Artificial Intelligence": "AI",
+                              "Data Structures & Algorithms": "DSA",
+                              "Computer Networks": "CN",
+                              "Operating Systems": "OS",
+                              "Database Management Systems": "DBMS",
+                              "Java Programming": "Java",
+                              "Other": "Other"
+                            };
+                            return { ...q, topic: displayTopic, subject: subjectName, subjectShort: shortSubjectMap[subjectName] || "Other" };
+                          });
+                      })();
                       return baseHistory
                         .filter(q => q.score !== null)
                         .map(q => {
@@ -2052,6 +2089,108 @@ export default function StudentDashboard() {
                       }
                     })();
 
+                      return (
+                        <div className="grid lg:grid-cols-2 gap-8 pb-10">
+                          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
+                            <AnalyticsCard
+                              title="Recent Quiz Performance"
+                              className="border-slate-100 shadow-sm rounded-3xl bg-white/80 backdrop-blur-xl"
+                              action={
+                                <select
+                                  value={selectedQuizPeriod}
+                                  onChange={(e) => setSelectedQuizPeriod(e.target.value)}
+                                  className="text-sm border border-slate-200 bg-white text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                >
+                                  {periods.map(p => (
+                                    <option key={p.value} value={p.value}>{p.label}</option>
+                                  ))}
+                                </select>
+                              }
+                            >
+                              <div className="h-[220px] mt-4">
+                                {filteredQuizHistory.length > 0 ? (
+                                  <div className="h-full flex flex-col">
+                                    <div className="flex-1 min-h-0">
+                                      <ResponsiveContainer width="100%" height="100%">
+                                        {(() => {
+                                          const chartData = selectedQuizPeriod === "All Time" 
+                                            ? filteredQuizHistory.slice(0, 15).reverse() 
+                                            : [...filteredQuizHistory].reverse();
+                                          
+                                          const shortSubjectColors = {
+                                            "AI": "url(#aiGradient)",
+                                            "DSA": "url(#mathGradient)",
+                                            "CN": "url(#dataGradient)",
+                                            "OS": "url(#csGradient)",
+                                            "DBMS": "url(#gkGradient)",
+                                            "Java": "url(#barGradient)",
+                                            "Other": "#cbd5e1"
+                                          };
+
+                                          return (
+                                          <BarChart
+                                            data={chartData}
+                                            margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+                                          >
+                                          <defs>
+                                            <linearGradient id="aiGradient" x1="0" y1="0" x2="0" y2="1">
+                                              <stop offset="0%" stopColor="#A855F7" />
+                                              <stop offset="100%" stopColor="#E879F9" />
+                                            </linearGradient>
+                                            <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                                              <stop offset="0%" stopColor="#F87171" />
+                                              <stop offset="100%" stopColor="#DC2626" />
+                                            </linearGradient>
+                                            <linearGradient id="mathGradient" x1="0" y1="0" x2="0" y2="1">
+                                              <stop offset="0%" stopColor="#EC4899" />
+                                              <stop offset="100%" stopColor="#8B5CF6" />
+                                            </linearGradient>
+                                            <linearGradient id="csGradient" x1="0" y1="0" x2="0" y2="1">
+                                              <stop offset="0%" stopColor="#F59E0B" />
+                                              <stop offset="100%" stopColor="#EF4444" />
+                                            </linearGradient>
+                                            <linearGradient id="dataGradient" x1="0" y1="0" x2="0" y2="1">
+                                              <stop offset="0%" stopColor="#10B981" />
+                                              <stop offset="100%" stopColor="#3B82F6" />
+                                            </linearGradient>
+                                            <linearGradient id="gkGradient" x1="0" y1="0" x2="0" y2="1">
+                                              <stop offset="0%" stopColor="#8B5CF6" />
+                                              <stop offset="100%" stopColor="#6366F1" />
+                                            </linearGradient>
+                                          </defs>
+                                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                                          <XAxis dataKey="subjectShort" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: "#64748b", fontSize: 10, dy: 5 }} />
+                                          <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} />
+                                          <Tooltip content={<CustomTooltip />} cursor={{ fill: '#e2e8f0' }} />
+                                          <Bar dataKey="score" fill="url(#barGradient)" radius={[6, 6, 0, 0]} maxBarSize={40}>
+                                            {chartData.map((entry, index) => (
+                                              <Cell key={`cell-${index}`} fill={shortSubjectColors[entry.subjectShort] || shortSubjectColors["Other"]} />
+                                            ))}
+                                          </Bar>
+                                        </BarChart>
+                                          );
+                                        })()}
+                                      </ResponsiveContainer>
+                                    </div>
+                                    <div className="flex flex-wrap justify-center gap-4 mt-2">
+                                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-purple-500 to-fuchsia-500"></div><span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">AI</span></div>
+                                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-pink-500 to-violet-500"></div><span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">DSA</span></div>
+                                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-emerald-500 to-blue-500"></div><span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">CN</span></div>
+                                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-amber-500 to-red-500"></div><span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">OS</span></div>
+                                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-violet-500 to-indigo-500"></div><span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">DBMS</span></div>
+                                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-red-400 to-red-600"></div><span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Java</span></div>
+                                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-slate-300"></div><span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Other</span></div>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                                    <BarChartIcon className="w-10 h-10 mb-3 opacity-30" />
+                                    <p className="font-semibold">No quiz data available for this period.</p>
+                                  </div>
+                                )}
+                              </div>
+                            </AnalyticsCard>
+                          </motion.div>
                     return (
                       <div className="grid lg:grid-cols-2 gap-8 pb-10">
                         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
@@ -2190,6 +2329,52 @@ export default function StudentDashboard() {
                           </AnalyticsCard>
                         </motion.div>
 
+                          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}>
+                            <AnalyticsCard
+                              title="Topic Mastery Heatmap"
+                              className="border-slate-100 shadow-sm rounded-3xl bg-white/80 backdrop-blur-xl h-full flex flex-col"
+                              action={
+                                <select
+                                  value={selectedSkillSubject}
+                                  onChange={(e) => setSelectedSkillSubject(e.target.value)}
+                                  className="text-sm border border-slate-200 bg-white text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                >
+                                  <option value="All Subjects">All Subjects</option>
+                                  <option value="Artificial Intelligence">Artificial Intelligence</option>
+                                  <option value="Data Structures & Algorithms">Data Structures & Algorithms</option>
+                                  <option value="Computer Networks">Computer Networks</option>
+                                  <option value="Operating Systems">Operating Systems</option>
+                                  <option value="Database Management Systems">Database Management Systems</option>
+                                  <option value="Java Programming">Java Programming</option>
+                                </select>
+                              }
+                            >
+                              <div className="mt-4 flex-1 flex flex-col min-h-[300px]">
+                                {filteredSkillData.length > 0 ? (
+                                  <>
+                                    <div className="flex-1 overflow-auto custom-scrollbar pr-2 max-h-[300px]">
+                                      <table className="w-full text-left border-collapse">
+                                        <thead>
+                                          <tr>
+                                            <th className="p-2 text-xs font-semibold text-slate-500 border-b border-slate-100 sticky top-0 bg-white/90 backdrop-blur-sm z-10">Topic</th>
+                                            {(selectedSkillSubject === "All Subjects" ? Object.keys(subjectMap) : [selectedSkillSubject]).map(col => (
+                                              <th key={col} className="p-2 text-xs font-semibold text-slate-500 text-center border-b border-slate-100 sticky top-0 bg-white/90 backdrop-blur-sm z-10">
+                                                {col === "Artificial Intelligence" ? "AI" : col === "Computer Networks" ? "CN" : col === "Data Structures & Algorithms" ? "DSA" : col === "Operating Systems" ? "OS" : col === "Database Management Systems" ? "DBMS" : col === "Java Programming" ? "Java" : col}
+                                              </th>
+                                            ))}
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {filteredSkillData.map((t, idx) => {
+                                            const cols = selectedSkillSubject === "All Subjects" ? Object.keys(subjectMap) : [selectedSkillSubject];
+                                            return (
+                                              <tr key={idx} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                                                <td className="p-2 text-xs font-medium text-slate-700 truncate max-w-[120px]" title={t.fullTopic}>
+                                                  {t.fullTopic}
+                                                </td>
+                                                {cols.map(col => {
+                                                  const subjectForThisTopic = getSubjectForTopic(t.fullTopic);
+                                                  const shouldShow = subjectForThisTopic === col;
                         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}>
                           <AnalyticsCard
                             title="Topic Mastery Heatmap"
@@ -2277,6 +2462,67 @@ export default function StudentDashboard() {
 
 
 
+                          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6 }}>
+                            <AnalyticsCard title="Weak Areas Radar" className="border-slate-100 shadow-sm rounded-3xl bg-white/80 backdrop-blur-xl">
+                              <div className="mt-4">
+                                {weakTopics.length > 0 ? (
+                                  <div className="space-y-3 p-2">
+                                    {weakTopics.slice(0, 4).map((t, i) => (
+                                      <div key={i} className="flex justify-between items-center p-4 rounded-2xl bg-red-50/50 border border-red-100">
+                                        <div>
+                                          <h4 className="font-bold text-red-900">{t.fullTopic}</h4>
+                                          <p className="text-sm font-semibold text-red-700 mt-1">Avg Score: {t.score}%</p>
+                                        </div>
+                                        <Button size="sm" variant="outline" className="bg-white border-red-200 text-red-700 hover:bg-red-500 hover:text-white" onClick={() => { setActiveItem("Study Plan"); }}>Plan</Button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                                    <CheckCircle className="w-12 h-12 mb-3 text-emerald-400 opacity-50" />
+                                    <p className="font-semibold text-center px-4">No weak areas identified! You are scoring above 60% in all topics.</p>
+                                  </div>
+                                )}
+                              </div>
+                            </AnalyticsCard>
+                          </motion.div>
+                        </div>
+                      );
+                    })()}
+                  </>
+                );
+              })()}
+            </motion.div>
+          ) : activeItem === "Chatbot" ? (
+            <div className="flex h-full overflow-hidden animate-in fade-in duration-500 rounded-xl border border-border shadow-sm mt-4">
+              {/* Sidebar for chat history */}
+              <div className="w-1/4 min-w-[250px] border-r border-border bg-card/50 flex flex-col">
+                <div className="p-4 border-b border-border flex justify-between items-center bg-card">
+                  <h3 className="font-bold text-foreground">Chat History</h3>
+                  <Button onClick={handleNewChat} size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-full hover:bg-primary/10 hover:text-primary"><Plus className="h-4 w-4" /></Button>
+                </div>
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
+                  {previousChats.map(chat => (
+                    <div
+                      key={chat.id}
+                      onClick={() => setSelectedChatId(chat.id)}
+                      className={`group p-3 rounded-xl cursor-pointer flex justify-between items-center transition-all ${selectedChatId === chat.id ? 'bg-primary text-primary-foreground shadow-md' : 'hover:bg-muted bg-background border border-border/50 text-foreground'}`}
+                    >
+                      <div className="truncate text-sm font-medium pr-2">
+                        {chat.title || "New chat"}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={`h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity ${selectedChatId === chat.id ? 'text-primary-foreground hover:bg-primary-foreground/20' : 'text-muted-foreground hover:text-red-500 hover:bg-red-500/10'}`}
+                        onClick={(e) => handleDeleteChat(e, chat.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
                         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6 }}>
                           <AnalyticsCard title="Weak Areas Radar" className="border-slate-100 shadow-sm rounded-3xl bg-white/80 backdrop-blur-xl">
                             <div className="h-[300px] mt-4 overflow-y-auto custom-scrollbar">

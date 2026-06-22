@@ -88,7 +88,8 @@ class TeacherQuizService:
         teacher_id: int = None,
         is_assessment: bool = False,
         manual_questions: str = None,
-        duration_minutes: int = 60,
+        duration_mins: int = 60,
+        semester: str = None,
         max_violations: int = 3,
     ) -> dict:
         if manual_questions:
@@ -190,6 +191,7 @@ class TeacherQuizService:
             question_type=final_question_type,
             difficulty=difficulty,
             num_questions=num_questions if not manual_questions else len(questions),
+            semester=semester,
             duration_minutes=duration_minutes,
             max_violations=max_violations,
         )

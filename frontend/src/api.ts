@@ -49,6 +49,7 @@ export type QuizGenerationPayload = {
   question_type?: string;
   difficulty: "easy" | "medium" | "hard" | string;
   num_questions: number;
+  semester?: string;
 };
 
 export type QuizSubmitPayload = {
