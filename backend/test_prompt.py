@@ -1,3 +1,4 @@
+import os
 import time
 from langchain.chat_models import init_chat_model
 
@@ -36,7 +37,7 @@ Ensure the plan is realistic, covers all specified subjects and syllabus topics 
 CRITICAL INSTRUCTION: Output ONLY raw JSON. Do NOT wrap the JSON in markdown blocks (e.g., ```json or ```). Do not include any conversational text before or after the JSON."""
 
 def test():
-    api_key = "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"
+    api_key = os.getenv("GROQ_API_KEY")
     llm = init_chat_model(
         "llama-3.1-8b-instant",
         model_provider="groq",
