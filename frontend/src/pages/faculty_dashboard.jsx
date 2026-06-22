@@ -12,7 +12,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card"
 import { StatCard } from "../components/ui/stat-card";
 import { AnalyticsCard } from "../components/ui/analytics-card";
 import { ChatBubble, ChatInput } from "../components/ui/chat";
-import { BookOpen, Users, AlertCircle, FileText, Send, CheckCircle, BarChart as BarChartIcon, BookMarked, TrendingUp, TrendingDown, Upload, Download, Eye, BrainCircuit, ShieldAlert } from "lucide-react";
+import { BookOpen, Users, AlertCircle, FileText, Send, CheckCircle, BarChart as BarChartIcon, BookMarked, TrendingUp, TrendingDown, Upload, Download, Eye, BrainCircuit, ShieldAlert, X } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { LearningMaterialsTab } from "../components/faculty/LearningMaterialsTab";
 import { MultimodalUploadTab } from "../components/faculty/MultimodalUploadTab";
@@ -252,7 +252,7 @@ export default function FacultyDashboard() {
 
   const handleUploadDocument = async (file = null) => {
     const fileToUpload = file || uploadFile;
-    const currentTopic = quizMode === "Assessment" ? quizTopic : uploadTopic;
+    const currentTopic = quizTopic;
     if (!fileToUpload || !currentTopic) return alert("Provide file and topic");
     setIsUploading(true);
     try {
@@ -621,19 +621,34 @@ export default function FacultyDashboard() {
                                 <label className="text-sm font-bold text-slate-900 mb-2 block">
                                   Lecture PDF <span className="text-red-500">*</span>
                                 </label>
-                                <input 
-                                  type="file" 
-                                  accept=".pdf"
-                                  onChange={(e) => {
-                                    const file = e.target.files[0];
-                                    if (file) {
-                                      setUploadFile(file);
-                                      handleUploadDocument(file);
-                                    }
-                                  }}
-                                  ref={pdfInputRef}
-                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"
-                                />
+                                <div className="flex items-center gap-2">
+                                  <input 
+                                    type="file" 
+                                    accept=".pdf"
+                                    onChange={(e) => {
+                                      const file = e.target.files[0];
+                                      if (file) {
+                                        setUploadFile(file);
+                                        handleUploadDocument(file);
+                                      }
+                                    }}
+                                    ref={pdfInputRef}
+                                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"
+                                  />
+                                  {uploadFile && (
+                                    <button 
+                                      type="button"
+                                      onClick={() => {
+                                        setUploadFile(null);
+                                        if (pdfInputRef.current) pdfInputRef.current.value = "";
+                                      }}
+                                      className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                      title="Remove uploaded file"
+                                    >
+                                      <X className="w-5 h-5" />
+                                    </button>
+                                  )}
+                                </div>
                                 <p className="text-xs text-slate-500 mt-2">Upload a PDF file containing the lecture content.</p>
                               </div>
                             </div>
@@ -880,20 +895,35 @@ export default function FacultyDashboard() {
                                 <label className="text-sm font-bold text-slate-900 mb-2 block">
                                   Reference PDF <span className="text-red-500">*</span>
                                 </label>
-                                <input 
-                                  type="file" 
-                                  accept=".pdf"
-                                  onChange={(e) => {
-                                    const file = e.target.files[0];
-                                    if (file) {
-                                      setUploadFile(file);
-                                      handleUploadDocument(file);
-                                    }
-                                  }}
-                                  ref={pdfInputRef}
-                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100"
-                                />
-                                <p className="text-xs text-slate-500 mt-2">Upload a PDF containing the reference material.</p>
+                                <div className="flex items-center gap-2">
+                                  <input 
+                                    type="file" 
+                                    accept=".pdf"
+                                    onChange={(e) => {
+                                      const file = e.target.files[0];
+                                      if (file) {
+                                        setUploadFile(file);
+                                        handleUploadDocument(file);
+                                      }
+                                    }}
+                                    ref={pdfInputRef}
+                                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100"
+                                  />
+                                  {uploadFile && (
+                                    <button 
+                                      type="button"
+                                      onClick={() => {
+                                        setUploadFile(null);
+                                        if (pdfInputRef.current) pdfInputRef.current.value = "";
+                                      }}
+                                      className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                      title="Remove uploaded file"
+                                    >
+                                      <X className="w-5 h-5" />
+                                    </button>
+                                  )}
+                                </div>
+                                <p className="text-xs text-slate-500 mt-2">Upload a PDF containing assessment reference material.</p>
                               </div>
                             </div>
                             {uploadedDocs.length > 0 && (
