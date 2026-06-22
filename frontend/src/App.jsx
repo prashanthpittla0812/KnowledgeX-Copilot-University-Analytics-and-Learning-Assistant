@@ -46,7 +46,7 @@ export default function App() {
   return (
     <>
       <Toaster position="top-center" />
-      <Suspense fallback={<div className="flex h-screen items-center justify-center"><div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>}>
+      <Suspense fallback={<div className="flex h-screen items-center justify-center"><div className="w-16 h-16 border-4 border-orange-600 border-t-transparent rounded-full animate-spin"></div></div>}>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/register" element={<Register />} />

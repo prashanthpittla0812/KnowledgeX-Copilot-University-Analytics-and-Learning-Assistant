@@ -439,7 +439,7 @@ export default function FacultyDashboard() {
                 value={dashboardStats?.total_documents || "0"} 
                 icon={BookOpen} 
                 description="Uploaded documents" 
-                colorClass="bg-gradient-to-br from-indigo-400 to-indigo-600 shadow-indigo-500/20"
+                colorClass="bg-gradient-to-br from-orange-400 to-orange-600 shadow-orange-500/20"
               />
               <StatCard 
                 title="Total Students" 
@@ -584,19 +584,19 @@ export default function FacultyDashboard() {
                       <div className="space-y-6">
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-3">
-                            <div className="bg-indigo-100 text-indigo-600 font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0">1</div>
+                            <div className="bg-orange-100 text-orange-600 font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0">1</div>
                             <h3 className="text-lg font-bold text-slate-900">Knowledge Base</h3>
                           </div>
                           <div className="flex bg-slate-100 p-1 rounded-xl">
                             <button 
                               onClick={() => setQuizGenerationMethod("AI")}
-                              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${quizGenerationMethod === "AI" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${quizGenerationMethod === "AI" ? "bg-white text-orange-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                             >
                               AI Generate (PDF)
                             </button>
                             <button 
                               onClick={() => setQuizGenerationMethod("Manual")}
-                              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${quizGenerationMethod === "Manual" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${quizGenerationMethod === "Manual" ? "bg-white text-orange-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                             >
                               Manual Entry
                             </button>
@@ -613,7 +613,7 @@ export default function FacultyDashboard() {
                                 <input 
                                   value={quizTopic}
                                   onChange={e => setQuizTopic(e.target.value)}
-                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
                                   placeholder="e.g., Computer Networks Ch 1"
                                 />
                               </div>
@@ -632,25 +632,25 @@ export default function FacultyDashboard() {
                                     }
                                   }}
                                   ref={pdfInputRef}
-                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"
+                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100"
                                 />
                                 <p className="text-xs text-slate-500 mt-2">Upload a PDF file containing the lecture content.</p>
                               </div>
                             </div>
 
                             {uploadedDocs.length > 0 && (
-                              <div className="mt-6 p-4 rounded-xl border-2 border-indigo-500 bg-indigo-50/70 animate-in fade-in slide-in-from-top-2">
-                                <h5 className="text-xs font-black text-indigo-800 uppercase mb-3 tracking-wider">Successfully Uploaded</h5>
+                              <div className="mt-6 p-4 rounded-xl border-2 border-orange-500 bg-orange-50/70 animate-in fade-in slide-in-from-top-2">
+                                <h5 className="text-xs font-black text-orange-800 uppercase mb-3 tracking-wider">Successfully Uploaded</h5>
                                 <div className="space-y-2">
                                   {uploadedDocs.map((doc, idx) => (
-                                    <div key={idx} className="flex justify-between items-center text-sm p-3 bg-white rounded-lg border border-indigo-200 shadow-sm">
-                                      <div className="flex items-center gap-2 text-indigo-800 font-bold">
-                                        <CheckCircle className="w-4 h-4 text-indigo-600" />
+                                    <div key={idx} className="flex justify-between items-center text-sm p-3 bg-white rounded-lg border border-orange-200 shadow-sm">
+                                      <div className="flex items-center gap-2 text-orange-800 font-bold">
+                                        <CheckCircle className="w-4 h-4 text-orange-600" />
                                         <span>{doc.topic}</span>
                                       </div>
                                       <div className="flex items-center gap-3">
-                                        <span className="text-indigo-600 text-xs font-semibold" title={doc.name}>{doc.name}</span>
-                                        <button onClick={() => setUploadedDocs(prev => prev.filter((_, i) => i !== idx))} className="text-indigo-400 hover:text-red-500 transition-colors p-1" title="Remove">
+                                        <span className="text-orange-600 text-xs font-semibold" title={doc.name}>{doc.name}</span>
+                                        <button onClick={() => setUploadedDocs(prev => prev.filter((_, i) => i !== idx))} className="text-orange-400 hover:text-red-500 transition-colors p-1" title="Remove">
                                           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
                                         </button>
                                       </div>
@@ -669,7 +669,7 @@ export default function FacultyDashboard() {
                                 <input 
                                   value={quizTopic}
                                   onChange={e => setQuizTopic(e.target.value)}
-                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
                                   placeholder="e.g., Computer Networks Ch 1"
                                 />
                             </div>
@@ -687,7 +687,7 @@ export default function FacultyDashboard() {
                       {/* Step 2 */}
                       <div className="space-y-6">
                         <div className="flex items-center gap-3">
-                          <div className="bg-indigo-100 text-indigo-600 font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0">2</div>
+                          <div className="bg-orange-100 text-orange-600 font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0">2</div>
                           <h3 className="text-lg font-bold text-slate-900">Quiz Details</h3>
                         </div>
 
@@ -699,7 +699,7 @@ export default function FacultyDashboard() {
                             <select 
                               value={quizQuestionType}
                               onChange={e => setQuizQuestionType(e.target.value)}
-                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
                             >
                               <option value="MCQ">Multiple Choice</option>
                               <option value="Fill in the Blanks">Fill in the Blanks</option>
@@ -714,7 +714,7 @@ export default function FacultyDashboard() {
                             <select 
                               value={quizDifficulty}
                               onChange={e => setQuizDifficulty(e.target.value)}
-                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
                             >
                               <option value="Easy">Easy</option>
                               <option value="Medium">Medium</option>
@@ -750,7 +750,7 @@ export default function FacultyDashboard() {
                                 min="1" max="50"
                                 value={quizQuestionCount}
                                 onChange={e => setQuizQuestionCount(e.target.value)}
-                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
                                 placeholder="e.g., 25"
                               />
                             </div>
@@ -1022,7 +1022,7 @@ export default function FacultyDashboard() {
                             <select 
                               value={quizSemester} 
                               onChange={e => setQuizSemester(e.target.value)} 
-                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
                             >
                               <option value="1st Sem">1st Sem</option>
                               <option value="2nd Sem">2nd Sem</option>
@@ -1054,11 +1054,11 @@ export default function FacultyDashboard() {
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {assessments.length === 0 && <p className="text-muted-foreground">No assessments generated yet.</p>}
                   {assessments.map(q => (
-                    <Card key={q.id} onClick={() => fetchAssessmentSubmissions(q.id)} className="cursor-pointer hover:border-indigo-500/50 transition-colors bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+                    <Card key={q.id} onClick={() => fetchAssessmentSubmissions(q.id)} className="cursor-pointer hover:border-orange-500/50 transition-colors bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
                       <CardContent className="p-6">
                         <h4 className="text-xl font-bold text-slate-900 truncate mb-3">{q.topic_name}</h4>
                         <div className="flex flex-wrap gap-2 mb-4">
-                          <span className="px-2 py-1 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-bold uppercase tracking-wider">{q.difficulty}</span>
+                          <span className="px-2 py-1 rounded-md bg-orange-50 text-orange-700 text-[10px] font-bold uppercase tracking-wider">{q.difficulty}</span>
                           <span className="px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase tracking-wider">
                             {q.question_type ? q.question_type.replace(/\((\d+)\s*mins?\)/i, (match, p1) => {
                               const mins = parseInt(p1);
@@ -1081,7 +1081,7 @@ export default function FacultyDashboard() {
               </>
             ) : selectedAssessmentId ? (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
-                <Button variant="ghost" onClick={() => setSelectedAssessmentId(null)} className="pl-0 hover:bg-transparent hover:text-indigo-600">← Back to Assessments</Button>
+                <Button variant="ghost" onClick={() => setSelectedAssessmentId(null)} className="pl-0 hover:bg-transparent hover:text-orange-600">← Back to Assessments</Button>
                 
                 <div className="flex justify-between items-end mb-6">
                   <div>
@@ -1092,13 +1092,13 @@ export default function FacultyDashboard() {
 
                 <div className="flex border-b border-slate-200 mb-6">
                   <button 
-                    className={`py-3 px-6 font-semibold border-b-2 transition-colors ${activeAssessmentTab === "submissions" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-500 hover:text-slate-900"}`}
+                    className={`py-3 px-6 font-semibold border-b-2 transition-colors ${activeAssessmentTab === "submissions" ? "border-orange-600 text-orange-600" : "border-transparent text-slate-500 hover:text-slate-900"}`}
                     onClick={() => setActiveAssessmentTab("submissions")}
                   >
                     Submissions
                   </button>
                   <button 
-                    className={`py-3 px-6 font-semibold border-b-2 transition-colors ${activeAssessmentTab === "questions" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-500 hover:text-slate-900"}`}
+                    className={`py-3 px-6 font-semibold border-b-2 transition-colors ${activeAssessmentTab === "questions" ? "border-orange-600 text-orange-600" : "border-transparent text-slate-500 hover:text-slate-900"}`}
                     onClick={() => setActiveAssessmentTab("questions")}
                   >
                     Questions
@@ -1126,7 +1126,7 @@ export default function FacultyDashboard() {
                               <td className="p-4 text-slate-500">{new Date(sub.submitted_at + (sub.submitted_at.endsWith('Z') ? '' : 'Z')).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'short', timeStyle: 'medium' })} IST</td>
                               <td className="p-4 text-slate-600">
                                 <div className="flex items-center gap-2">
-                                  <FileText className="w-4 h-4 text-indigo-500" />
+                                  <FileText className="w-4 h-4 text-orange-500" />
                                   {sub.file_name}
                                 </div>
                               </td>
@@ -1142,7 +1142,7 @@ export default function FacultyDashboard() {
                                   <Button 
                                     size="sm" 
                                     onClick={() => handleDownloadSubmission(sub.id, sub.file_name)}
-                                    className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 shadow-none border-none font-semibold"
+                                    className="bg-orange-50 hover:bg-orange-100 text-orange-700 shadow-none border-none font-semibold"
                                   >
                                     <Download className="w-4 h-4 mr-2" /> Download
                                   </Button>
@@ -1159,7 +1159,7 @@ export default function FacultyDashboard() {
                     {quizDetails?.questions?.map((q, idx) => (
                       <Card key={idx} className="bg-white border-slate-200 shadow-sm rounded-xl">
                         <CardContent className="p-6">
-                          <h4 className="font-bold text-lg mb-2"><span className="text-indigo-600 mr-2">Q{idx+1}.</span> {q.question || q.question_text}</h4>
+                          <h4 className="font-bold text-lg mb-2"><span className="text-orange-600 mr-2">Q{idx+1}.</span> {q.question || q.question_text}</h4>
                           {q.options && q.options.length > 0 && (
                             <div className="space-y-2 mt-4 ml-7">
                               {q.options.map((opt, oIdx) => (
@@ -1300,7 +1300,7 @@ export default function FacultyDashboard() {
               className="flex justify-between items-start"
             >
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-500 shadow-sm border border-indigo-100">
+                <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-500 shadow-sm border border-orange-100">
                   <BarChartIcon className="w-6 h-6" />
                 </div>
                 <div>
@@ -1327,7 +1327,7 @@ export default function FacultyDashboard() {
 
             {isLoading ? (
               <div className="flex items-center justify-center py-20">
-                <div className="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full" />
+                <div className="animate-spin w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full" />
               </div>
             ) : learningGaps ? (
               <div className="space-y-8">
@@ -1337,9 +1337,9 @@ export default function FacultyDashboard() {
                     <AnalyticsCard title="Student Performance" className="min-h-[400px] border-slate-100 shadow-sm rounded-3xl bg-white/80 backdrop-blur-xl">
                       <div className="flex flex-wrap gap-2 mt-4 mb-6">
                         {learningGaps.student_performance.map((sp, idx) => (
-                          <motion.div whileHover={{ scale: 1.05 }} key={idx} className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 text-sm shadow-sm cursor-default">
+                          <motion.div whileHover={{ scale: 1.05 }} key={idx} className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-orange-50 to-purple-50 border border-orange-100 text-sm shadow-sm cursor-default">
                             <span className="font-semibold text-slate-700">{sp.student_name}</span>
-                            <span className="text-indigo-600 font-black">{sp.average_score}%</span>
+                            <span className="text-orange-600 font-black">{sp.average_score}%</span>
                           </motion.div>
                         ))}
                       </div>
@@ -1362,7 +1362,7 @@ export default function FacultyDashboard() {
                                   return (
                                     <div className="bg-white/90 backdrop-blur-md border border-slate-200 p-4 rounded-2xl shadow-xl">
                                       <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{label}</p>
-                                      <p className="text-lg font-black text-indigo-600">
+                                      <p className="text-lg font-black text-orange-600">
                                         Score: <span className="text-slate-800">{payload[0].value}%</span>
                                       </p>
                                     </div>
@@ -1442,7 +1442,7 @@ export default function FacultyDashboard() {
                               </div>
                               <button 
                                 onClick={() => setSelectedStudent(sp)}
-                                className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 text-xs font-bold px-3 py-1.5 rounded-full transition-colors shrink-0"
+                                className="bg-orange-50 text-orange-600 hover:bg-orange-100 text-xs font-bold px-3 py-1.5 rounded-full transition-colors shrink-0"
                               >
                                 View Details
                               </button>
@@ -1465,10 +1465,10 @@ export default function FacultyDashboard() {
                                 </p>
                                 <div className="flex justify-between items-center text-xs font-semibold mb-1.5">
                                   <span className="text-slate-500">Progress</span>
-                                  <span className="text-indigo-600">{sp.average_score}%</span>
+                                  <span className="text-orange-600">{sp.average_score}%</span>
                                 </div>
                                 <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                                  <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full transition-all duration-500" style={{ width: `${sp.average_score}%` }} />
+                                  <div className="bg-gradient-to-r from-orange-500 to-purple-500 h-full rounded-full transition-all duration-500" style={{ width: `${sp.average_score}%` }} />
                                 </div>
                               </div>
                             </div>
@@ -1526,12 +1526,12 @@ export default function FacultyDashboard() {
             className="relative bg-white/90 backdrop-blur-xl rounded-[2rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] w-full max-w-3xl overflow-hidden border border-white/50"
           >
             {/* Ambient Background Glow */}
-            <div className="absolute top-0 left-0 w-full h-40 bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-emerald-500/10 pointer-events-none" />
+            <div className="absolute top-0 left-0 w-full h-40 bg-gradient-to-br from-orange-500/10 via-purple-500/10 to-emerald-500/10 pointer-events-none" />
 
             <div className="relative p-8 pb-6">
               <div className="flex justify-between items-start mb-10">
                 <div className="flex items-center gap-6">
-                  <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 p-[3px] shadow-lg shrink-0">
+                  <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-orange-500 to-purple-600 p-[3px] shadow-lg shrink-0">
                     <div className="w-full h-full rounded-full overflow-hidden border-2 border-white bg-white">
                       <img 
                         src={getPhotoUrl(selectedStudent.profile_photo_path || selectedStudent.profile_image) || `https://api.dicebear.com/7.x/initials/svg?seed=${selectedStudent.student_name}&backgroundColor=f8fafc&textColor=475569`} 
@@ -1544,7 +1544,7 @@ export default function FacultyDashboard() {
                     <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-slate-800 to-slate-600 tracking-tight">{selectedStudent.student_name}</h2>
                     <div className="flex items-center gap-2 mt-1.5">
                       {selectedStudent.department && (
-                        <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-xs font-bold tracking-wide uppercase">{selectedStudent.department}</span>
+                        <span className="px-3 py-1 bg-orange-50 text-orange-600 rounded-full text-xs font-bold tracking-wide uppercase">{selectedStudent.department}</span>
                       )}
                       {selectedStudent.designation && (
                         <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-xs font-bold tracking-wide uppercase">{selectedStudent.designation}</span>
@@ -1555,7 +1555,7 @@ export default function FacultyDashboard() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setIsRecommending(!isRecommending)}
-                    className="w-10 h-10 rounded-full bg-indigo-50 hover:bg-indigo-100 flex items-center justify-center text-indigo-500 hover:text-indigo-600 transition-all shadow-sm"
+                    className="w-10 h-10 rounded-full bg-orange-50 hover:bg-orange-100 flex items-center justify-center text-orange-500 hover:text-orange-600 transition-all shadow-sm"
                     title="Send Recommendation"
                   >
                     <Send className="w-4 h-4" />
@@ -1570,13 +1570,13 @@ export default function FacultyDashboard() {
               </div>
 
               {isRecommending && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mb-8 bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100 shadow-inner overflow-hidden">
-                  <h4 className="text-sm font-black text-indigo-800 mb-2 flex items-center gap-2"><Send className="w-4 h-4"/> Send Personal Recommendation</h4>
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mb-8 bg-orange-50/50 p-5 rounded-2xl border border-orange-100 shadow-inner overflow-hidden">
+                  <h4 className="text-sm font-black text-orange-800 mb-2 flex items-center gap-2"><Send className="w-4 h-4"/> Send Personal Recommendation</h4>
                   <textarea
                     value={recommendationMessage}
                     onChange={(e) => setRecommendationMessage(e.target.value)}
                     placeholder="Type your advice or recommendation here..."
-                    className="w-full h-24 p-4 rounded-xl border border-indigo-200 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100/50 resize-none text-sm bg-white shadow-sm mb-3 transition-all"
+                    className="w-full h-24 p-4 rounded-xl border border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-100/50 resize-none text-sm bg-white shadow-sm mb-3 transition-all"
                   />
                   <div className="flex justify-end gap-2">
                     <button
@@ -1598,7 +1598,7 @@ export default function FacultyDashboard() {
                           alert("Failed to send recommendation.");
                         }
                       }}
-                      className="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl shadow-md hover:bg-indigo-700 transition-colors flex items-center gap-1.5"
+                      className="px-4 py-2 bg-orange-600 text-white text-xs font-bold rounded-xl shadow-md hover:bg-orange-700 transition-colors flex items-center gap-1.5"
                     >
                       Send Notification
                     </button>
@@ -1607,14 +1607,14 @@ export default function FacultyDashboard() {
               )}
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-                <motion.div whileHover={{ y: -5 }} className="bg-gradient-to-b from-indigo-50/50 to-white rounded-2xl p-5 border border-indigo-100 shadow-sm relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-16 h-16 bg-indigo-500/5 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-150" />
-                  <p className="text-xs font-black text-indigo-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
+                <motion.div whileHover={{ y: -5 }} className="bg-gradient-to-b from-orange-50/50 to-white rounded-2xl p-5 border border-orange-100 shadow-sm relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-16 h-16 bg-orange-500/5 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-150" />
+                  <p className="text-xs font-black text-orange-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-orange-400"></span>
                     Score
                   </p>
                   <div className="flex items-end gap-1">
-                    <span className="text-4xl font-black text-indigo-600">{selectedStudent.average_score}%</span>
+                    <span className="text-4xl font-black text-orange-600">{selectedStudent.average_score}%</span>
                   </div>
                 </motion.div>
 
@@ -1655,10 +1655,10 @@ export default function FacultyDashboard() {
               </div>
 
               <div className="relative">
-                <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-3xl blur opacity-20"></div>
-                <div className="relative bg-white rounded-2xl p-6 border border-indigo-50/50 shadow-sm">
-                  <h3 className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 mb-4 uppercase tracking-widest flex items-center gap-2">
-                    <BrainCircuit className="w-5 h-5 text-indigo-500" />
+                <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 via-purple-500 to-pink-500 rounded-3xl blur opacity-20"></div>
+                <div className="relative bg-white rounded-2xl p-6 border border-orange-50/50 shadow-sm">
+                  <h3 className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-purple-600 mb-4 uppercase tracking-widest flex items-center gap-2">
+                    <BrainCircuit className="w-5 h-5 text-orange-500" />
                     AI Intelligence Report
                   </h3>
                   
@@ -1670,7 +1670,7 @@ export default function FacultyDashboard() {
                       return (
                         <div className="space-y-4">
                           <p className="text-slate-600 font-medium leading-relaxed">
-                            <strong className="text-slate-800">{selectedStudent.student_name}</strong> is demonstrating exceptional mastery in <span className="text-indigo-600 font-bold">{topicName}</span>. Their analytical skills are well above the baseline metrics.
+                            <strong className="text-slate-800">{selectedStudent.student_name}</strong> is demonstrating exceptional mastery in <span className="text-orange-600 font-bold">{topicName}</span>. Their analytical skills are well above the baseline metrics.
                           </p>
                           <div className="bg-emerald-50/80 rounded-xl p-4 border border-emerald-100 flex items-start gap-3">
                             <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
@@ -1687,7 +1687,7 @@ export default function FacultyDashboard() {
                       return (
                         <div className="space-y-4">
                           <p className="text-slate-600 font-medium leading-relaxed">
-                            <strong className="text-slate-800">{selectedStudent.student_name}</strong> is maintaining steady progress in <span className="text-indigo-600 font-bold">{topicName}</span>, grasping core concepts but occasionally struggling with edge-case scenarios.
+                            <strong className="text-slate-800">{selectedStudent.student_name}</strong> is maintaining steady progress in <span className="text-orange-600 font-bold">{topicName}</span>, grasping core concepts but occasionally struggling with edge-case scenarios.
                           </p>
                           <div className="bg-amber-50/80 rounded-xl p-4 border border-amber-100 flex items-start gap-3">
                             <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
@@ -1704,7 +1704,7 @@ export default function FacultyDashboard() {
                       return (
                         <div className="space-y-4">
                           <p className="text-slate-600 font-medium leading-relaxed">
-                            While <strong className="text-slate-800">{selectedStudent.student_name}</strong> shows consistent engagement, data indicates a growing gap in understanding <span className="text-indigo-600 font-bold">{topicName}</span>.
+                            While <strong className="text-slate-800">{selectedStudent.student_name}</strong> shows consistent engagement, data indicates a growing gap in understanding <span className="text-orange-600 font-bold">{topicName}</span>.
                           </p>
                           <div className="bg-rose-50/80 rounded-xl p-4 border border-rose-100 flex items-start gap-3">
                             <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center shrink-0 mt-0.5">
@@ -1721,7 +1721,7 @@ export default function FacultyDashboard() {
                       return (
                         <div className="space-y-4">
                           <p className="text-slate-600 font-medium leading-relaxed">
-                            <strong className="text-slate-800">{selectedStudent.student_name}</strong> is currently at a critical risk of falling behind in <span className="text-indigo-600 font-bold">{topicName}</span>. Predictive models indicate fundamental misunderstandings.
+                            <strong className="text-slate-800">{selectedStudent.student_name}</strong> is currently at a critical risk of falling behind in <span className="text-orange-600 font-bold">{topicName}</span>. Predictive models indicate fundamental misunderstandings.
                           </p>
                           <div className="bg-red-50/80 rounded-xl p-4 border border-red-100 flex items-start gap-3">
                             <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center shrink-0 mt-0.5">

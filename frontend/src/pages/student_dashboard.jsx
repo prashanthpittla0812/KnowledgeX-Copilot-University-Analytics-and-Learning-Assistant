@@ -568,7 +568,7 @@ export default function StudentDashboard() {
             </div>
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              <StatCard title="Quizzes Taken" value={dashboardStats?.quizzes_taken ?? "0"} icon={CheckCircle} description="Total practice quizzes" colorClass="bg-gradient-to-br from-indigo-400 to-indigo-600 shadow-indigo-500/20" />
+              <StatCard title="Quizzes Taken" value={dashboardStats?.quizzes_taken ?? "0"} icon={CheckCircle} description="Total practice quizzes" colorClass="bg-gradient-to-br from-orange-400 to-orange-600 shadow-orange-500/20" />
               <StatCard title="Average Score" value={`${dashboardStats?.average_quiz_score ?? 0}%`} icon={Target} description="All time average" colorClass="bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-emerald-500/20" />
               <StatCard title="Study Streak" value={`${dashboardStats?.study_streak ?? 0} ${dashboardStats?.study_streak === 1 ? 'day' : 'days'}`} icon={TrendingUp} description="Keep it up!" colorClass="bg-gradient-to-br from-sky-400 to-sky-600 shadow-sky-500/20" />
               <StatCard title="Docs Uploaded" value={dashboardStats?.documents_uploaded ?? "0"} icon={FileText} description="Total resources" colorClass="bg-gradient-to-br from-violet-400 to-violet-600 shadow-violet-500/20" />
@@ -588,12 +588,12 @@ export default function StudentDashboard() {
                   </div>
                   <div
                     onClick={() => setActiveItem("Quizzes")}
-                    className="flex flex-col items-center justify-center gap-3 p-6 rounded-2xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 border border-indigo-200 cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all group"
+                    className="flex flex-col items-center justify-center gap-3 p-6 rounded-2xl bg-gradient-to-br from-orange-50 to-orange-100/50 border border-orange-200 cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all group"
                   >
-                    <div className="w-14 h-14 rounded-full bg-indigo-500 text-white flex items-center justify-center shadow-indigo-500/30 shadow-lg group-hover:scale-110 transition-transform">
+                    <div className="w-14 h-14 rounded-full bg-orange-500 text-white flex items-center justify-center shadow-orange-500/30 shadow-lg group-hover:scale-110 transition-transform">
                       <Target className="w-6 h-6" />
                     </div>
-                    <p className="font-bold text-indigo-900 text-center">Take a Practice Quiz</p>
+                    <p className="font-bold text-orange-900 text-center">Take a Practice Quiz</p>
                   </div>
                 </div>
               </AnalyticsCard>
@@ -684,13 +684,13 @@ export default function StudentDashboard() {
                     <div className="max-w-3xl mx-auto">
                       <div className="flex justify-between items-center mb-6">
                         <h2 className="text-2xl font-bold text-slate-800">{formatTopicForDisplay(activeQuiz.topic)} Quiz</h2>
-                        <span className="px-3 py-1 rounded-md bg-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-wider">{activeQuiz.difficulty}</span>
+                        <span className="px-3 py-1 rounded-md bg-orange-100 text-orange-700 text-xs font-bold uppercase tracking-wider">{activeQuiz.difficulty}</span>
                       </div>
                       <div className="space-y-6">
                         {activeQuiz.questions.map((q, i) => (
                           <Card key={i} className="bg-white border-slate-200 shadow-sm rounded-xl">
                             <CardContent className="p-6">
-                              <p className="font-bold text-slate-800 mb-4 text-lg"><span className="text-indigo-600 mr-2">Q{i + 1}.</span>{q.question}</p>
+                              <p className="font-bold text-slate-800 mb-4 text-lg"><span className="text-orange-600 mr-2">Q{i + 1}.</span>{q.question}</p>
                               {!q.options || q.options.length === 0 ? (
                                 <div className="mt-2">
                                   <input
@@ -698,16 +698,16 @@ export default function StudentDashboard() {
                                     value={selectedAnswers[i] || ""}
                                     onChange={(e) => setSelectedAnswers(prev => ({ ...prev, [i]: e.target.value }))}
                                     placeholder="Type your answer here..."
-                                    className="w-full max-w-md rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-slate-800"
+                                    className="w-full max-w-md rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all text-slate-800"
                                   />
                                 </div>
                               ) : (
                                 <div className="space-y-3">
                                   {q.options.map((opt, j) => (
-                                    <label key={j} className={`flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all border ${selectedAnswers[i] === opt ? "border-indigo-500 bg-indigo-50 shadow-sm" : "border-slate-200 bg-white hover:border-indigo-300"}`}>
-                                      <input type="radio" name={`q-${i}`} value={opt} checked={selectedAnswers[i] === opt} onChange={() => setSelectedAnswers(prev => ({ ...prev, [i]: opt }))} className="text-indigo-600 w-4 h-4" />
-                                      <span className={`text-sm font-medium ${selectedAnswers[i] === opt ? "text-indigo-900 font-bold" : "text-slate-600"}`}>
-                                        <span className="font-bold mr-2 uppercase text-indigo-500">{String.fromCharCode(97 + j)})</span> {opt}
+                                    <label key={j} className={`flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all border ${selectedAnswers[i] === opt ? "border-orange-500 bg-orange-50 shadow-sm" : "border-slate-200 bg-white hover:border-orange-300"}`}>
+                                      <input type="radio" name={`q-${i}`} value={opt} checked={selectedAnswers[i] === opt} onChange={() => setSelectedAnswers(prev => ({ ...prev, [i]: opt }))} className="text-orange-600 w-4 h-4" />
+                                      <span className={`text-sm font-medium ${selectedAnswers[i] === opt ? "text-orange-900 font-bold" : "text-slate-600"}`}>
+                                        <span className="font-bold mr-2 uppercase text-orange-500">{String.fromCharCode(97 + j)})</span> {opt}
                                       </span>
                                     </label>
                                   ))}
@@ -716,7 +716,7 @@ export default function StudentDashboard() {
                             </CardContent>
                           </Card>
                         ))}
-                        <Button onClick={submitWrapper} disabled={isLoading} className="w-full h-14 text-lg font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-500/30">
+                        <Button onClick={submitWrapper} disabled={isLoading} className="w-full h-14 text-lg font-bold bg-orange-600 hover:bg-orange-700 text-white rounded-xl shadow-lg shadow-orange-500/30">
                           {isLoading ? "Submitting..." : "Submit Answers"}
                         </Button>
                       </div>
@@ -917,13 +917,13 @@ export default function StudentDashboard() {
 
             <div className="flex space-x-2 border-b border-slate-200 mb-6">
               <button
-                className={`py-2 px-4 font-semibold text-sm transition-colors ${activeAssessmentTab === "Active" ? "border-b-2 border-indigo-600 text-indigo-600" : "text-slate-500 hover:text-slate-700"}`}
+                className={`py-2 px-4 font-semibold text-sm transition-colors ${activeAssessmentTab === "Active" ? "border-b-2 border-orange-600 text-orange-600" : "text-slate-500 hover:text-slate-700"}`}
                 onClick={() => setActiveAssessmentTab("Active")}
               >
                 Active
               </button>
               <button
-                className={`py-2 px-4 font-semibold text-sm transition-colors ${activeAssessmentTab === "Completed" ? "border-b-2 border-indigo-600 text-indigo-600" : "text-slate-500 hover:text-slate-700"}`}
+                className={`py-2 px-4 font-semibold text-sm transition-colors ${activeAssessmentTab === "Completed" ? "border-b-2 border-orange-600 text-orange-600" : "text-slate-500 hover:text-slate-700"}`}
                 onClick={() => setActiveAssessmentTab("Completed")}
               >
                 Completed
@@ -935,10 +935,10 @@ export default function StudentDashboard() {
                 .filter(q => q.question_type && q.question_type.startsWith('Assessment'))
                 .filter(q => activeAssessmentTab === "Active" ? !q.is_completed : q.is_completed)
                 .map((q, i) => (
-                  <Card key={q.id} className="glass-card border-slate-200 bg-white hover:border-indigo-400 hover:shadow-md transition-all cursor-pointer" onClick={() => setActiveItem(`Assessment_${q.id}`)}>
+                  <Card key={q.id} className="glass-card border-slate-200 bg-white hover:border-orange-400 hover:shadow-md transition-all cursor-pointer" onClick={() => setActiveItem(`Assessment_${q.id}`)}>
                     <CardContent className="p-6">
                       <div className="flex justify-between items-start mb-2">
-                        <span className="text-xs font-bold px-2 py-1 bg-indigo-50 text-indigo-600 rounded-md">
+                        <span className="text-xs font-bold px-2 py-1 bg-orange-50 text-orange-600 rounded-md">
                           {formatQuestionType(q.question_type)}
                         </span>
                         {q.is_completed && <CheckCircle className="w-5 h-5 text-emerald-500" />}
@@ -1664,7 +1664,7 @@ export default function StudentDashboard() {
               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
               className="flex items-center gap-3"
             >
-              <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-500 shadow-sm border border-indigo-100">
+              <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-500 shadow-sm border border-orange-100">
                 <BarChartIcon className="w-6 h-6" />
               </div>
               <div>
@@ -1739,7 +1739,7 @@ export default function StudentDashboard() {
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
                           {isStreak ? (payload[0].payload.subject ? `${payload[0].payload.subject} (${label})` : label) : (isDate ? new Date(label).toLocaleDateString() : (payload[0].payload.subject ? `${payload[0].payload.subject}: ${payload[0].payload.topic || label}` : label))}
                         </p>
-                        <p className="text-lg font-black text-indigo-600">
+                        <p className="text-lg font-black text-orange-600">
                           {isStreak ? "Study Time: " : "Score: "}
                           <span className="text-slate-800">{payload[0].value}{isStreak ? " hrs" : "%"}</span>
                         </p>
@@ -1757,7 +1757,7 @@ export default function StudentDashboard() {
                       title="Quizzes Taken"
                       value={totalQuizzes}
                       icon={FileText}
-                      colorClass="bg-gradient-to-br from-indigo-400 to-indigo-600 shadow-indigo-500/20"
+                      colorClass="bg-gradient-to-br from-orange-400 to-orange-600 shadow-orange-500/20"
                     />
                     <StatCard
                       title="Average Score"
@@ -2091,7 +2091,7 @@ export default function StudentDashboard() {
                                 <select
                                   value={selectedQuizPeriod}
                                   onChange={(e) => setSelectedQuizPeriod(e.target.value)}
-                                  className="text-sm border border-slate-200 bg-white text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                  className="text-sm border border-slate-200 bg-white text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
                                 >
                                   {periods.map(p => (
                                     <option key={p.value} value={p.value}>{p.label}</option>
@@ -2169,7 +2169,7 @@ export default function StudentDashboard() {
                                       <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-pink-500 to-violet-500"></div><span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">DSA</span></div>
                                       <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-emerald-500 to-blue-500"></div><span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">CN</span></div>
                                       <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-amber-500 to-red-500"></div><span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">OS</span></div>
-                                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-violet-500 to-indigo-500"></div><span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">DBMS</span></div>
+                                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-violet-500 to-orange-500"></div><span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">DBMS</span></div>
                                       <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-red-400 to-red-600"></div><span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Java</span></div>
                                       <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-slate-300"></div><span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Other</span></div>
                                     </div>
@@ -2251,7 +2251,7 @@ export default function StudentDashboard() {
                                 <select
                                   value={selectedSkillSubject}
                                   onChange={(e) => setSelectedSkillSubject(e.target.value)}
-                                  className="text-sm border border-slate-200 bg-white text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                  className="text-sm border border-slate-200 bg-white text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
                                 >
                                   <option value="All Subjects">All Subjects</option>
                                   <option value="Artificial Intelligence">Artificial Intelligence</option>

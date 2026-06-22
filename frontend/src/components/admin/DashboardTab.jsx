@@ -76,7 +76,7 @@ export default function DashboardTab() {
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard title="Total Students" value={data.total_students} icon={GraduationCap} description="Registered on platform" colorClass="bg-gradient-to-br from-indigo-500 to-blue-600 shadow-blue-500/30" ringClass="ring-blue-50" />
+        <StatCard title="Total Students" value={data.total_students} icon={GraduationCap} description="Registered on platform" colorClass="bg-gradient-to-br from-orange-500 to-blue-600 shadow-blue-500/30" ringClass="ring-blue-50" />
         <StatCard title="Total Faculty" value={data.total_faculty} icon={Users} description="Active faculty members" colorClass="bg-gradient-to-br from-fuchsia-500 to-pink-600 shadow-pink-500/30" ringClass="ring-pink-50" />
         <StatCard title="Pending Approvals" value={data.pending_students} icon={CheckCircle2} trend={data.pending_students > 0 ? `${data.pending_students} new` : null} trendColor="text-amber-500" description="Awaiting review" colorClass="bg-gradient-to-br from-amber-400 to-orange-500 shadow-orange-500/30" ringClass="ring-orange-50" />
       </div>

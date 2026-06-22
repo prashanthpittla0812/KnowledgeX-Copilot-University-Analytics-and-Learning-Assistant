@@ -33,7 +33,7 @@ export function QuizMonitoringTab({ quizId, onBack }) {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <span className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></span>
+        <span className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></span>
       </div>
     );
   }
@@ -51,7 +51,7 @@ export function QuizMonitoringTab({ quizId, onBack }) {
     <div className="space-y-6 animate-in fade-in">
       <div className="flex items-center justify-end mb-6">
         <div className="flex items-center gap-2 text-slate-500 font-medium">
-          <ShieldAlert className="w-5 h-5 text-indigo-500" />
+          <ShieldAlert className="w-5 h-5 text-orange-500" />
           Proctoring Dashboard
         </div>
       </div>
@@ -104,7 +104,7 @@ export function QuizMonitoringTab({ quizId, onBack }) {
                       variant="outline" 
                       disabled={!attempt.start_photo_url}
                       onClick={() => setActiveMedia({ type: 'image', url: attempt.start_photo_url })}
-                      className="border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+                      className="border-orange-200 text-orange-600 hover:bg-orange-50"
                       title="View Start Photo"
                     >
                       <ImageIcon className="w-4 h-4" />
@@ -113,7 +113,7 @@ export function QuizMonitoringTab({ quizId, onBack }) {
                       variant="outline" 
                       disabled={!attempt.recording_url}
                       onClick={() => setActiveMedia({ type: 'video', url: attempt.recording_url })}
-                      className="border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+                      className="border-orange-200 text-orange-600 hover:bg-orange-50"
                       title="Play Session Recording"
                     >
                       <Video className="w-4 h-4" />

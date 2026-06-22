@@ -123,7 +123,7 @@ export function StudentAssessmentView({ quizId }) {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-600"></div>
       </div>
     );
   }
@@ -189,14 +189,14 @@ export function StudentAssessmentView({ quizId }) {
 
       <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl flex flex-col">
         <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-          <FileText className="w-5 h-5 text-indigo-600" /> Preview Questions
+          <FileText className="w-5 h-5 text-orange-600" /> Preview Questions
         </h3>
         
         <div className="space-y-6">
           {assessment.questions?.map((q, index) => (
             <div key={index} className="p-5 rounded-xl bg-slate-50 border border-slate-100">
               <div className="flex gap-4">
-                <span className="font-bold text-indigo-600 text-lg">Q{index + 1}.</span>
+                <span className="font-bold text-orange-600 text-lg">Q{index + 1}.</span>
                 <p className="text-slate-800 text-lg font-medium leading-relaxed">{q.question}</p>
               </div>
             </div>
@@ -212,7 +212,7 @@ export function StudentAssessmentView({ quizId }) {
       {/* Submission Section */}
       <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl">
         <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-          <Upload className="w-5 h-5 text-indigo-600" /> Submit Assessment
+          <Upload className="w-5 h-5 text-orange-600" /> Submit Assessment
         </h3>
 
         {submissionStatus.submitted ? (
@@ -238,14 +238,14 @@ export function StudentAssessmentView({ quizId }) {
               />
             </div>
             {uploadFile && (
-              <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex items-center justify-between">
+              <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3 min-w-0">
-                  <FileText className="w-5 h-5 text-indigo-600 shrink-0" />
-                  <span className="font-medium text-indigo-900 truncate">{uploadFile.name}</span>
+                  <FileText className="w-5 h-5 text-orange-600 shrink-0" />
+                  <span className="font-medium text-orange-900 truncate">{uploadFile.name}</span>
                   <button 
                     onClick={() => setUploadFile(null)}
                     disabled={isSubmitting}
-                    className="p-1 rounded-full hover:bg-indigo-100 text-indigo-400 hover:text-indigo-600 transition-colors shrink-0"
+                    className="p-1 rounded-full hover:bg-orange-100 text-orange-400 hover:text-orange-600 transition-colors shrink-0"
                     title="Remove selected file"
                   >
                     <X className="w-4 h-4" />

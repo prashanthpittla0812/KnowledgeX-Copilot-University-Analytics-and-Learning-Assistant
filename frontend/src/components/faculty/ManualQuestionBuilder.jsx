@@ -84,13 +84,13 @@ export function ManualQuestionBuilder({ questions, onChange }) {
           </div>
 
           <div className="flex items-center gap-3 mb-4">
-            <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-xs">
+            <span className="w-6 h-6 rounded-full bg-orange-100 text-orange-700 font-bold flex items-center justify-center text-xs">
               {qIndex + 1}
             </span>
             <select 
               value={q.type}
               onChange={(e) => handleQuestionChange(qIndex, "type", e.target.value)}
-              className="text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-indigo-500"
+              className="text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-orange-500"
             >
               <option value="MCQ">Multiple Choice</option>
               <option value="Fill in the Blanks">Fill in the Blanks</option>
@@ -104,7 +104,7 @@ export function ManualQuestionBuilder({ questions, onChange }) {
                 value={q.question}
                 onChange={(e) => handleQuestionChange(qIndex, "question", e.target.value)}
                 placeholder="Enter your question here..."
-                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-y min-h-[80px]"
+                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 resize-y min-h-[80px]"
               />
             </div>
 
@@ -119,7 +119,7 @@ export function ManualQuestionBuilder({ questions, onChange }) {
                       className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
                         q.answer && q.answer === opt && opt.trim()
                           ? "border-emerald-500 bg-emerald-500 text-white" 
-                          : "border-slate-300 hover:border-indigo-400 bg-white"
+                          : "border-slate-300 hover:border-orange-400 bg-white"
                       }`}
                       title={!opt.trim() ? "Type an option first" : "Mark as correct answer"}
                     >
@@ -131,7 +131,7 @@ export function ManualQuestionBuilder({ questions, onChange }) {
                         value={opt}
                         onChange={(e) => handleOptionChange(qIndex, oIndex, e.target.value)}
                         placeholder={`Option ${oIndex + 1}`}
-                        className={`w-full bg-white border rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-500 ${
+                        className={`w-full bg-white border rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 ${
                           q.answer && q.answer === opt && opt.trim() ? "border-emerald-300 bg-emerald-50/30" : "border-slate-200"
                         }`}
                       />
@@ -150,7 +150,7 @@ export function ManualQuestionBuilder({ questions, onChange }) {
                 <div className="flex items-center justify-between pt-2">
                   <button 
                     onClick={() => handleAddOption(qIndex)}
-                    className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 bg-indigo-50 px-2 py-1.5 rounded-md"
+                    className="text-xs font-bold text-orange-600 hover:text-orange-800 flex items-center gap-1 bg-orange-50 px-2 py-1.5 rounded-md"
                   >
                     <Plus className="w-3 h-3" /> Add Option
                   </button>
@@ -170,7 +170,7 @@ export function ManualQuestionBuilder({ questions, onChange }) {
                   value={q.answer}
                   onChange={(e) => handleQuestionChange(qIndex, "answer", e.target.value)}
                   placeholder={q.type === "Fill in the Blanks" ? "Enter the exact word(s)" : "Enter key points or exact answer"}
-                  className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-500"
+                  className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500"
                 />
               </div>
             )}
@@ -181,7 +181,7 @@ export function ManualQuestionBuilder({ questions, onChange }) {
       <Button 
         variant="outline" 
         onClick={handleAddQuestion}
-        className="w-full py-6 border-dashed border-2 border-slate-300 hover:border-indigo-500 hover:bg-indigo-50/50 text-slate-500 hover:text-indigo-700"
+        className="w-full py-6 border-dashed border-2 border-slate-300 hover:border-orange-500 hover:bg-orange-50/50 text-slate-500 hover:text-orange-700"
       >
         <Plus className="w-5 h-5 mr-2" /> Add Question
       </Button>

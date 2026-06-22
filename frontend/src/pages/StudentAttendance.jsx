@@ -4,7 +4,7 @@ export default function StudentAttendance() {
   return (
     <div className="min-h-screen bg-slate-50 p-8 flex flex-col items-center justify-center">
       <div className="bg-white p-8 rounded-3xl shadow-xl max-w-2xl w-full text-center border border-slate-100">
-        <div className="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6">
+        <div className="w-20 h-20 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-6">
           <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
