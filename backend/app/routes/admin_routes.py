@@ -182,16 +182,32 @@ async def deactivate_faculty(faculty_id: int, db: AsyncSession = Depends(get_db)
     return {"message": "Faculty deactivated successfully"}
 
 @router.get("/analytics", response_model=AdminDashboardAnalytics)
-async def get_admin_analytics(db: AsyncSession = Depends(get_db)):
-    total_students = await db.scalar(select(func.count()).select_from(User).where(User.role == "student")) or 0
-    approved_students = await db.scalar(select(func.count()).select_from(User).where(User.role == "student", User.status == "APPROVED")) or 0
-    pending_students = await db.scalar(select(func.count()).select_from(User).where(User.role == "student", User.status == "PENDING")) or 0
-    rejected_students = await db.scalar(select(func.count()).select_from(User).where(User.role == "student", User.status == "REJECTED")) or 0
+async def get_admin_analytics(department: Optional[str] = None, db: AsyncSession = Depends(get_db)):
+    # Base queries for users
+    student_query = select(func.count()).select_from(User).where(User.role == "student")
+    faculty_query = select(func.count()).select_from(User).where(User.role == "faculty")
     
-    total_faculty = await db.scalar(select(func.count()).select_from(User).where(User.role == "faculty")) or 0
-    active_faculty = await db.scalar(select(func.count()).select_from(User).where(User.role == "faculty", User.is_active == True)) or 0
+    if department and department != "All Departments":
+        student_query = student_query.where(func.lower(User.department) == department.lower())
+        faculty_query = faculty_query.where(func.lower(User.department) == department.lower())
+
+    total_students = await db.scalar(student_query) or 0
+    approved_students = await db.scalar(student_query.where(User.status == "APPROVED")) or 0
+    pending_students = await db.scalar(student_query.where(User.status == "PENDING")) or 0
+    rejected_students = await db.scalar(student_query.where(User.status == "REJECTED")) or 0
     
-    total_quizzes = await db.scalar(select(func.count()).select_from(TeacherQuiz)) or 0
+    total_faculty = await db.scalar(faculty_query) or 0
+    active_faculty = await db.scalar(faculty_query.where(User.is_active == True)) or 0
+    
+    # Optional: Filter quizzes/attempts if they had department relations, but we leave as total for now 
+    # since quizzes belong to teachers, and teachers have departments.
+    # For now we'll just filter total_quizzes based on faculty department if requested
+    
+    quiz_query = select(func.count()).select_from(TeacherQuiz)
+    if department and department != "All Departments":
+        quiz_query = quiz_query.join(User, TeacherQuiz.teacher_id == User.id).where(func.lower(User.department) == department.lower())
+        
+    total_quizzes = await db.scalar(quiz_query) or 0
     total_quiz_attempts = await db.scalar(select(func.count()).select_from(QuizAttempt)) or 0
     average_performance = await db.scalar(select(func.avg(QuizAttempt.percentage))) or 0.0
     
@@ -208,7 +224,13 @@ async def get_admin_analytics(db: AsyncSession = Depends(get_db)):
     )
 
 @router.get("/audit-logs", response_model=List[AuditLogResponse])
-async def get_audit_logs(db: AsyncSession = Depends(get_db)):
+async def get_audit_logs(
+    time_range: Optional[str] = None, 
+    department: Optional[str] = None, 
+    db: AsyncSession = Depends(get_db)
+):
+    from datetime import datetime, timedelta
+    
     performer_alias = aliased(User)
     target_alias = aliased(User)
     
@@ -222,9 +244,20 @@ async def get_audit_logs(db: AsyncSession = Depends(get_db)):
         )
         .join(performer_alias, AuditLog.performed_by == performer_alias.id)
         .outerjoin(target_alias, AuditLog.target_user == target_alias.id)
-        .order_by(AuditLog.timestamp.desc())
-        .limit(100)
     )
+
+    if time_range == "Last 24 Hours":
+        query = query.where(AuditLog.timestamp >= datetime.utcnow() - timedelta(hours=24))
+    elif time_range == "Last 7 Days":
+        query = query.where(AuditLog.timestamp >= datetime.utcnow() - timedelta(days=7))
+    elif time_range == "Last 30 Days":
+        query = query.where(AuditLog.timestamp >= datetime.utcnow() - timedelta(days=30))
+
+    if department and department != "All Departments":
+        query = query.where(func.lower(performer_alias.department) == department.lower())
+
+    query = query.order_by(AuditLog.timestamp.desc()).limit(100)
+
     
     result = await db.execute(query)
     rows = result.all()

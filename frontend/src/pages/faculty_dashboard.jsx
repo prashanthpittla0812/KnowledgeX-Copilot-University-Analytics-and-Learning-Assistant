@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "../components/layout/DashboardLayout";
 import { facultyMenuItems } from "./faculty_menu";
-import { facultyApi } from "../api";
+import { facultyApi, API_BASE_URL } from "../api";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, Cell
@@ -18,6 +18,12 @@ import { LearningMaterialsTab } from "../components/faculty/LearningMaterialsTab
 import { MultimodalUploadTab } from "../components/faculty/MultimodalUploadTab";
 
 const defaultFacultyChats = [];
+
+const getPhotoUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  return `${API_BASE_URL.replace("/api/v1", "")}/${path}`;
+};
 
 export default function FacultyDashboard() {
   const navigate = useNavigate();
@@ -1140,59 +1146,59 @@ export default function FacultyDashboard() {
               </div>
             ) : learningGaps ? (
               <div className="space-y-8">
-              <div className="grid lg:grid-cols-2 gap-8">
-                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
-                  <AnalyticsCard title="Student Performance" className="min-h-[400px] border-slate-100 shadow-sm rounded-3xl bg-white/80 backdrop-blur-xl">
-                    <div className="flex flex-wrap gap-2 mt-4 mb-6">
-                      {learningGaps.student_performance.map((sp, idx) => (
-                        <motion.div whileHover={{ scale: 1.05 }} key={idx} className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 text-sm shadow-sm cursor-default">
-                          <span className="font-semibold text-slate-700">{sp.student_name}</span>
-                          <span className="text-indigo-600 font-black">{sp.average_score}%</span>
-                        </motion.div>
-                      ))}
-                    </div>
-                    <div className="h-[300px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={learningGaps.student_performance} margin={{ bottom: 30, right: 20 }}>
-                          <defs>
-                            <linearGradient id="facultyBar" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#6366F1" />
-                              <stop offset="100%" stopColor="#A855F7" />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.8} />
-                          <XAxis dataKey="student_name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', angle: -45, textAnchor: 'end' }} interval={0} height={60} />
-                          <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} domain={[0, 100]} />
-                          <Tooltip 
-                            cursor={{ fill: '#f1f5f9', opacity: 0.8 }} 
-                            content={({ active, payload, label }) => {
-                              if (active && payload && payload.length) {
-                                return (
-                                  <div className="bg-white/90 backdrop-blur-md border border-slate-200 p-4 rounded-2xl shadow-xl">
-                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{label}</p>
-                                    <p className="text-lg font-black text-indigo-600">
-                                      Score: <span className="text-slate-800">{payload[0].value}%</span>
-                                    </p>
-                                  </div>
-                                );
-                              }
-                              return null;
-                            }}
-                          />
-                          <Bar dataKey="average_score" fill="url(#facultyBar)" radius={[6, 6, 0, 0]} maxBarSize={40}>
-                            {learningGaps.student_performance.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill="url(#facultyBar)" />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </AnalyticsCard>
-                </motion.div>
+              <div className="space-y-8">
+                <div className="grid lg:grid-cols-2 gap-8">
+                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
+                    <AnalyticsCard title="Student Performance" className="min-h-[400px] border-slate-100 shadow-sm rounded-3xl bg-white/80 backdrop-blur-xl">
+                      <div className="flex flex-wrap gap-2 mt-4 mb-6">
+                        {learningGaps.student_performance.map((sp, idx) => (
+                          <motion.div whileHover={{ scale: 1.05 }} key={idx} className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 text-sm shadow-sm cursor-default">
+                            <span className="font-semibold text-slate-700">{sp.student_name}</span>
+                            <span className="text-indigo-600 font-black">{sp.average_score}%</span>
+                          </motion.div>
+                        ))}
+                      </div>
+                      <div className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={learningGaps.student_performance} margin={{ bottom: 30, right: 20 }}>
+                            <defs>
+                              <linearGradient id="facultyBar" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#6366F1" />
+                                <stop offset="100%" stopColor="#A855F7" />
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.8} />
+                            <XAxis dataKey="student_name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', angle: -45, textAnchor: 'end' }} interval={0} height={60} />
+                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} domain={[0, 100]} />
+                            <Tooltip 
+                              cursor={{ fill: '#f1f5f9', opacity: 0.8 }} 
+                              content={({ active, payload, label }) => {
+                                if (active && payload && payload.length) {
+                                  return (
+                                    <div className="bg-white/90 backdrop-blur-md border border-slate-200 p-4 rounded-2xl shadow-xl">
+                                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{label}</p>
+                                      <p className="text-lg font-black text-indigo-600">
+                                        Score: <span className="text-slate-800">{payload[0].value}%</span>
+                                      </p>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              }}
+                            />
+                            <Bar dataKey="average_score" fill="url(#facultyBar)" radius={[6, 6, 0, 0]} maxBarSize={40}>
+                              {learningGaps.student_performance.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill="url(#facultyBar)" />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </AnalyticsCard>
+                  </motion.div>
 
-                <div className="space-y-6">
-                  <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
-                    <AnalyticsCard title="Weak Topics" className="border-red-100 shadow-sm rounded-3xl bg-gradient-to-br from-red-50/50 to-white">
+                  <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="h-full">
+                    <AnalyticsCard title="Weak Topics" className="h-full min-h-[400px] border-red-100 shadow-sm rounded-3xl bg-gradient-to-br from-red-50/50 to-white">
                       <div className="space-y-3 mt-4">
                         {learningGaps.weak_topics?.length === 0 && <p className="text-sm font-semibold text-slate-400 text-center py-4">No weak topics identified! 🎉</p>}
                         {learningGaps.weak_topics?.map((wt, i) => (
@@ -1211,6 +1217,75 @@ export default function FacultyDashboard() {
                         ))}
                       </div>
                     </AnalyticsCard>
+                  </motion.div>
+                </div>
+
+                <div className="grid lg:grid-cols-2 gap-8">
+                  {/* Students Overview Carousel */}
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+                    <div className="bg-gradient-to-br from-[#f6f8f4] to-[#f0f4ec] rounded-2xl p-8 shadow-sm border border-[#e6ebe0]">
+                      <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-2xl font-bold text-slate-800">Students Overview</h2>
+                        {learningGaps.student_performance?.length > 0 && (
+                          <div className="flex items-center gap-3 text-slate-500 font-medium">
+                            <button 
+                              onClick={() => setOverviewPage(p => Math.max(0, p - 1))} 
+                              disabled={overviewPage === 0}
+                              className="text-lg hover:text-slate-800 disabled:opacity-30 transition-colors"
+                            >
+                              ←
+                            </button>
+                            <span className="text-lg font-medium tracking-wide">{overviewPage + 1} / {Math.max(1, Math.ceil(learningGaps.student_performance.length / 2))}</span>
+                            <button 
+                              onClick={() => setOverviewPage(p => Math.min(Math.ceil(learningGaps.student_performance.length / 2) - 1, p + 1))} 
+                              disabled={overviewPage >= Math.max(0, Math.ceil(learningGaps.student_performance.length / 2) - 1)}
+                              className="text-lg hover:text-slate-800 disabled:opacity-30 transition-colors"
+                            >
+                              →
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="grid md:grid-cols-2 gap-6">
+                        {learningGaps.student_performance?.slice(overviewPage * 2, overviewPage * 2 + 2).map((sp, idx) => (
+                          <div key={idx} className="bg-white rounded-xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100/60 relative overflow-hidden flex flex-col justify-between min-h-[350px]">
+                            <div className="flex justify-between items-start z-10">
+                              <div>
+                                <h3 className="text-xl font-bold text-slate-800">{sp.student_name}</h3>
+                                <p className="text-slate-400 font-medium text-sm mt-1">Student</p>
+                              </div>
+                              <button 
+                              onClick={() => setSelectedStudent(sp)}
+                              className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 text-xs font-bold px-4 py-2 rounded-full transition-colors"
+                            >
+                              View Details
+                            </button>
+                            </div>
+                            
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 opacity-95 z-0 pointer-events-none mt-4">
+                              <img 
+                                src={getPhotoUrl(sp.profile_photo_path || sp.profile_image) || `https://api.dicebear.com/7.x/initials/svg?seed=${sp.student_name}&backgroundColor=f8fafc&textColor=475569`} 
+                                alt="avatar" 
+                                className="w-full h-full object-cover rounded-full shadow-sm border-4 border-white" 
+                              />
+                            </div>
+                            
+                            <div className="z-10 mt-auto pt-40">
+                              <div className="bg-white/90 backdrop-blur-md rounded-2xl p-4 border border-slate-100 shadow-sm">
+                                <p className="font-bold text-slate-700 text-sm mb-3">Topic: {analyticsQuiz ? (quizzes.find(q => q.id.toString() === analyticsQuiz)?.topic_name || "Assessment") : "Overall Progress"}</p>
+                                <div className="flex justify-between items-center text-sm font-semibold">
+                                  <span className="text-slate-500">Progress: <span className="text-indigo-600">{sp.average_score}%</span></span>
+                                </div>
+                                <div className="w-full bg-slate-100 h-2 rounded-full mt-2 overflow-hidden">
+                                  <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full" style={{ width: `${sp.average_score}%` }} />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </motion.div>
 
                   <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
@@ -1235,75 +1310,6 @@ export default function FacultyDashboard() {
                     </AnalyticsCard>
                   </motion.div>
                 </div>
-              </div>
-
-              <div className="mt-12 max-w-4xl mx-auto">
-                {/* Students Overview Carousel */}
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-                  <div className="bg-gradient-to-br from-[#f6f8f4] to-[#f0f4ec] rounded-2xl p-8 shadow-sm border border-[#e6ebe0]">
-                    <div className="flex justify-between items-center mb-6">
-                      <h2 className="text-2xl font-bold text-slate-800">Students Overview</h2>
-                      {learningGaps.student_performance?.length > 0 && (
-                        <div className="flex items-center gap-3 text-slate-500 font-medium">
-                          <button 
-                            onClick={() => setOverviewPage(p => Math.max(0, p - 1))} 
-                            disabled={overviewPage === 0}
-                            className="text-lg hover:text-slate-800 disabled:opacity-30 transition-colors"
-                          >
-                            ←
-                          </button>
-                          <span className="text-lg font-medium tracking-wide">{overviewPage + 1} / {Math.max(1, Math.ceil(learningGaps.student_performance.length / 2))}</span>
-                          <button 
-                            onClick={() => setOverviewPage(p => Math.min(Math.ceil(learningGaps.student_performance.length / 2) - 1, p + 1))} 
-                            disabled={overviewPage >= Math.max(0, Math.ceil(learningGaps.student_performance.length / 2) - 1)}
-                            className="text-lg hover:text-slate-800 disabled:opacity-30 transition-colors"
-                          >
-                            →
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="grid md:grid-cols-2 gap-6">
-                      {learningGaps.student_performance?.slice(overviewPage * 2, overviewPage * 2 + 2).map((sp, idx) => (
-                        <div key={idx} className="bg-white rounded-xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100/60 relative overflow-hidden flex flex-col justify-between min-h-[350px]">
-                          <div className="flex justify-between items-start z-10">
-                            <div>
-                              <h3 className="text-xl font-bold text-slate-800">{sp.student_name}</h3>
-                              <p className="text-slate-400 font-medium text-sm mt-1">Student</p>
-                            </div>
-                            <button 
-                            onClick={() => setSelectedStudent(sp)}
-                            className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 text-xs font-bold px-4 py-2 rounded-full transition-colors"
-                          >
-                            View Details
-                          </button>
-                          </div>
-                          
-                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 opacity-95 z-0 pointer-events-none mt-4">
-                            <img 
-                              src={sp.profile_image || `https://api.dicebear.com/7.x/initials/svg?seed=${sp.student_name}&backgroundColor=f8fafc&textColor=475569`} 
-                              alt="avatar" 
-                              className="w-full h-full object-cover rounded-full shadow-sm border-4 border-white" 
-                            />
-                          </div>
-                          
-                          <div className="z-10 mt-auto pt-40">
-                            <div className="bg-white/90 backdrop-blur-md rounded-2xl p-4 border border-slate-100 shadow-sm">
-                              <p className="font-bold text-slate-700 text-sm mb-3">Topic: {analyticsQuiz ? (quizzes.find(q => q.id.toString() === analyticsQuiz)?.topic_name || "Assessment") : "Overall Progress"}</p>
-                              <div className="flex justify-between items-center text-sm font-semibold">
-                                <span className="text-slate-500">Progress: <span className="text-indigo-600">{sp.average_score}%</span></span>
-                              </div>
-                              <div className="w-full bg-slate-100 h-2 rounded-full mt-2 overflow-hidden">
-                                <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full" style={{ width: `${sp.average_score}%` }} />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </motion.div>
               </div>
               </div>
             ) : (
