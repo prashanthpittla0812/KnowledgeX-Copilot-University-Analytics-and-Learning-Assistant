@@ -1,10 +1,35 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Bot, User, Paperclip, Send, Loader2, Mic } from 'lucide-react';
+import { Bot, User, Paperclip, Send, Loader2, Mic, ThumbsUp, ThumbsDown, Copy, Check, Volume2, Square } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Button } from './button';
 
-export function ChatBubble({ message, sources, isUser, isTyping = false }) {
+export const ChatBubble = React.memo(function ChatBubble({ message, sources, isUser, isTyping = false }) {
+  const [feedback, setFeedback] = React.useState(null);
+  const [isCopied, setIsCopied] = React.useState(false);
+
+  const handleCopy = () => {
+    if (message) {
+      navigator.clipboard.writeText(message);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    }
+  };
+
+  const handleReplay = () => {
+    if (message && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(message);
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  const handleStop = () => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+  };
+
   return (
     <div className={cn("flex w-full gap-4 p-4 md:p-6 transition-all", isUser ? "justify-end" : "justify-start")}>
       {!isUser && (
@@ -19,7 +44,7 @@ export function ChatBubble({ message, sources, isUser, isTyping = false }) {
           ? "bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-md rounded-br-sm" 
           : "bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] shadow-sm rounded-bl-sm"
       )}>
-        <div className={cn("prose prose-sm max-w-none break-words font-medium", isUser ? "text-white" : "dark:prose-invert text-[var(--foreground)]")}>
+        <div className={cn("prose prose-sm max-w-none break-words font-medium", isUser ? "text-white" : "text-[var(--foreground)]")}>
           {isTyping ? (
             <div className="flex gap-1 py-1.5 items-center">
               <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary [animation-delay:-0.3s]"></span>
@@ -46,6 +71,52 @@ export function ChatBubble({ message, sources, isUser, isTyping = false }) {
                   ))}
                 </div>
               )}
+              {!isUser && (
+                <div className="flex justify-end mt-4 pt-3 border-t border-border/10">
+                  <div className="flex items-center gap-1 bg-muted/40 rounded-full p-1 border border-border/40 shadow-sm">
+                    <button 
+                      onClick={handleCopy}
+                      className={cn("p-1.5 rounded-full transition-all flex items-center justify-center", isCopied ? "bg-green-500/10 text-green-600" : "text-muted-foreground hover:text-foreground hover:bg-background hover:shadow-sm")}
+                      title="Copy message"
+                    >
+                      {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                    
+                    <button 
+                      onClick={handleReplay}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full transition-all text-muted-foreground hover:text-primary hover:bg-primary/5 hover:shadow-sm text-[11px] font-semibold uppercase tracking-wider" 
+                      title="Replay Response"
+                    >
+                      <Volume2 className="w-3.5 h-3.5" /> <span>Replay</span>
+                    </button>
+                    
+                    <button 
+                      onClick={handleStop}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full transition-all text-muted-foreground hover:text-red-500 hover:bg-red-500/5 hover:shadow-sm text-[11px] font-semibold uppercase tracking-wider" 
+                      title="Stop Speaking"
+                    >
+                      <Square className="w-3 h-3" fill="currentColor" /> <span>Stop</span>
+                    </button>
+                    
+                    <div className="w-[1px] h-4 bg-border/60 mx-0.5"></div>
+                    
+                    <button 
+                      onClick={() => setFeedback(feedback === 'up' ? null : 'up')}
+                      className={cn("p-1.5 rounded-full transition-all", feedback === 'up' ? "text-emerald-500 bg-emerald-500/10 shadow-sm" : "text-muted-foreground hover:text-emerald-500 hover:bg-background hover:shadow-sm")} 
+                      title="Helpful"
+                    >
+                      <ThumbsUp className="w-3.5 h-3.5" />
+                    </button>
+                    <button 
+                      onClick={() => setFeedback(feedback === 'down' ? null : 'down')}
+                      className={cn("p-1.5 rounded-full transition-all", feedback === 'down' ? "text-red-500 bg-red-500/10 shadow-sm" : "text-muted-foreground hover:text-red-500 hover:bg-background hover:shadow-sm")} 
+                      title="Not helpful"
+                    >
+                      <ThumbsDown className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -58,16 +129,18 @@ export function ChatBubble({ message, sources, isUser, isTyping = false }) {
       )}
     </div>
   );
-}
+});
 
 export function ChatInput({ input, setInput, onSubmit, isSending = false, onAttachClick }) {
   const [isListening, setIsListening] = React.useState(false);
+  const [isVoiceSource, setIsVoiceSource] = React.useState(false);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       if (input.trim() && !isSending) {
-        onSubmit();
+        onSubmit(isVoiceSource);
+        setIsVoiceSource(false);
       }
     }
   };
@@ -88,13 +161,35 @@ export function ChatInput({ input, setInput, onSubmit, isSending = false, onAtta
     };
 
     recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setInput(prev => (prev ? prev + " " + transcript : transcript));
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        }
+      }
+      if (finalTranscript) {
+        setInput(prev => (prev ? prev + " " + finalTranscript : finalTranscript));
+        setIsVoiceSource(true);
+      }
     };
 
     recognition.onerror = (event) => {
       console.error("Speech recognition error", event.error);
       setIsListening(false);
+
+      let errorMessage = `Microphone error (${event.error}). Please try again.`;
+      if (event.error === 'not-allowed') {
+        errorMessage = "Microphone access was denied. Please click the microphone icon in your address bar to allow it.";
+      } else if (event.error === 'no-speech') {
+        errorMessage = "No speech was detected.";
+      } else if (event.error === 'audio-capture') {
+        errorMessage = "No microphone was found. Please ensure a microphone is plugged in and recognized by your system.";
+      } else if (event.error === 'network') {
+        errorMessage = "Network error. Speech recognition requires an internet connection.";
+      }
+      
+      // Use toast or alert depending on what's available
+      alert(errorMessage);
     };
 
     recognition.onend = () => {
@@ -108,7 +203,7 @@ export function ChatInput({ input, setInput, onSubmit, isSending = false, onAtta
     <div className="relative flex w-full flex-col overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)] shadow-lg focus-within:ring-2 focus-within:ring-[var(--primary)]/50 transition-all">
       <textarea
         value={input}
-        onChange={(e) => setInput(e.target.value)}
+        onChange={(e) => { setInput(e.target.value); setIsVoiceSource(false); }}
         onKeyDown={handleKeyDown}
         placeholder={isListening ? "Listening..." : "Message KnowledgeX Copilot..."}
         className="min-h-[60px] w-full resize-none bg-transparent px-4 pt-4 pb-12 focus:outline-none sm:text-sm custom-scrollbar text-[var(--foreground)]"
@@ -138,6 +233,7 @@ export function ChatInput({ input, setInput, onSubmit, isSending = false, onAtta
         >
           <Mic className="h-4 w-4" />
         </Button>
+
       </div>
       <div className="absolute right-2 bottom-2 flex items-center gap-2">
         <Button
@@ -148,7 +244,10 @@ export function ChatInput({ input, setInput, onSubmit, isSending = false, onAtta
             input.trim() ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-muted text-muted-foreground opacity-50 cursor-not-allowed"
           )}
           disabled={!input.trim() || isSending}
-          onClick={onSubmit}
+          onClick={() => {
+            onSubmit(isVoiceSource);
+            setIsVoiceSource(false);
+          }}
         >
           {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         </Button>

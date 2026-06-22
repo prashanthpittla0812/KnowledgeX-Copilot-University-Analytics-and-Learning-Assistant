@@ -1,5 +1,5 @@
 from langchain_chroma import Chroma
-from langchain_community.embeddings import OllamaEmbeddings
+from langchain_ollama import OllamaEmbeddings
 from langchain_openai import AzureOpenAIEmbeddings, OpenAIEmbeddings
 
 from app.config.settings import settings
@@ -8,11 +8,14 @@ from app.utils.logger import get_logger
 logger = get_logger()
 
 
+from app.utils.embeddings import get_embeddings
+
+
 def get_teacher_embeddings():
     if settings.AI_PROVIDER == "openai":
         return OpenAIEmbeddings(
             model="text-embedding-ada-002",
-            openai_api_key=settings.OPENAI_API_KEY,
+            api_key=settings.OPENAI_API_KEY,
         )
     elif settings.AI_PROVIDER == "azure":
         return AzureOpenAIEmbeddings(
@@ -21,6 +24,9 @@ def get_teacher_embeddings():
             api_key=settings.AZURE_OPENAI_KEY,
             api_version=settings.AZURE_OPENAI_API_VERSION,
         )
+    elif settings.AI_PROVIDER == "groq":
+        from langchain_community.embeddings import HuggingFaceEmbeddings
+        return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
     else:
         return OllamaEmbeddings(
             model="nomic-embed-text",

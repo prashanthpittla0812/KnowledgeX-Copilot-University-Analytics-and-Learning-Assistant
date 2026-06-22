@@ -44,8 +44,8 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "llama-3.1-8b-instant"
 
-    # ChromaDB
-    CHROMA_PERSIST_DIRECTORY: str = "./chroma_db"
+    # ChromaDB Settings
+    CHROMA_PERSIST_DIRECTORY: str = "./chroma_db_v2"
 
     # File Uploads
     UPLOAD_DIRECTORY: str = "./uploads"
@@ -54,6 +54,11 @@ class Settings(BaseSettings):
     # Logging
     LOG_LEVEL: str = "INFO"
     LOG_FILE: str = "./logs/knowledgex.log"
+
+    # Supabase Storage
+    SUPABASE_URL: str = ""
+    SUPABASE_KEY: str = ""
+    SUPABASE_STORAGE_BUCKET: str = "profile-pictures"
 
     @property
     def UPLOAD_PATH(self) -> Path:

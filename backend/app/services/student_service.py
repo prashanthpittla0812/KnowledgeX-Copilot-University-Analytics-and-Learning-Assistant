@@ -10,11 +10,45 @@ class StudentQuizService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_all_quizzes(self) -> list:
+    async def get_all_quizzes(self, student=None) -> list:
         result = await self.db.execute(
             select(TeacherQuiz).order_by(TeacherQuiz.created_at.desc())
         )
-        quizzes = result.scalars().all()
+        all_quizzes = result.scalars().all()
+
+        import re
+        import math
+        student_year = None
+        if student and student.designation:
+            match = re.search(r'\d+', student.designation)
+            if match:
+                student_year = int(match.group())
+
+        quizzes = []
+        for q in all_quizzes:
+            if q.semester and student_year:
+                sem_match = re.search(r'\d+', q.semester)
+                if sem_match:
+                    sem_num = int(sem_match.group())
+                    req_year = math.ceil(sem_num / 2)
+                    if req_year != student_year:
+                        continue
+            quizzes.append(q)
+
+        attempted_quiz_ids = set()
+        if student:
+            student_id = student.id
+            from app.database.models import QuizAttempt, AssessmentSubmission
+            attempts_result = await self.db.execute(
+                select(QuizAttempt.quiz_id).where(QuizAttempt.student_id == student_id)
+            )
+            attempted_quiz_ids = set(attempts_result.scalars().all())
+
+            subs_result = await self.db.execute(
+                select(AssessmentSubmission.assessment_id).where(AssessmentSubmission.student_id == student_id)
+            )
+            attempted_quiz_ids.update(subs_result.scalars().all())
+
         return [
             {
                 "id": q.id,
@@ -23,7 +57,10 @@ class StudentQuizService:
                 "question_type": q.question_type,
                 "difficulty": q.difficulty,
                 "num_questions": q.num_questions,
+                "duration_minutes": q.duration_minutes or 60,
+                "max_violations": q.max_violations or 3,
                 "created_at": q.created_at.isoformat() if q.created_at else None,
+                "is_completed": q.id in attempted_quiz_ids,
             }
             for q in quizzes
         ]
@@ -49,7 +86,22 @@ class StudentQuizService:
                 "options": options,
             })
 
-        return {"quiz_id": quiz_id, "questions": formatted}
+        result = await self.db.execute(
+            select(TeacherQuiz)
+            .where(TeacherQuiz.id == quiz_id)
+        )
+        quiz = result.scalar_one_or_none()
+        
+        return {
+            "quiz_id": quiz_id, 
+            "topic_name": quiz.topic_name if quiz else None,
+            "question_type": quiz.question_type if quiz else None,
+            "num_questions": quiz.num_questions if quiz else None,
+            "duration_minutes": quiz.duration_minutes if quiz else 60,
+            "max_violations": quiz.max_violations if quiz else 3,
+            "created_at": quiz.created_at.isoformat() if quiz and quiz.created_at else None,
+            "questions": formatted
+        }
 
 
 class StudentSubmitService:

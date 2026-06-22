@@ -24,6 +24,7 @@ class RAGService:
                 model_provider="openai",
                 api_key=settings.OPENAI_API_KEY,
                 temperature=0.3,
+                max_tokens=1024,
             )
         elif settings.AI_PROVIDER == "azure":
             return init_chat_model(
@@ -33,6 +34,7 @@ class RAGService:
                 azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
                 api_version=settings.AZURE_OPENAI_API_VERSION,
                 temperature=0.3,
+                max_tokens=1024,
             )
         elif settings.AI_PROVIDER == "groq":
             return init_chat_model(
@@ -40,6 +42,7 @@ class RAGService:
                 model_provider="groq",
                 api_key=settings.GROQ_API_KEY,
                 temperature=0.3,
+                max_tokens=1024,
             )
         else:
             return init_chat_model(
@@ -47,6 +50,8 @@ class RAGService:
                 model_provider="ollama",
                 base_url=settings.OLLAMA_BASE_URL,
                 temperature=0.3,
+                max_tokens=1024,
+                model_kwargs={"num_ctx": 2048},
             )
 
     def load_and_index_pdf(self, file_path: str) -> int:
@@ -61,7 +66,7 @@ class RAGService:
             logger.info(f"Indexed {len(texts)} chunks into vector store")
         return len(texts)
 
-    def retrieve_context(self, query: str, k: int = 4) -> list[str]:
+    def retrieve_context(self, query: str, k: int = 3) -> list[str]:
         docs = self.vector_store.similarity_search(query, k=k)
         return [doc.page_content for doc in docs]
 
@@ -78,7 +83,7 @@ class RAGService:
             else:
                 filter_dict = {"content_id": {"$in": content_ids}}
 
-        docs = self.vector_store.similarity_search(question, k=4, filter=filter_dict)
+        docs = self.vector_store.similarity_search(question, k=3, filter=filter_dict)
         context = "\n\n".join(doc.page_content for doc in docs)
 
         chain = prompt | self.llm

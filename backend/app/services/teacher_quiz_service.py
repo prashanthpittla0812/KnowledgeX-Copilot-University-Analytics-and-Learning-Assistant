@@ -30,6 +30,7 @@ class TeacherQuizService:
                 model_provider="openai",
                 api_key=settings.OPENAI_API_KEY,
                 temperature=0.3,
+                max_tokens=4096,
             )
         elif settings.AI_PROVIDER == "azure":
             return init_chat_model(
@@ -39,6 +40,7 @@ class TeacherQuizService:
                 azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
                 api_version=settings.AZURE_OPENAI_API_VERSION,
                 temperature=0.3,
+                max_tokens=4096,
             )
         elif settings.AI_PROVIDER == "groq":
             return init_chat_model(
@@ -46,6 +48,7 @@ class TeacherQuizService:
                 model_provider="groq",
                 api_key=settings.GROQ_API_KEY,
                 temperature=0.3,
+                max_tokens=4096,
             )
         else:
             return init_chat_model(
@@ -56,15 +59,16 @@ class TeacherQuizService:
             )
 
     def _get_prompt(self, question_type: str, context: str, difficulty: str, num_questions: int) -> str:
-        if question_type.lower() == "mcq":
+        q_type = question_type.lower()
+        if "mcq" in q_type:
             return TEACHER_MCQ_PROMPT_TEMPLATE.format(
                 context=context, difficulty=difficulty, num_questions=num_questions
             )
-        elif question_type.lower() == "fill_blanks":
+        elif "fill" in q_type or "blank" in q_type:
             return TEACHER_FILL_BLANKS_PROMPT_TEMPLATE.format(
                 context=context, difficulty=difficulty, num_questions=num_questions
             )
-        elif question_type.lower() == "theory":
+        elif "theory" in q_type or "word" in q_type:
             return TEACHER_THEORY_PROMPT_TEMPLATE.format(
                 context=context, difficulty=difficulty, num_questions=num_questions
             )
@@ -80,20 +84,48 @@ class TeacherQuizService:
         question_type: str,
         difficulty: str,
         num_questions: int,
+        document_topic: str = None,
+        teacher_id: int = None,
+        is_assessment: bool = False,
+        manual_questions: str = None,
+        duration_mins: int = 60,
+        semester: str = None,
+        max_violations: int = 3,
     ) -> dict:
-        context = retrieve_context(topic_name, topic_name)
-        if not context:
-            return {"status": "error", "message": "No content found for this topic. Upload a document first."}
+        if manual_questions:
+            # Check if manual_questions is already a valid JSON string (from the new ManualQuestionBuilder UI)
+            is_valid_json = False
+            try:
+                parsed_manual = json.loads(manual_questions)
+                if isinstance(parsed_manual, list):
+                    is_valid_json = True
+                    content = manual_questions
+            except json.JSONDecodeError:
+                pass
 
-        prompt = self._get_prompt(
-            question_type=question_type,
-            context=context,
-            difficulty=difficulty,
-            num_questions=num_questions,
-        )
+            if not is_valid_json:
+                # Fallback for old textarea inputs
+                prompt = f"Format the following manual questions into a JSON list of objects with 'question', 'options' (empty list if none), and 'answer' (empty string if none) keys.\n\nQuestions:\n{manual_questions}\n\nReturn ONLY valid JSON."
+                response = await self.llm.ainvoke(prompt)
+                content = response.content if hasattr(response, "content") else str(response)
+        else:
+            doc_topic = document_topic or topic_name
+            context = retrieve_context(doc_topic, topic_name)
+            if not context:
+                return {"status": "error", "message": "No content found for this topic. Upload a document first."}
 
-        response = await self.llm.ainvoke(prompt)
-        content = response.content if hasattr(response, "content") else str(response)
+            if is_assessment:
+                prompt = f"Generate {num_questions} questions for an assessment of type {question_type} at {difficulty} difficulty.\nUse ONLY this context:\n{context}\n\nReturn ONLY valid JSON as a list of objects with 'question', 'options' (empty list if none), and 'answer' (empty string if none) keys."
+            else:
+                prompt = self._get_prompt(
+                    question_type=question_type,
+                    context=context,
+                    difficulty=difficulty,
+                    num_questions=num_questions,
+                )
+
+            response = await self.llm.ainvoke(prompt)
+            content = response.content if hasattr(response, "content") else str(response)
 
         questions = None
         try:
@@ -118,16 +150,50 @@ class TeacherQuizService:
                 except json.JSONDecodeError:
                     pass
 
+        if questions is None:
+            start = content.find('[')
+            if start != -1:
+                last_brace = content.rfind('}')
+                if last_brace != -1 and last_brace > start:
+                    fixed_content = content[start:last_brace+1] + "\n]"
+                    try:
+                        questions = json.loads(fixed_content)
+                    except json.JSONDecodeError:
+                        pass
+
+        if isinstance(questions, dict):
+            if "questions" in questions:
+                questions = questions["questions"]
+            else:
+                found_list = False
+                for v in questions.values():
+                    if isinstance(v, list):
+                        questions = v
+                        found_list = True
+                        break
+                if not found_list:
+                    extracted_questions = []
+                    for v in questions.values():
+                        if isinstance(v, dict) and "question" in v:
+                            extracted_questions.append(v)
+                    if extracted_questions:
+                        questions = extracted_questions
+
         if questions is None or not isinstance(questions, list):
             logger.error(f"Failed to extract JSON from LLM response: {content[:200]}")
             return {"status": "error", "message": "Failed to generate valid quiz format"}
+        final_question_type = f"Assessment: {question_type} ({duration_mins} mins)" if is_assessment else question_type
 
         quiz = TeacherQuiz(
             teacher_name=faculty_name,
+            teacher_id=teacher_id,
             topic_name=topic_name,
-            question_type=question_type,
+            question_type=final_question_type,
             difficulty=difficulty,
-            num_questions=num_questions,
+            num_questions=num_questions if not manual_questions else len(questions),
+            semester=semester,
+            duration_minutes=duration_mins,
+            max_violations=max_violations,
         )
         self.db.add(quiz)
         await self.db.flush()
@@ -149,6 +215,30 @@ class TeacherQuizService:
             "quiz_id": quiz.id,
             "questions": questions,
         }
+
+    async def get_quiz(self, quiz_id: int) -> dict:
+        from sqlalchemy import select
+        result = await self.db.execute(
+            select(TeacherQuizQuestion).where(TeacherQuizQuestion.quiz_id == quiz_id)
+        )
+        questions = result.scalars().all()
+        
+        formatted = []
+        for q in questions:
+            options = q.options
+            if isinstance(options, str):
+                try:
+                    options = json.loads(options)
+                except (json.JSONDecodeError, TypeError):
+                    options = []
+            formatted.append({
+                "id": q.id,
+                "question": q.question,
+                "options": options,
+                "answer": q.answer,
+            })
+            
+        return {"quiz_id": quiz_id, "questions": formatted}
 
 
 

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from pathlib import Path
+import aiofiles # Import aiofiles for non-blocking file writing
 
 from app.auth.permissions import require_role
 from app.config.settings import settings
@@ -59,8 +60,9 @@ async def upload_multimodal_document(
         user_dir.mkdir(parents=True, exist_ok=True)
         file_path = user_dir / file.filename
         
-        with open(file_path, "wb") as f:
-            f.write(content)
+        # FIX: Async file write using aiofiles
+        async with aiofiles.open(file_path, "wb") as f:
+            await f.write(content)
             
         rag_service = MultimodalRAGService(db)
         processed_content = await rag_service.process_upload(
@@ -77,6 +79,7 @@ async def upload_multimodal_document(
         )
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
 
 @router.post("/multimodal/upload-batch", status_code=status.HTTP_201_CREATED)
 async def upload_multimodal_batch(
@@ -97,8 +100,10 @@ async def upload_multimodal_batch(
                 continue # Skip large files in batch
                 
             file_path = user_dir / file.filename
-            with open(file_path, "wb") as f:
-                f.write(content)
+            
+            # FIX: Async batch file write using aiofiles
+            async with aiofiles.open(file_path, "wb") as f:
+                await f.write(content)
                 
             processed_content = await rag_service.process_upload(
                 file_path=str(file_path),
@@ -116,6 +121,7 @@ async def upload_multimodal_batch(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
 
 @router.get("/", response_model=DocumentListResponse)
 async def list_documents(

@@ -1,67 +1,22 @@
-import { useNavigate } from "react-router-dom";
+import React from 'react';
 
 export default function StudentAttendance() {
-  const navigate = useNavigate();
-
-  const attendanceData = [
-    { subject: "Math", present: 18, total: 20 },
-    { subject: "Physics", present: 16, total: 20 },
-    { subject: "CS", present: 19, total: 20 },
-    { subject: "English", present: 17, total: 20 },
-  ];
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-orange-50 to-orange-200 text-gray-900 p-6">
-
-      <div className="max-w-4xl mx-auto">
-
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-orange-500">
-            Student Attendance
-          </h1>
-
-          <button
-            onClick={() => navigate("/student-dashboard")}
-            className="border border-orange-500 px-4 py-2 rounded-lg text-orange-500 hover:bg-orange-500 hover:text-white"
-          >
-            Back to Dashboard
-          </button>
+    <div className="min-h-screen bg-slate-50 p-8 flex flex-col items-center justify-center">
+      <div className="bg-white p-8 rounded-3xl shadow-xl max-w-2xl w-full text-center border border-slate-100">
+        <div className="w-20 h-20 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-6">
+          <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
         </div>
-
-        {/* Attendance Cards */}
-        <div className="grid gap-4 md:grid-cols-2">
-          {attendanceData.map((sub, index) => {
-            const percent = ((sub.present / sub.total) * 100).toFixed(1);
-
-            return (
-              <div
-                key={index}
-                className="bg-white/90 p-5 rounded-2xl border border-orange-100 shadow-lg shadow-orange-300/20 backdrop-blur"
-              >
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {sub.subject}
-                </h2>
-
-                <p className="text-gray-600 mt-2">
-                  Present: {sub.present} / {sub.total}
-                </p>
-
-                <div className="mt-3 bg-gray-200 h-3 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-orange-500"
-                    style={{ width: `${percent}%` }}
-                  ></div>
-                </div>
-
-                <p className="mt-2 text-sm text-orange-500">
-                  {percent}% Attendance
-                </p>
-              </div>
-            );
-          })}
-        </div>
-
+        <h1 className="text-3xl font-black text-slate-800 tracking-tight mb-4">Student Attendance</h1>
+        <p className="text-slate-500 font-medium">This page is currently under construction. Attendance tracking features will be available here soon.</p>
+        <button 
+          onClick={() => window.history.back()}
+          className="mt-8 bg-slate-900 text-white font-bold py-3 px-6 rounded-xl hover:bg-slate-800 transition-colors"
+        >
+          Go Back
+        </button>
       </div>
     </div>
   );

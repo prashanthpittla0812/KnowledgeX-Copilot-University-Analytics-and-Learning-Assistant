@@ -19,11 +19,12 @@ class StudyPlanService:
         self.rag = RAGService()
 
     async def generate_plan(
-        self, user: User, subjects: list[str], exam_date: str, daily_hours: float
+        self, user: User, subjects: list[str], exam_date: str, daily_hours: float, syllabus: str | None = None
     ) -> dict:
         prompt = STUDYPLAN_GENERATION_PROMPT_TEMPLATE.format(
             current_date=datetime.now().strftime("%Y-%m-%d"),
             subjects=subjects,
+            syllabus=syllabus or "None provided",
             exam_date=exam_date,
             daily_hours=daily_hours,
         )

@@ -1,7 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException
+import os
+import shutil
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
+from app.config.settings import settings
 from app.database.db import get_db
+from app.auth.permissions import get_current_student
+from app.database.models import User, TeacherQuiz, AssessmentSubmission
 from app.schemas.teacher_schema import (
     StudentQuizEvalRequest,
     StudentQuizEvalResponse,
@@ -18,9 +24,12 @@ router = APIRouter(prefix="/student", tags=["Student"])
 
 
 @router.get("/assigned-quizzes")
-async def get_assigned_quizzes(db: AsyncSession = Depends(get_db)):
+async def get_assigned_quizzes(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_student),
+):
     service = StudentQuizService(db)
-    quizzes = await service.get_all_quizzes()
+    quizzes = await service.get_all_quizzes(student=current_user)
     return {"quizzes": quizzes}
 
 
@@ -85,3 +94,59 @@ async def evaluate_quiz(
         answers=request.answers,
     )
     return StudentQuizEvalResponse(**result)
+
+
+@router.post("/assessment/{assessment_id}/submit")
+async def submit_assessment(
+    assessment_id: int,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_student),
+):
+    result = await db.execute(select(TeacherQuiz).where(TeacherQuiz.id == assessment_id))
+    assessment = result.scalar_one_or_none()
+    if not assessment:
+        raise HTTPException(status_code=404, detail="Assessment not found")
+        
+    result = await db.execute(
+        select(AssessmentSubmission)
+        .where(AssessmentSubmission.assessment_id == assessment_id)
+        .where(AssessmentSubmission.student_id == current_user.id)
+    )
+    existing = result.scalar_one_or_none()
+    if existing:
+        raise HTTPException(status_code=400, detail="Assessment already submitted")
+        
+    upload_dir = settings.UPLOAD_PATH / "submissions"
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    file_path_relative = f"uploads/submissions/{current_user.id}_{assessment_id}_{file.filename}"
+    file_path = str(upload_dir / f"{current_user.id}_{assessment_id}_{file.filename}")
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    submission = AssessmentSubmission(
+        assessment_id=assessment_id,
+        student_id=current_user.id,
+        file_path=file_path_relative,
+        file_name=file.filename,
+    )
+    db.add(submission)
+    await db.commit()
+    return {"status": "success", "message": "Assessment submitted successfully"}
+
+
+@router.get("/assessment/{assessment_id}/status")
+async def get_assessment_status(
+    assessment_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_student),
+):
+    result = await db.execute(
+        select(AssessmentSubmission)
+        .where(AssessmentSubmission.assessment_id == assessment_id)
+        .where(AssessmentSubmission.student_id == current_user.id)
+    )
+    submission = result.scalar_one_or_none()
+    if submission:
+        return {"submitted": True, "file_name": submission.file_name, "submitted_at": submission.submitted_at}
+    return {"submitted": False}

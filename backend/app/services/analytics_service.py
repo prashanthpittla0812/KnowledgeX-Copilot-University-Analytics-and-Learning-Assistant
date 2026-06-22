@@ -4,7 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.prompts import LEARNING_GAPS_PROMPT_TEMPLATE
-from app.database.models import Document, FacultyDocument, Quiz, QuizAttempt, TeacherQuiz, User, TopicPerformance
+from app.database.models import Document, FacultyDocument, LearningMaterial, Quiz, QuizAttempt, TeacherQuiz, User, TopicPerformance
 from app.services.rag_service import RAGService
 from app.utils.logger import get_logger
 
@@ -16,24 +16,39 @@ class AnalyticsService:
         self.db = db
         self.rag = RAGService()
 
-    async def get_dashboard_stats(self) -> dict:
-        total_students = await self.db.scalar(
-            select(func.count()).select_from(User).where(User.role == "student")
-        )
+    async def get_dashboard_stats(self, faculty: User | None = None) -> dict:
+        student_query = select(func.count()).select_from(User).where(User.role == "student")
+        if faculty and faculty.department:
+            student_query = student_query.where(func.lower(User.department) == func.lower(faculty.department))
+        total_students = await self.db.scalar(student_query)
+
         total_faculty = await self.db.scalar(
             select(func.count()).select_from(User).where(User.role == "faculty")
         )
-        total_documents = await self.db.scalar(
-            select(func.count()).select_from(Document)
-        )
-        total_quizzes = await self.db.scalar(
-            select(func.count()).select_from(Quiz)
-        )
+
+        doc_query = select(func.count()).select_from(LearningMaterial)
+        if faculty:
+            doc_query = doc_query.where(LearningMaterial.faculty_id == faculty.id)
+        total_documents = await self.db.scalar(doc_query)
+
+        quiz_query = select(func.count()).select_from(TeacherQuiz)
+        if faculty:
+            quiz_query = quiz_query.where(TeacherQuiz.teacher_id == faculty.id)
+        total_quizzes = await self.db.scalar(quiz_query)
+
+        avg_score = 0.0
+        if faculty and faculty.department:
+            score_query = select(func.avg(QuizAttempt.percentage)).join(User, QuizAttempt.student_id == User.id).where(User.department == faculty.department)
+            avg_score = await self.db.scalar(score_query)
+        else:
+            avg_score = await self.db.scalar(select(func.avg(QuizAttempt.percentage)))
+
         return {
             "total_students": total_students or 0,
             "total_faculty": total_faculty or 0,
             "total_documents": total_documents or 0,
             "total_quizzes": total_quizzes or 0,
+            "avg_class_score": round(avg_score or 0, 2),
         }
 
     async def get_performance_metrics(self) -> list[dict]:
@@ -64,22 +79,33 @@ class AnalyticsService:
             })
         return metrics
 
-    async def get_learning_gaps(self) -> dict:
-        student_query = await self.db.execute(
-            select(User.name, func.avg(QuizAttempt.percentage).label("avg_score"))
+    async def get_learning_gaps(self, quiz_id: int | None = None) -> dict:
+        student_query_stmt = select(User.id.label("user_id"), User.name, User.profile_photo_path, User.department, User.designation, func.avg(QuizAttempt.percentage).label("avg_score")) \
             .join(QuizAttempt, User.id == QuizAttempt.student_id)
-            .group_by(User.name)
-        )
-        student_scores = student_query.all()
+        
+        if quiz_id:
+            student_query_stmt = student_query_stmt.where(QuizAttempt.quiz_id == quiz_id)
+            
+        student_query_stmt = student_query_stmt.group_by(User.id, User.name, User.profile_photo_path, User.department, User.designation)
+        student_scores = (await self.db.execute(student_query_stmt)).all()
 
-        topic_query = await self.db.execute(
-            select(TopicPerformance.topic, func.avg(TopicPerformance.accuracy).label("avg_acc"))
-            .group_by(TopicPerformance.topic)
-        )
-        topic_scores = topic_query.all()
+        topic_query_stmt = select(TopicPerformance.topic, func.avg(TopicPerformance.accuracy).label("avg_acc"))
+        if quiz_id:
+            topic_query_stmt = topic_query_stmt.join(QuizAttempt, TopicPerformance.attempt_id == QuizAttempt.id) \
+                                               .where(QuizAttempt.quiz_id == quiz_id)
+        topic_query_stmt = topic_query_stmt.group_by(TopicPerformance.topic)
+        
+        topic_scores = (await self.db.execute(topic_query_stmt)).all()
 
         student_performance = [
-            {"student_name": row.name, "average_score": round(float(row.avg_score), 2)}
+            {
+                "student_id": row.user_id,
+                "student_name": row.name,
+                "profile_photo_path": row.profile_photo_path,
+                "department": row.department,
+                "designation": row.designation,
+                "average_score": round(float(row.avg_score), 2)
+            }
             for row in student_scores
         ]
 

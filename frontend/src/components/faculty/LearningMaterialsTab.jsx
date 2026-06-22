@@ -6,9 +6,8 @@ import { BookOpen, Upload, Link as LinkIcon, FileText, File, Video, Trash2, Eye,
 import toast from "react-hot-toast";
 
 export function LearningMaterialsTab() {
-  const [activeTab, setActiveTab] = useState("upload"); // 'upload' or 'my-materials' or 'analytics'
+  const [activeTab, setActiveTab] = useState("upload"); // 'upload' or 'my-materials'
   const [materials, setMaterials] = useState([]);
-  const [analytics, setAnalytics] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Upload Form State
@@ -36,18 +35,8 @@ export function LearningMaterialsTab() {
     }
   };
 
-  const fetchAnalytics = async () => {
-    try {
-      const res = await materialApi.getFacultyAnalytics();
-      setAnalytics(res.data);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
   useEffect(() => {
     if (activeTab === "my-materials") fetchMaterials();
-    if (activeTab === "analytics") fetchAnalytics();
   }, [activeTab]);
 
   const handleUpload = async (e) => {
@@ -141,10 +130,9 @@ export function LearningMaterialsTab() {
           <h1 className="text-3xl font-black tracking-tight">Learning Materials</h1>
           <p className="text-muted-foreground">Manage and share resources with your students.</p>
         </div>
-        <div className="flex bg-muted/50 p-1 rounded-xl">
-          <button onClick={() => setActiveTab("upload")} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === "upload" ? "bg-white dark:bg-slate-800 shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"}`}>Upload</button>
-          <button onClick={() => setActiveTab("my-materials")} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === "my-materials" ? "bg-white dark:bg-slate-800 shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"}`}>My Materials</button>
-          <button onClick={() => setActiveTab("analytics")} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === "analytics" ? "bg-white dark:bg-slate-800 shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"}`}>Analytics</button>
+        <div className="flex bg-orange-100/60 p-1 rounded-xl border border-orange-200/50 shadow-inner">
+          <button onClick={() => setActiveTab("upload")} className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === "upload" ? "bg-gradient-to-r from-orange-500 to-amber-500 shadow-md text-white" : "text-orange-900/60 hover:text-orange-900 hover:bg-orange-200/50"}`}>Upload</button>
+          <button onClick={() => setActiveTab("my-materials")} className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === "my-materials" ? "bg-gradient-to-r from-orange-500 to-amber-500 shadow-md text-white" : "text-orange-900/60 hover:text-orange-900 hover:bg-orange-200/50"}`}>My Materials</button>
         </div>
       </div>
 
@@ -163,10 +151,7 @@ export function LearningMaterialsTab() {
                     <option value="PDF">PDF Document</option>
                     <option value="PPT">Presentation (PPT)</option>
                     <option value="DOC">Word Document (DOC)</option>
-                    <option value="NOTE">Study Notes</option>
-                    <option value="ASSIGNMENT">Assignment</option>
                     <option value="VIDEO">Video Link</option>
-                    <option value="LINK">Reference Link</option>
                   </select>
                 </div>
               </div>
@@ -191,20 +176,37 @@ export function LearningMaterialsTab() {
                 </div>
                 <div>
                   <label className="text-sm font-semibold mb-1 block">Semester</label>
-                  <input value={semester} onChange={e => setSemester(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-2 text-sm focus:ring-1 focus:ring-primary outline-none" placeholder="e.g., 6" />
+                  <select value={semester} onChange={e => setSemester(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-2 text-sm focus:ring-1 focus:ring-primary outline-none">
+                    <option value="">Select Semester</option>
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map(sem => (
+                      <option key={sem} value={sem}>Semester {sem}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
               <div className="border-t border-border pt-6 mt-6">
-                {["LINK", "VIDEO"].includes(materialType) ? (
+                {materialType === "VIDEO" ? (
                   <div>
-                    <label className="text-sm font-semibold mb-1 block">Resource URL *</label>
+                    <label className="text-sm font-semibold mb-1 block">Video URL *</label>
                     <input type="url" required value={linkUrl} onChange={e => setLinkUrl(e.target.value)} className="w-full rounded-xl border border-input bg-background px-4 py-2 text-sm focus:ring-1 focus:ring-primary outline-none" placeholder="https://..." />
                   </div>
                 ) : (
                   <div>
                     <label className="text-sm font-semibold mb-1 block">Upload File *</label>
-                    <input ref={fileInputRef} type="file" required onChange={e => setFile(e.target.files[0])} className="w-full rounded-xl border border-input bg-background px-4 py-2 text-sm focus:ring-1 focus:ring-primary outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 transition-all" />
+                    <input 
+                      ref={fileInputRef} 
+                      type="file" 
+                      accept={
+                        materialType === "PDF" ? ".pdf,application/pdf" :
+                        materialType === "PPT" ? ".ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" :
+                        materialType === "DOC" ? ".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" :
+                        "*/*"
+                      }
+                      required 
+                      onChange={e => setFile(e.target.files[0])} 
+                      className="w-full rounded-xl border border-input bg-background px-4 py-2 text-sm focus:ring-1 focus:ring-primary outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 transition-all" 
+                    />
                   </div>
                 )}
               </div>
@@ -279,43 +281,7 @@ export function LearningMaterialsTab() {
         </div>
       )}
 
-      {activeTab === "analytics" && (
-        <div className="grid gap-6">
-          <div className="grid sm:grid-cols-3 gap-6">
-            <Card className="glass-card">
-              <CardContent className="p-6">
-                <h3 className="text-sm font-semibold text-muted-foreground mb-2">Total Uploads</h3>
-                <p className="text-4xl font-black">{analytics?.total_uploads || 0}</p>
-              </CardContent>
-            </Card>
-            <Card className="glass-card">
-              <CardContent className="p-6">
-                <h3 className="text-sm font-semibold text-muted-foreground mb-2">Total Views</h3>
-                <p className="text-4xl font-black text-primary">{analytics?.total_views || 0}</p>
-              </CardContent>
-            </Card>
-            <Card className="glass-card">
-              <CardContent className="p-6">
-                <h3 className="text-sm font-semibold text-muted-foreground mb-2">Total Downloads</h3>
-                <p className="text-4xl font-black text-blue-500">{analytics?.total_downloads || 0}</p>
-              </CardContent>
-            </Card>
-          </div>
-          
-          <Card className="glass-card">
-            <CardContent className="p-6">
-              <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-                <Eye className="w-5 h-5 text-primary" /> Most Viewed Material
-              </h3>
-              {analytics?.most_viewed ? (
-                <p className="text-xl font-medium">{analytics.most_viewed}</p>
-              ) : (
-                <p className="text-muted-foreground">Not enough data to determine.</p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
+
     </div>
   );
 }

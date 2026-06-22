@@ -13,8 +13,9 @@ class User(Base):
     name = Column(String(255), nullable=False)
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
-    role = Column(String(50), nullable=False, default="student")
+    role = Column(String(50), nullable=False, default="student", index=True)
     status = Column(String(50), nullable=False, default="PENDING")
+    email_type = Column(String(50), nullable=True)
     approved_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     approved_at = Column(DateTime, nullable=True)
     rejected_at = Column(DateTime, nullable=True)
@@ -23,6 +24,11 @@ class User(Base):
     must_change_password = Column(Boolean, default=False, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    last_login_date = Column(DateTime, nullable=True)
+    current_streak = Column(Integer, default=0, nullable=False)
+    profile_photo_path = Column(String(500), nullable=True)
+    email_verified = Column(Boolean, default=False, nullable=False)
+    verified_at = Column(DateTime, nullable=True)
 
     documents = relationship("Document", back_populates="user", cascade="all, delete-orphan")
     quizzes = relationship("Quiz", back_populates="user", cascade="all, delete-orphan")
@@ -33,6 +39,7 @@ class User(Base):
     quiz_attempts = relationship("QuizAttempt", back_populates="student", cascade="all, delete-orphan")
     topic_performances = relationship("TopicPerformance", back_populates="student", cascade="all, delete-orphan")
     topic_summaries = relationship("StudentTopicSummary", back_populates="student", cascade="all, delete-orphan")
+    assessment_submissions = relationship("AssessmentSubmission", back_populates="student", cascade="all, delete-orphan")
     
     # Self-referential relationship for approver
     approved_users = relationship("User", back_populates="approver", foreign_keys=[approved_by])
@@ -111,6 +118,9 @@ class TeacherQuiz(Base):
     question_type = Column(String(50), nullable=False)
     difficulty = Column(String(50), nullable=False)
     num_questions = Column(Integer, nullable=False)
+    semester = Column(String(50), nullable=True)
+    duration_minutes = Column(Integer, nullable=True, default=60)
+    max_violations = Column(Integer, nullable=True, default=3)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     teacher = relationship("User", back_populates="created_quizzes", foreign_keys=[teacher_id])
@@ -119,6 +129,7 @@ class TeacherQuiz(Base):
     results = relationship("TeacherQuizResult", back_populates="quiz", cascade="all, delete-orphan")
     attempts = relationship("QuizAttempt", back_populates="quiz", cascade="all, delete-orphan")
     learning_gap_reports = relationship("LearningGapReport", back_populates="quiz", cascade="all, delete-orphan")
+    submissions = relationship("AssessmentSubmission", back_populates="assessment", cascade="all, delete-orphan")
 
 
 class TeacherQuizQuestion(Base):
@@ -150,6 +161,21 @@ class TeacherQuizResult(Base):
     submitted_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     quiz = relationship("TeacherQuiz", back_populates="results")
+
+
+class AssessmentSubmission(Base):
+    __tablename__ = "assessment_submissions"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    assessment_id = Column(Integer, ForeignKey("teacher_quizzes.id", ondelete="CASCADE"), nullable=False)
+    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    file_path = Column(String(500), nullable=False)
+    file_name = Column(String(255), nullable=False)
+    status = Column(String(50), nullable=False, default="submitted")
+    submitted_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    assessment = relationship("TeacherQuiz", back_populates="submissions")
+    student = relationship("User", back_populates="assessment_submissions")
 
 
 class StudentQuiz(Base):
@@ -212,18 +238,36 @@ class QuizAttempt(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     quiz_id = Column(Integer, ForeignKey("teacher_quizzes.id", ondelete="CASCADE"), nullable=False)
-    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     score = Column(Float, nullable=False)
     percentage = Column(Float, nullable=False)
     total_questions = Column(Integer, nullable=False)
     correct_answers = Column(Integer, nullable=False)
     wrong_answers = Column(Integer, nullable=False)
+    attempt_type = Column(String(50), nullable=False, default="practice")
+    started_at = Column(DateTime, nullable=True)
     submitted_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    start_photo_url = Column(String(500), nullable=True)
+    recording_url = Column(String(500), nullable=True)
+    total_violations = Column(Integer, default=0, nullable=False)
+    status = Column(String(50), nullable=False, default="IN_PROGRESS")
 
     quiz = relationship("TeacherQuiz", back_populates="attempts")
     student = relationship("User", back_populates="quiz_attempts")
     answers = relationship("StudentAnswer", back_populates="attempt", cascade="all, delete-orphan")
     topic_performances = relationship("TopicPerformance", back_populates="attempt", cascade="all, delete-orphan")
+    violations = relationship("ExamViolation", back_populates="attempt", cascade="all, delete-orphan")
+
+class ExamViolation(Base):
+    __tablename__ = "exam_violations"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    attempt_id = Column(Integer, ForeignKey("quiz_attempts.id", ondelete="CASCADE"), nullable=False)
+    violation_type = Column(String(50), nullable=False)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    details = Column(Text, nullable=True)
+
+    attempt = relationship("QuizAttempt", back_populates="violations")
 
 
 class StudentAnswer(Base):
@@ -259,7 +303,7 @@ class StudentTopicSummary(Base):
     __tablename__ = "student_topic_summaries"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     topic = Column(String(255), nullable=False)
     subtopic = Column(String(255), nullable=True)
     total_attempts = Column(Integer, default=0)
@@ -288,7 +332,7 @@ class Attendance(Base):
     __tablename__ = "attendance"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     date = Column(DateTime, default=datetime.utcnow, nullable=False)
     status = Column(String(50), nullable=False) # "present" or "absent"
 
@@ -352,7 +396,7 @@ class MaterialBookmark(Base):
 class Notification(Base):
     __tablename__ = "notifications"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     title = Column(String(255), nullable=False)
     message = Column(Text, nullable=False)
     link = Column(String(500), nullable=True)
@@ -386,3 +430,39 @@ class SecurityLog(Base):
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     user = relationship("User")
+
+
+class OTPVerification(Base):
+    __tablename__ = "otp_verifications"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    otp_code = Column(String(10), nullable=False)
+    purpose = Column(String(50), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    is_verified = Column(Boolean, default=False, nullable=False)
+
+    user = relationship("User")
+
+class LoginAudit(Base):
+    __tablename__ = "login_audit"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    login_time = Column(DateTime, default=datetime.utcnow, nullable=False)
+    browser = Column(String(100), nullable=True)
+    operating_system = Column(String(100), nullable=True)
+    device_type = Column(String(100), nullable=True)
+    ip_address = Column(String(50), nullable=True)
+
+    user = relationship("User")
+
+
+class EmailVerificationOTP(Base):
+    __tablename__ = "email_verification_otps"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    email = Column(String(255), index=True, nullable=False)
+    otp_code = Column(String(255), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    is_verified = Column(Boolean, default=False, nullable=False)
+    attempts = Column(Integer, default=0, nullable=False)

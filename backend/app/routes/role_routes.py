@@ -2,14 +2,16 @@ import os
 import shutil
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import FileResponse
 from langchain_core.documents import Document as LangchainDocument
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.permissions import get_current_admin, get_current_faculty, get_current_student
+from app.routes.material_routes import notify_students
 from app.config.settings import settings
 from app.database.db import get_db
-from app.database.models import Document, Quiz, QuizAttempt, User
+from app.database.models import Document, Quiz, QuizAttempt, User, AssessmentSubmission
 from app.schemas.teacher_schema import (
     HomeResponse,
     QuizGenerateRequest,
@@ -39,9 +41,12 @@ async def student_dashboard(
     current_user: User = Depends(get_current_student),
     db: AsyncSession = Depends(get_db),
 ):
-    doc_count = await db.scalar(
-        select(func.count()).select_from(Document).where(Document.user_id == current_user.id)
+    from app.database.models import LearningMaterial
+    
+    total_docs = await db.scalar(
+        select(func.count()).select_from(LearningMaterial)
     )
+
     quiz_count = await db.scalar(
         select(func.count()).select_from(Quiz).where(
             Quiz.user_id == current_user.id,
@@ -65,9 +70,10 @@ async def student_dashboard(
         "name": current_user.name,
         "email": current_user.email,
         "role": current_user.role,
-        "documents_uploaded": doc_count or 0,
+        "documents_uploaded": total_docs,
         "quizzes_taken": (quiz_count or 0) + (attempt_count or 0),
         "average_quiz_score": avg_score,
+        "study_streak": current_user.current_streak,
     }
 
 
@@ -76,9 +82,16 @@ async def faculty_dashboard(
     current_user: User = Depends(get_current_faculty),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.services.teacher_dashboard_service import TeacherDashboardService
+    
     analytics = AnalyticsService(db)
-    stats = await analytics.get_dashboard_stats()
+    teacher_service = TeacherDashboardService(db)
+    
+    stats = await analytics.get_dashboard_stats(faculty=current_user)
     metrics = await analytics.get_performance_metrics()
+    
+    teacher_perf = await teacher_service.get_all_quiz_performance(current_user.id)
+    
     return {
         "name": current_user.name,
         "email": current_user.email,
@@ -123,15 +136,23 @@ async def faculty_upload_document(
 @faculty_router.post("/generate-quiz", response_model=QuizGenerateResponse)
 async def faculty_generate_quiz(
     request: QuizGenerateRequest,
+    current_user: User = Depends(get_current_faculty),
     db: AsyncSession = Depends(get_db),
 ):
     service = TeacherQuizService(db)
     result = await service.generate_quiz(
         faculty_name=request.faculty_name,
         topic_name=request.topic_name,
+        document_topic=request.document_topic or request.topic_name,
         question_type=request.question_type,
         difficulty=request.difficulty,
         num_questions=request.num_questions,
+        teacher_id=current_user.id,
+        is_assessment=request.is_assessment,
+        manual_questions=request.manual_questions,
+        duration_mins=request.duration_minutes,
+        semester=request.semester,
+        max_violations=request.max_violations,
     )
 
     if result.get("status") == "error":
@@ -140,7 +161,63 @@ async def faculty_generate_quiz(
             detail=result.get("message", "Quiz generation failed"),
         )
 
+    title = "New Assessment Available" if request.is_assessment else "New Quiz Available"
+    message = f"A new {'assessment' if request.is_assessment else 'quiz'} on '{request.topic_name}' has been generated."
+    link = f"Assessment_{result['quiz_id']}" if request.is_assessment else "Quizzes"
+
+    await notify_students(
+        db,
+        title,
+        message,
+        link=link,
+        target_semester=request.semester
+    )
+
     return QuizGenerateResponse(**result)
+
+
+@faculty_router.get("/assessment/{assessment_id}/submissions")
+async def get_assessment_submissions(
+    assessment_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_faculty)
+):
+    result = await db.execute(
+        select(AssessmentSubmission, User)
+        .join(User, AssessmentSubmission.student_id == User.id)
+        .where(AssessmentSubmission.assessment_id == assessment_id)
+    )
+    
+    submissions = []
+    for sub, user in result.all():
+        submissions.append({
+            "id": sub.id,
+            "student_id": user.id,
+            "student_name": user.name,
+            "file_name": sub.file_name,
+            "file_path": sub.file_path,
+            "status": sub.status,
+            "submitted_at": sub.submitted_at
+        })
+        
+    return {"submissions": submissions}
+
+
+@faculty_router.get("/assessment/submission/{submission_id}/download")
+async def download_submission(
+    submission_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_faculty)
+):
+    result = await db.execute(select(AssessmentSubmission).where(AssessmentSubmission.id == submission_id))
+    submission = result.scalar_one_or_none()
+    if not submission:
+        raise HTTPException(status_code=404, detail="Submission not found")
+        
+    if not os.path.exists(submission.file_path):
+        raise HTTPException(status_code=404, detail="File not found on server")
+        
+    return FileResponse(submission.file_path, filename=submission.file_name)
 
 
 @faculty_router.get("/results/{quiz_id}", response_model=ResultResponse)
@@ -151,6 +228,17 @@ async def faculty_get_results(
     service = TeacherResultService(db)
     result = await service.get_results(quiz_id)
     return ResultResponse(**result)
+
+
+@faculty_router.get("/quiz/{quiz_id}")
+async def faculty_get_quiz(
+    quiz_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_faculty),
+):
+    service = TeacherQuizService(db)
+    result = await service.get_quiz(quiz_id)
+    return result
 
 
 @admin_router.get("/dashboard")

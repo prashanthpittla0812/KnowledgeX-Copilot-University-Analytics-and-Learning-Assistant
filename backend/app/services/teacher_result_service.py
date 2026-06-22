@@ -1,7 +1,7 @@
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database.models import TeacherQuizResult
+from app.database.models import QuizAttempt, User
 
 
 class TeacherResultService:
@@ -10,21 +10,39 @@ class TeacherResultService:
 
     async def get_results(self, quiz_id: int) -> dict:
         result = await self.db.execute(
-            select(TeacherQuizResult)
-            .where(TeacherQuizResult.quiz_id == quiz_id)
-            .order_by(TeacherQuizResult.score_percentage.desc())
+            select(QuizAttempt, User)
+            .join(User, QuizAttempt.student_id == User.id)
+            .where(QuizAttempt.quiz_id == quiz_id)
+            .order_by(QuizAttempt.percentage.desc())
         )
-        rows = result.scalars().all()
+        rows = result.all()
 
         response = []
-        for r in rows:
+        for attempt, user in rows:
             response.append({
-                "student_name": r.student_name,
-                "total_questions": r.total_questions,
-                "correct_answers": r.correct_answers,
-                "wrong_answers": r.wrong_answers,
-                "score_percentage": r.score_percentage,
-                "submitted_at": str(r.submitted_at),
+                "student_name": user.name,
+                "total_questions": attempt.total_questions,
+                "correct_answers": attempt.correct_answers,
+                "wrong_answers": attempt.wrong_answers,
+                "score_percentage": attempt.percentage,
+                "submitted_at": str(attempt.submitted_at),
             })
 
-        return {"quiz_id": quiz_id, "results": response}
+        summary = await self.db.execute(
+            select(
+                func.avg(QuizAttempt.percentage),
+                func.max(QuizAttempt.percentage),
+                func.min(QuizAttempt.percentage),
+                func.count(QuizAttempt.id),
+            ).where(QuizAttempt.quiz_id == quiz_id)
+        )
+        s_row = summary.one()
+
+        return {
+            "quiz_id": quiz_id,
+            "results": response,
+            "average_score": round(s_row[0] or 0, 2),
+            "highest_score": round(s_row[1] or 0, 2),
+            "lowest_score": round(s_row[2] or 0, 2),
+            "total_attempts": s_row[3] or 0,
+        }

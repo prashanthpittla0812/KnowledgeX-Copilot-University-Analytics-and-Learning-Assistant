@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import axios from "axios";
 
 export const API_BASE_URL =
@@ -21,7 +22,12 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
+    if (
+      error.response &&
+      error.response.status === 401 &&
+      error.config &&
+      !error.config.url?.includes("/auth/login")
+    ) {
       localStorage.removeItem(TOKEN_STORAGE_KEY);
       localStorage.removeItem(USER_STORAGE_KEY);
       localStorage.removeItem("currentUser");
@@ -39,9 +45,11 @@ export type LoginPayload = {
 export type QuizGenerationPayload = {
   faculty_name?: string;
   topic_name: string;
+  document_topic?: string;
   question_type?: string;
   difficulty: "easy" | "medium" | "hard" | string;
   num_questions: number;
+  semester?: string;
 };
 
 export type QuizSubmitPayload = {
@@ -49,13 +57,51 @@ export type QuizSubmitPayload = {
 };
 
 export const authApi = {
+  async sendRegistrationOtp(payload: { email: string }) {
+    const response = await api.post("/auth/send-registration-otp", payload);
+    return response.data;
+  },
+
+  async verifyRegistrationOtp(payload: { email: string; otp: string }) {
+    const response = await api.post("/auth/verify-registration-otp", payload);
+    return response.data;
+  },
+
   async register(payload: { name: string; email: string; password: string; role?: string }) {
     const response = await api.post("/api/v1/auth/register", payload);
     return response.data;
   },
 
   async login(payload: LoginPayload) {
-    const response = await api.post("/api/v1/auth/login", payload);
+    const response = await api.post("/auth/login", payload);
+
+    const token =
+      response.data?.access_token ||
+      response.data?.token ||
+      response.data?.jwt ||
+      response.data?.data?.access_token;
+
+    if (token) {
+      localStorage.setItem(TOKEN_STORAGE_KEY, token);
+    }
+
+    let user = response.data?.user;
+    if (!user && token) {
+      const meResponse = await api.get("/auth/me");
+      user = meResponse.data;
+    }
+
+    if (user) {
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+      localStorage.setItem("currentUser", JSON.stringify({ name: user.name, role: user.role, id: user.id }));
+    }
+
+    return { ...response.data, user };
+  },
+
+  async verifyLoginOtp(payload: { email: string; otp_code: string }) {
+    const response = await api.post("/auth/verify-login-otp", payload);
+
     const token =
       response.data?.access_token ||
       response.data?.token ||
@@ -78,6 +124,21 @@ export const authApi = {
     }
 
     return { ...response.data, user };
+  },
+
+  async forgotPassword(payload: { email: string }) {
+    const response = await api.post("/auth/forgot-password", payload);
+    return response.data;
+  },
+
+  async verifyResetOtp(payload: { email: string; otp_code: string }) {
+    const response = await api.post("/auth/verify-reset-otp", payload);
+    return response.data;
+  },
+
+  async resetPassword(payload: { email: string; otp_code: string; new_password: string }) {
+    const response = await api.post("/auth/reset-password", payload);
+    return response.data;
   },
 
   logout() {
@@ -116,12 +177,11 @@ export const facultyApi = {
   },
 
   getQuizResults(quizId: string | number) {
-    return api.get(`/api/v1/assessment/class-performance/${quizId}`);
+    return api.get(`/faculty/results/${quizId}`);
   },
 
   getLearningGaps(quizId?: string | number) {
-    if (quizId) return api.get(`/api/v1/assessment/learning-gaps/${quizId}`);
-    return api.get("/api/v1/dashboard/learning-gaps");
+    return api.get("/dashboard/learning-gaps", quizId ? { params: { quiz_id: quizId } } : undefined);
   },
 
   getClassInsights(quizId: string | number) {
@@ -129,15 +189,35 @@ export const facultyApi = {
   },
 
   getDashboard() {
-    return api.get("/api/v1/faculty/dashboard");
+    return api.get("/faculty/dashboard");
   },
-  
+
+  getRecentQuizRankings() {
+    return api.get("/dashboard/teacher/recent-quiz-rankings");
+  },
+
   getAttendance() {
     return api.get("/api/v1/attendance/class");
   },
 
   getAtRiskStudents() {
-    return api.get("/api/v1/attendance/at-risk");
+    return api.get("/attendance/at-risk");
+  },
+
+  getQuiz(quizId: string | number) {
+    return api.get(`/faculty/quiz/${quizId}`);
+  },
+
+  getAssessmentSubmissions(assessmentId: number | string) {
+    return api.get(`/faculty/assessment/${assessmentId}/submissions`);
+  },
+
+  downloadSubmission(submissionId: number | string) {
+    return api.get(`/faculty/assessment/submission/${submissionId}/download`, { responseType: 'blob' });
+  },
+
+  sendRecommendation(studentId: number | string, message: string) {
+    return api.post(`/dashboard/teacher/student/${studentId}/recommendation`, { message });
   }
 };
 
@@ -146,8 +226,18 @@ export const studentApi = {
     return api.post("/api/v1/quiz/generate", payload);
   },
 
-  submitQuiz(payload: { quiz_id: number; answers: string[] }) {
-    return api.post("/api/v1/quiz/submit", payload);
+  submitQuiz(data: any) {
+    return api.post("/quiz/submit", data);
+  },
+
+  submitAssessment(assessmentId: number | string, formData: FormData) {
+    return api.post(`/student/assessment/${assessmentId}/submit`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+
+  getAssessmentStatus(assessmentId: number | string) {
+    return api.get(`/student/assessment/${assessmentId}/status`);
   },
 
   getQuizHistory() {
@@ -166,8 +256,8 @@ export const studentApi = {
     return api.post("/api/v1/assessment/attempt", payload);
   },
 
-  generateStudyPlan(payload: { subjects: string[]; exam_date: string; daily_hours: number }) {
-    return api.post("/api/v1/studyplan/generate", payload);
+  generateStudyPlan(payload: { subjects: string[]; exam_date: string; daily_hours: number; syllabus?: string }) {
+    return api.post("/studyplan/generate", payload);
   },
 
   getStudyPlanHistory() {
@@ -194,8 +284,8 @@ export const studentApi = {
 };
 
 export const chatbotApi = {
-  async askQuestion(question: string, content_ids: number[] = []) {
-    const response = await api.post("/api/v1/chat/", { question, content_ids });
+  async askQuestion(question: string, content_ids: number[] = [], input_type: string = "TEXT") {
+    const response = await api.post("/chat/", { question, content_ids, input_type });
     return response.data;
   },
   async summarize(content_id: number, summary_type: string = "Short Summary") {
@@ -276,7 +366,10 @@ export const materialApi = {
     return api.get("/api/v1/materials/notifications");
   },
   markNotificationsRead() {
-    return api.post("/api/v1/materials/notifications/read");
+    return api.post("/materials/notifications/read");
+  },
+  deleteNotification(id: number) {
+    return api.delete(`/materials/notifications/${id}`);
   }
 };
 

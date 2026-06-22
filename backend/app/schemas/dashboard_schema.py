@@ -6,6 +6,7 @@ class DashboardStats(BaseModel):
     total_faculty: int
     total_documents: int
     total_quizzes: int
+    avg_class_score: float = 0.0
 
 
 class PerformanceMetric(BaseModel):
@@ -28,7 +29,11 @@ class LearningGapItem(BaseModel):
 
 
 class StudentPerformance(BaseModel):
+    student_id: int | None = None
     student_name: str
+    profile_photo_path: str | None = None
+    department: str | None = None
+    designation: str | None = None
     average_score: float
 
 class TopicAccuracy(BaseModel):
