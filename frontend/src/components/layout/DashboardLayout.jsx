@@ -260,6 +260,7 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
 
 
   const [notifications, setNotifications] = useState([]);
+  const [selectedNotification, setSelectedNotification] = useState(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef(null);
 
@@ -312,10 +313,8 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
     setNotifications(prev =>
       prev.map(n => (n.id === item.id ? { ...n, isUnread: false } : n))
     );
-    if (item.link) {
-      setActiveItem(item.link);
-      setNotificationsOpen(false);
-    }
+    setSelectedNotification(item);
+    setNotificationsOpen(false);
   };
 
   const markAllAsRead = async () => {
@@ -489,7 +488,7 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
 
 
             {/* 2. Notification Overlay Drawer Dropdown Node Context */}
-            {false && (
+            {role !== "admin" && (
               <div className="relative" ref={notificationRef}>
                 <button
                   onClick={() => setNotificationsOpen(!notificationsOpen)}
@@ -1099,6 +1098,70 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
           </div>
         )}
       </AnimatePresence>
+      {/* Notification Popup Modal */}
+      <AnimatePresence>
+        {selectedNotification && (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-orange-400 to-amber-400" />
+              
+              <div className="flex items-start gap-4 mb-4 mt-2">
+                <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
+                  <Bell className="w-6 h-6 text-orange-500" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-800 leading-tight">{selectedNotification.title}</h3>
+                  <p className="text-xs text-slate-500 mt-1 font-medium">{selectedNotification.time}</p>
+                </div>
+              </div>
+              
+              <div className="bg-slate-50 p-4 rounded-2xl mb-6 border border-slate-100">
+                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                  {selectedNotification.description}
+                </p>
+              </div>
+              
+              <div className="flex items-center justify-end gap-3">
+                {selectedNotification.title?.includes("Personal Recommendation") ? (
+                  <button
+                    onClick={() => setSelectedNotification(null)}
+                    className="px-5 py-2.5 rounded-xl font-bold text-white bg-orange-500 hover:bg-orange-600 shadow-md shadow-orange-500/20 transition-colors"
+                  >
+                    Close
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setSelectedNotification(null)}
+                      className="px-5 py-2.5 rounded-xl font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                    >
+                      Close
+                    </button>
+                    {selectedNotification.link && (
+                      <button
+                        onClick={() => {
+                          const link = selectedNotification.link === "/dashboard" ? "Dashboard" : selectedNotification.link;
+                          setActiveItem(link);
+                          setSelectedNotification(null);
+                        }}
+                        className="px-5 py-2.5 rounded-xl font-bold text-white bg-orange-500 hover:bg-orange-600 shadow-md shadow-orange-500/20 transition-colors"
+                      >
+                        Go to Page
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }

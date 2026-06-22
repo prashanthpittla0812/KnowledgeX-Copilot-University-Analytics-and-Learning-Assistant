@@ -28,6 +28,7 @@ class LearningGapItem(BaseModel):
 
 
 class StudentPerformance(BaseModel):
+    student_id: int | None = None
     student_name: str
     profile_photo_path: str | None = None
     department: str | None = None

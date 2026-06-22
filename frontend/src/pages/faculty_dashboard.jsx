@@ -70,8 +70,8 @@ export default function FacultyDashboard() {
   const [quizMode, setQuizMode] = useState("Quiz");
   const [overviewPage, setOverviewPage] = useState(0);
   const [selectedStudent, setSelectedStudent] = useState(null);
-
-
+  const [isRecommending, setIsRecommending] = useState(false);
+  const [recommendationMessage, setRecommendationMessage] = useState("");
 
   useEffect(() => {
     const stored = localStorage.getItem("currentUser");
@@ -1208,7 +1208,7 @@ export default function FacultyDashboard() {
 
                   <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="h-full">
                     <AnalyticsCard title="Weak Topics" className="h-full min-h-[400px] border-red-100 shadow-sm rounded-3xl bg-gradient-to-br from-red-50/50 to-white">
-                      <div className="space-y-3 mt-4">
+                      <div className="space-y-3 mt-4 max-h-[320px] overflow-y-auto pr-2 custom-scrollbar">
                         {learningGaps.weak_topics?.length === 0 && <p className="text-sm font-semibold text-slate-400 text-center py-4">No weak topics identified! 🎉</p>}
                         {learningGaps.weak_topics?.map((wt, i) => (
                           <motion.div whileHover={{ scale: 1.02 }} key={i} className="flex justify-between items-center bg-white p-4 rounded-2xl border border-red-100 shadow-sm group transition-all hover:border-red-200">
@@ -1304,7 +1304,7 @@ export default function FacultyDashboard() {
 
                   <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
                     <AnalyticsCard title="Strong Topics" className="border-emerald-100 shadow-sm rounded-3xl bg-gradient-to-br from-emerald-50/50 to-white">
-                      <div className="space-y-3 mt-4">
+                      <div className="space-y-3 mt-4 max-h-[320px] overflow-y-auto pr-2 custom-scrollbar">
                         {learningGaps.strong_topics?.length === 0 && <p className="text-sm font-semibold text-slate-400 text-center py-4">No strong topics identified yet.</p>}
                         {learningGaps.strong_topics?.map((st, i) => (
                           <motion.div whileHover={{ scale: 1.02 }} key={i} className="flex justify-between items-center bg-white p-4 rounded-2xl border border-emerald-100 shadow-sm group transition-all hover:border-emerald-200">
@@ -1376,13 +1376,59 @@ export default function FacultyDashboard() {
                     </div>
                   </div>
                 </div>
-                <button 
-                  onClick={() => setSelectedStudent(null)}
-                  className="w-10 h-10 rounded-full bg-slate-100/80 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-all shadow-sm backdrop-blur-sm"
-                >
-                  ✕
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsRecommending(!isRecommending)}
+                    className="w-10 h-10 rounded-full bg-indigo-50 hover:bg-indigo-100 flex items-center justify-center text-indigo-500 hover:text-indigo-600 transition-all shadow-sm"
+                    title="Send Recommendation"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={() => { setSelectedStudent(null); setIsRecommending(false); setRecommendationMessage(""); }}
+                    className="w-10 h-10 rounded-full bg-slate-100/80 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-all shadow-sm backdrop-blur-sm"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
+
+              {isRecommending && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mb-8 bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100 shadow-inner overflow-hidden">
+                  <h4 className="text-sm font-black text-indigo-800 mb-2 flex items-center gap-2"><Send className="w-4 h-4"/> Send Personal Recommendation</h4>
+                  <textarea
+                    value={recommendationMessage}
+                    onChange={(e) => setRecommendationMessage(e.target.value)}
+                    placeholder="Type your advice or recommendation here..."
+                    className="w-full h-24 p-4 rounded-xl border border-indigo-200 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100/50 resize-none text-sm bg-white shadow-sm mb-3 transition-all"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => setIsRecommending(false)}
+                      className="px-4 py-2 bg-white text-slate-600 border border-slate-200 text-xs font-bold rounded-xl shadow-sm hover:bg-slate-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!recommendationMessage.trim() || !selectedStudent.student_id) return;
+                        try {
+                          await facultyApi.sendRecommendation(selectedStudent.student_id, recommendationMessage);
+                          setIsRecommending(false);
+                          setRecommendationMessage("");
+                          alert("Recommendation sent successfully!");
+                        } catch(e) {
+                          console.error(e);
+                          alert("Failed to send recommendation.");
+                        }
+                      }}
+                      className="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl shadow-md hover:bg-indigo-700 transition-colors flex items-center gap-1.5"
+                    >
+                      Send Notification
+                    </button>
+                  </div>
+                </motion.div>
+              )}
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
                 <motion.div whileHover={{ y: -5 }} className="bg-gradient-to-b from-indigo-50/50 to-white rounded-2xl p-5 border border-indigo-100 shadow-sm relative overflow-hidden group">

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { api } from "../../api";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -133,35 +134,43 @@ export default function FacultyTab() {
       </AnalyticsCard>
 
       {/* Create Faculty Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="glass-card w-full max-w-md p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold mb-1 text-foreground">Create Faculty Account</h3>
-            <p className="text-sm text-muted-foreground mb-6">Fill in the details below to create a new faculty member.</p>
+      {isModalOpen && createPortal(
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[300] p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl border border-slate-100 relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-orange-400 to-amber-400" />
+            
+            <h3 className="text-xl font-bold text-slate-800 mb-1 mt-2">Create Faculty Account</h3>
+            <p className="text-sm text-slate-500 mb-6 font-medium">Fill in the details below to create a new faculty member.</p>
+            
             <form onSubmit={handleCreateFaculty} className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground">Name</label>
-                <Input required value={newFaculty.name} onChange={e => setNewFaculty({...newFaculty, name: e.target.value})} className="rounded-xl" />
+              <div className="space-y-1.5">
+                <label className="text-sm font-bold text-slate-700">Name</label>
+                <Input required value={newFaculty.name} onChange={e => setNewFaculty({...newFaculty, name: e.target.value})} className="rounded-xl border-slate-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-100/50 transition-all bg-slate-50/50" placeholder="John Doe" />
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground">Email</label>
-                <Input type="email" required value={newFaculty.email} onChange={e => setNewFaculty({...newFaculty, email: e.target.value})} className="rounded-xl" />
+              <div className="space-y-1.5">
+                <label className="text-sm font-bold text-slate-700">Email</label>
+                <Input type="email" required value={newFaculty.email} onChange={e => setNewFaculty({...newFaculty, email: e.target.value})} className="rounded-xl border-slate-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-100/50 transition-all bg-slate-50/50" placeholder="john.doe@university.edu" />
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground">Department</label>
-                <Input value={newFaculty.department} onChange={e => setNewFaculty({...newFaculty, department: e.target.value})} className="rounded-xl" />
+              <div className="space-y-1.5">
+                <label className="text-sm font-bold text-slate-700">Department</label>
+                <Input value={newFaculty.department} onChange={e => setNewFaculty({...newFaculty, department: e.target.value})} className="rounded-xl border-slate-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-100/50 transition-all bg-slate-50/50" placeholder="Computer Science" />
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground">Designation</label>
-                <Input value={newFaculty.designation} onChange={e => setNewFaculty({...newFaculty, designation: e.target.value})} className="rounded-xl" />
+              <div className="space-y-1.5">
+                <label className="text-sm font-bold text-slate-700">Designation</label>
+                <Input value={newFaculty.designation} onChange={e => setNewFaculty({...newFaculty, designation: e.target.value})} className="rounded-xl border-slate-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-100/50 transition-all bg-slate-50/50" placeholder="Professor" />
               </div>
-              <div className="flex gap-2 justify-end mt-6 pt-4 border-t border-border/50">
-                <Button type="button" variant="outline" className="rounded-xl" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-                <Button type="submit" className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md shadow-orange-500/20">Create Account</Button>
+              <div className="flex gap-3 justify-end mt-8 pt-6 border-t border-slate-100">
+                <Button type="button" variant="outline" className="px-5 py-2.5 rounded-xl font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors border-0" onClick={() => setIsModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" className="px-5 py-2.5 rounded-xl font-bold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-md shadow-orange-500/20 transition-all border-0">
+                  Create Account
+                </Button>
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -213,6 +213,10 @@ export const facultyApi = {
 
   downloadSubmission(submissionId: number | string) {
     return api.get(`/faculty/assessment/submission/${submissionId}/download`, { responseType: 'blob' });
+  },
+
+  sendRecommendation(studentId: number | string, message: string) {
+    return api.post(`/dashboard/teacher/student/${studentId}/recommendation`, { message });
   }
 };
 
