@@ -17,6 +17,7 @@ import { BookOpen, AlertCircle, FileText, Calendar, CheckCircle, BarChart as Bar
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, PieChart, Pie, RadialBarChart, RadialBar, Legend } from "recharts";
 import CopilotFloatingButton from "./CopilotFloatingButton";
 
+
 export default function StudentDashboard() {
   const navigate = useNavigate();
   const pdfInputRef = useRef(null);
@@ -1732,22 +1733,7 @@ export default function StudentDashboard() {
                   }
                   return null;
                 };
-              const CustomTooltip = ({ active, payload, label, isDate = false, isStreak = false }) => {
-                if (active && payload && payload.length) {
-                  return (
-                    <div className="bg-white/90 backdrop-blur-md border border-slate-200 p-4 rounded-2xl shadow-xl">
-                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                        {isStreak ? (payload[0].payload.subject ? `${payload[0].payload.subject} (${label})` : label) : (isDate ? new Date(label).toLocaleDateString() : (payload[0].payload.subject ? `${payload[0].payload.subject}: ${label}` : label))}
-                      </p>
-                      <p className="text-lg font-black text-indigo-600">
-                        {isStreak ? "Study Time: " : "Score: "}
-                        <span className="text-slate-800">{payload[0].value}{isStreak ? " hrs" : "%"}</span>
-                      </p>
-                    </div>
-                  );
-                }
-                return null;
-              };
+
 
               return (
                 <>
@@ -1851,15 +1837,6 @@ export default function StudentDashboard() {
                             return { ...q, topic: displayTopic, subject: subjectName, subjectShort: shortSubjectMap[subjectName] || "Other" };
                           });
                       })();
-                      return baseHistory
-                        .filter(q => q.score !== null)
-                        .map(q => {
-                          const displayTopic = formatTopicForDisplay(q.topic);
-                          let subjectName = getSubjectForTopic(q.topic);
-                          if (subjectName === "default") subjectName = "Other";
-                          return { ...q, topic: displayTopic, subject: subjectName };
-                        });
-                    })();
 
                     const currentStreak = (() => {
                       const dateMap = {};
@@ -2191,84 +2168,6 @@ export default function StudentDashboard() {
                               </div>
                             </AnalyticsCard>
                           </motion.div>
-                    return (
-                      <div className="grid lg:grid-cols-2 gap-8 pb-10">
-                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
-                          <AnalyticsCard
-                            title="Recent Quiz Performance"
-                            className="border-slate-100 shadow-sm rounded-3xl bg-white/80 backdrop-blur-xl"
-                            action={
-                              <select
-                                value={selectedQuizPeriod}
-                                onChange={(e) => setSelectedQuizPeriod(e.target.value)}
-                                className="text-sm border border-slate-200 bg-white text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                              >
-                                {periods.map(p => (
-                                  <option key={p.value} value={p.value}>{p.label}</option>
-                                ))}
-                              </select>
-                            }
-                          >
-                            <div className="h-[220px] mt-4">
-                              {filteredQuizHistory.length > 0 ? (
-                                <div className="h-full flex flex-col">
-                                  <div className="flex-1 min-h-0">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                      <BarChart
-                                        data={selectedQuizPeriod === "All Time" ? filteredQuizHistory.slice(0, 15).reverse() : [...filteredQuizHistory].reverse()}
-                                        margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
-                                      >
-                                        <defs>
-                                          <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stopColor="#F87171" />
-                                            <stop offset="100%" stopColor="#DC2626" />
-                                          </linearGradient>
-                                          <linearGradient id="mathGradient" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stopColor="#EC4899" />
-                                            <stop offset="100%" stopColor="#8B5CF6" />
-                                          </linearGradient>
-                                          <linearGradient id="csGradient" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stopColor="#F59E0B" />
-                                            <stop offset="100%" stopColor="#EF4444" />
-                                          </linearGradient>
-                                          <linearGradient id="dataGradient" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stopColor="#10B981" />
-                                            <stop offset="100%" stopColor="#3B82F6" />
-                                          </linearGradient>
-                                          <linearGradient id="gkGradient" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stopColor="#8B5CF6" />
-                                            <stop offset="100%" stopColor="#6366F1" />
-                                          </linearGradient>
-                                        </defs>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                                        <XAxis dataKey="topic" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tick={false} />
-                                        <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} />
-                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: '#e2e8f0' }} />
-                                        <Bar dataKey="score" fill="url(#barGradient)" radius={[6, 6, 0, 0]} maxBarSize={40}>
-                                          {(selectedQuizPeriod === "All Time" ? filteredQuizHistory.slice(0, 15).reverse() : [...filteredQuizHistory].reverse()).map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={subjectColors[entry.subject] || subjectColors["default"]} />
-                                          ))}
-                                        </Bar>
-                                      </BarChart>
-                                    </ResponsiveContainer>
-                                  </div>
-                                  <div className="flex flex-wrap justify-center gap-4 mt-2">
-                                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-pink-500 to-violet-500"></div><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Data Structures & Algorithms</span></div>
-                                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-emerald-500 to-blue-500"></div><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Computer Networks</span></div>
-                                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-amber-500 to-red-500"></div><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Operating Systems</span></div>
-                                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-violet-500 to-indigo-500"></div><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Database Management Systems</span></div>
-                                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-red-400 to-red-600"></div><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Java Programming</span></div>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="h-full flex flex-col items-center justify-center text-slate-400">
-                                  <BarChartIcon className="w-10 h-10 mb-3 opacity-30" />
-                                  <p className="font-semibold">No quiz data available for this period.</p>
-                                </div>
-                              )}
-                            </div>
-                          </AnalyticsCard>
-                        </motion.div>
 
                         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}>
                           <AnalyticsCard
@@ -2375,52 +2274,6 @@ export default function StudentDashboard() {
                                                 {cols.map(col => {
                                                   const subjectForThisTopic = getSubjectForTopic(t.fullTopic);
                                                   const shouldShow = subjectForThisTopic === col;
-                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}>
-                          <AnalyticsCard
-                            title="Topic Mastery Heatmap"
-                            className="border-slate-100 shadow-sm rounded-3xl bg-white/80 backdrop-blur-xl h-full flex flex-col"
-                            action={
-                              <select
-                                value={selectedSkillSubject}
-                                onChange={(e) => setSelectedSkillSubject(e.target.value)}
-                                className="text-sm border border-slate-200 bg-white text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                              >
-                                <option value="All Subjects">All Subjects</option>
-                                <option value="Data Structures & Algorithms">Data Structures & Algorithms</option>
-                                <option value="Computer Networks">Computer Networks</option>
-                                <option value="Operating Systems">Operating Systems</option>
-                                <option value="Database Management Systems">Database Management Systems</option>
-                                <option value="Java Programming">Java Programming</option>
-                              </select>
-                            }
-                          >
-                            <div className="mt-4 flex-1 flex flex-col min-h-[300px]">
-                              {filteredSkillData.length > 0 ? (
-                                <>
-                                  <div className="flex-1 overflow-auto custom-scrollbar pr-2 max-h-[300px]">
-                                    <table className="w-full text-left border-collapse">
-                                      <thead>
-                                        <tr>
-                                          <th className="p-2 text-xs font-semibold text-slate-500 border-b border-slate-100 sticky top-0 bg-white/90 backdrop-blur-sm z-10">Topic</th>
-                                          {(selectedSkillSubject === "All Subjects" ? Object.keys(subjectMap) : [selectedSkillSubject]).map(col => (
-                                            <th key={col} className="p-2 text-xs font-semibold text-slate-500 text-center border-b border-slate-100 sticky top-0 bg-white/90 backdrop-blur-sm z-10">
-                                              {col === "Computer Networks" ? "CN" : col === "Data Structures & Algorithms" ? "DSA" : col === "Operating Systems" ? "OS" : col === "Database Management Systems" ? "DBMS" : col === "Java Programming" ? "Java" : col}
-                                            </th>
-                                          ))}
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        {filteredSkillData.map((t, idx) => {
-                                          const cols = selectedSkillSubject === "All Subjects" ? Object.keys(subjectMap) : [selectedSkillSubject];
-                                          return (
-                                            <tr key={idx} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                                              <td className="p-2 text-xs font-medium text-slate-700 truncate max-w-[120px]" title={t.fullTopic}>
-                                                {t.fullTopic}
-                                              </td>
-                                              {cols.map(col => {
-                                                const subjectForThisTopic = getSubjectForTopic(t.fullTopic);
-                                                const shouldShow = subjectForThisTopic === col;
-
                                                 if (shouldShow) {
                                                   let colorClass = "bg-slate-100 text-slate-500";
                                                   if (t.score >= 75) colorClass = "bg-emerald-100 text-emerald-700";
@@ -2486,49 +2339,13 @@ export default function StudentDashboard() {
                               </div>
                             </AnalyticsCard>
                           </motion.div>
-                        </div>
-                      );
-                    })()}
-                  </>
-                );
-              })()}
-            </motion.div>
-          ) : activeItem === "Chatbot" ? (
-            <div className="flex h-full overflow-hidden animate-in fade-in duration-500 rounded-xl border border-border shadow-sm mt-4">
-              {/* Sidebar for chat history */}
-              <div className="w-1/4 min-w-[250px] border-r border-border bg-card/50 flex flex-col">
-                <div className="p-4 border-b border-border flex justify-between items-center bg-card">
-                  <h3 className="font-bold text-foreground">Chat History</h3>
-                  <Button onClick={handleNewChat} size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-full hover:bg-primary/10 hover:text-primary"><Plus className="h-4 w-4" /></Button>
-                </div>
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
-                  {previousChats.map(chat => (
-                    <div
-                      key={chat.id}
-                      onClick={() => setSelectedChatId(chat.id)}
-                      className={`group p-3 rounded-xl cursor-pointer flex justify-between items-center transition-all ${selectedChatId === chat.id ? 'bg-primary text-primary-foreground shadow-md' : 'hover:bg-muted bg-background border border-border/50 text-foreground'}`}
-                    >
-                      <div className="truncate text-sm font-medium pr-2">
-                        {chat.title || "New chat"}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={`h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity ${selectedChatId === chat.id ? 'text-primary-foreground hover:bg-primary-foreground/20' : 'text-muted-foreground hover:text-red-500 hover:bg-red-500/10'}`}
-                        onClick={(e) => handleDeleteChat(e, chat.id)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
+
                         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6 }}>
-                          <AnalyticsCard title="Weak Areas Radar" className="border-slate-100 shadow-sm rounded-3xl bg-white/80 backdrop-blur-xl">
-                            <div className="h-[300px] mt-4 overflow-y-auto custom-scrollbar">
+                          <AnalyticsCard title="Weak Areas Radar" className="border-slate-100 shadow-sm rounded-3xl bg-white/80 backdrop-blur-xl h-full flex flex-col">
+                            <div className="mt-4 flex-1">
                               {weakTopics.length > 0 ? (
                                 <div className="space-y-3 p-2">
-                                  {weakTopics.map((t, i) => (
+                                  {weakTopics.slice(0, 4).map((t, i) => (
                                     <div key={i} className="flex justify-between items-center p-4 rounded-2xl bg-red-50/50 border border-red-100">
                                       <div>
                                         <h4 className="font-bold text-red-900">{t.fullTopic}</h4>
@@ -2547,13 +2364,14 @@ export default function StudentDashboard() {
                             </div>
                           </AnalyticsCard>
                         </motion.div>
-                      </div>
-                    );
-                  })()}
-                </>
-              );
-            })()}
-          </motion.div>
+                        </div>
+                      );
+                    })()}
+                  </>
+                );
+              })()}
+            </motion.div>
+
         ) : activeItem === "Chatbot" ? (
           <div className="flex h-full overflow-hidden animate-in fade-in duration-500 rounded-xl border border-border shadow-sm mt-4">
             {/* Sidebar for chat history */}

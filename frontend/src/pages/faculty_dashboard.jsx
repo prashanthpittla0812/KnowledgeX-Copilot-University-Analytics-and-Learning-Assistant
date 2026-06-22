@@ -45,7 +45,6 @@ export default function FacultyDashboard() {
   const [quizDifficulty, setQuizDifficulty] = useState("medium");
   const [quizCount, setQuizCount] = useState(0);
   const [quizSemester, setQuizSemester] = useState("1st Sem");
-  const [quizCount, setQuizCount] = useState("");
   const [quizDuration, setQuizDuration] = useState("");
   const [quizMaxViolations, setQuizMaxViolations] = useState(3);
   const [assessmentGenerationMethod, setAssessmentGenerationMethod] = useState("AI");
@@ -304,21 +303,17 @@ export default function FacultyDashboard() {
         topic_name: quizTopic,
         question_type: quizQuestionType,
         difficulty: quizDifficulty,
-        num_questions: quizCount,
-        semester: quizSemester
-      });
-      alert("Quiz generated!");
-
-      // Reset form fields
         num_questions: Number(quizQuestionCount),
         document_topic: quizTopic,
         is_assessment: false,
         duration_minutes: Number(quizDuration) || 60,
         max_violations: Number(quizMaxViolations) || 3,
-        manual_questions: quizGenerationMethod === "Manual" ? JSON.stringify(manualQuestionsData) : null
+        manual_questions: quizGenerationMethod === "Manual" ? JSON.stringify(manualQuestionsData) : null,
+        semester: quizSemester
       };
       
       await facultyApi.generateQuiz(payload);
+      alert("Quiz generated!");
       
       setQuizTopic("");
       setQuizDifficulty("medium");
