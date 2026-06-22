@@ -4,6 +4,7 @@ from typing import List, Dict, Any
 class ChatRequest(BaseModel):
     question: str
     content_ids: List[int] = []
+    input_type: str = "TEXT"
 
 
 class ChatResponse(BaseModel):
