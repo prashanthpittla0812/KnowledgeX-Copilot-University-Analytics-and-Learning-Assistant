@@ -104,7 +104,7 @@ export default function Register() {
         role: "student",
       });
 
-      if (email.trim().toLowerCase().endsWith("@ifheindia.org")) {
+      if (email.trim().toLowerCase().endsWith("@ifheindia.org") || email.trim().toLowerCase().endsWith("@motivitylabs.com")) {
         window.alert("Account created successfully!\n\nYour account has been automatically approved. You can now log in.");
       } else {
         window.alert(
@@ -409,10 +409,15 @@ export default function Register() {
           {/* Info banner for Faculty/Admin restriction */}
           <div className="mt-6 p-4 rounded-xl bg-orange-50/50 border border-orange-100 flex items-start gap-3">
             <Info className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
-            <p className="text-xs text-slate-600 leading-relaxed font-medium">
-              Only student accounts can be self-registered.
-              <strong className="block mt-1 text-orange-600">Faculty account is created by the admin.</strong>
-            </p>
+            <div className="space-y-2 text-xs text-slate-600 leading-relaxed font-medium">
+              <p>
+                Only student accounts can be self-registered.
+                <strong className="block mt-1 text-orange-600">Faculty account is created by the admin.</strong>
+              </p>
+              <p className="text-slate-500">
+                Users with trusted institutional or corporate email domains are automatically approved after email verification.
+              </p>
+            </div>
           </div>
 
           {/* Sign In Link */}
