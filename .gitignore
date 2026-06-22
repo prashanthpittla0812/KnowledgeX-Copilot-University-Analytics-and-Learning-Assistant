@@ -11,6 +11,8 @@ build/
 # Virtual environment
 venv/
 .venv/
+env/
+.env/
 
 # File uploads
 uploads/
@@ -36,12 +38,14 @@ Thumbs.db
 .mypy_cache/
 .ruff_cache/
 
-# Frontend
-frontend/node_modules/
+# Dependencies
+node_modules/
 frontend/.vite/
 frontend/dist/
-frontend/public/models/
+backend/dist/
+backend/build/
 chroma_db_old_768d/
 
-# Backend
-backend/node_modules/
+# Models
+frontend/public/models/
+frontend/download_models.py

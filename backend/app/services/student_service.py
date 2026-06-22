@@ -57,6 +57,8 @@ class StudentQuizService:
                 "question_type": q.question_type,
                 "difficulty": q.difficulty,
                 "num_questions": q.num_questions,
+                "duration_minutes": q.duration_minutes or 60,
+                "max_violations": q.max_violations or 3,
                 "created_at": q.created_at.isoformat() if q.created_at else None,
                 "is_completed": q.id in attempted_quiz_ids,
             }
@@ -95,6 +97,8 @@ class StudentQuizService:
             "topic_name": quiz.topic_name if quiz else None,
             "question_type": quiz.question_type if quiz else None,
             "num_questions": quiz.num_questions if quiz else None,
+            "duration_minutes": quiz.duration_minutes if quiz else 60,
+            "max_violations": quiz.max_violations if quiz else 3,
             "created_at": quiz.created_at.isoformat() if quiz and quiz.created_at else None,
             "questions": formatted
         }

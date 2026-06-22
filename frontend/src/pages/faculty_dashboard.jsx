@@ -12,10 +12,12 @@ import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card"
 import { StatCard } from "../components/ui/stat-card";
 import { AnalyticsCard } from "../components/ui/analytics-card";
 import { ChatBubble, ChatInput } from "../components/ui/chat";
-import { BookOpen, Users, AlertCircle, FileText, Send, CheckCircle, BarChart as BarChartIcon, BookMarked, TrendingUp, TrendingDown, Upload, Download, Eye, BrainCircuit } from "lucide-react";
+import { BookOpen, Users, AlertCircle, FileText, Send, CheckCircle, BarChart as BarChartIcon, BookMarked, TrendingUp, TrendingDown, Upload, Download, Eye, BrainCircuit, ShieldAlert } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { LearningMaterialsTab } from "../components/faculty/LearningMaterialsTab";
 import { MultimodalUploadTab } from "../components/faculty/MultimodalUploadTab";
+import { QuizMonitoringTab } from "../components/faculty/QuizMonitoringTab";
+import { ManualQuestionBuilder } from "../components/faculty/ManualQuestionBuilder";
 
 const defaultFacultyChats = [];
 
@@ -43,12 +45,26 @@ export default function FacultyDashboard() {
   const [quizDifficulty, setQuizDifficulty] = useState("medium");
   const [quizCount, setQuizCount] = useState(0);
   const [quizSemester, setQuizSemester] = useState("1st Sem");
+  const [quizCount, setQuizCount] = useState("");
+  const [quizDuration, setQuizDuration] = useState("");
+  const [quizMaxViolations, setQuizMaxViolations] = useState(3);
   const [assessmentGenerationMethod, setAssessmentGenerationMethod] = useState("AI");
+  const [quizGenerationMethod, setQuizGenerationMethod] = useState("AI");
   const [assessmentType, setAssessmentType] = useState("Essay");
   const [assessmentDifficulty, setAssessmentDifficulty] = useState("Beginner");
   const [assessmentDuration, setAssessmentDuration] = useState(1);
   const [assessmentQuestionCount, setAssessmentQuestionCount] = useState(5);
+  const [quizQuestionType, setQuizQuestionType] = useState("MCQ");
+  const [quizQuestionCount, setQuizQuestionCount] = useState("");
+  
   const [manualQuestionsText, setManualQuestionsText] = useState("");
+  const [manualQuestionsData, setManualQuestionsData] = useState([{
+    id: "1",
+    question: "",
+    type: "MCQ",
+    options: ["", "", "", ""],
+    answer: ""
+  }]);
 
   // Quiz Results State
   const [quizzes, setQuizzes] = useState([]);
@@ -259,14 +275,34 @@ export default function FacultyDashboard() {
   };
 
   const handleGenerateQuiz = async () => {
-    if (!quizTopic) return alert("Enter topic.");
-    setIsGenerating(true);
     try {
-      await facultyApi.generateQuiz({
+      if (quizGenerationMethod === "AI") {
+        if (!quizTopic || !quizDifficulty || !quizQuestionType || !quizQuestionCount) {
+          alert("Please fill all required quiz fields.");
+          return;
+        }
+      } else {
+        if (!quizTopic || manualQuestionsData.length === 0) {
+          alert("Please provide a topic and at least one question.");
+          return;
+        }
+        // Basic validation for manual questions
+        const invalid = manualQuestionsData.some(q => {
+          if (!q.question.trim()) return true;
+          if (q.type === "MCQ" && !q.answer.trim()) return true;
+          return false;
+        });
+        if (invalid) {
+          alert("Please ensure all questions have text and MCQs have a correct answer selected.");
+          return;
+        }
+      }
+
+      setIsGenerating(true);
+      const payload = {
         faculty_name: userName,
         topic_name: quizTopic,
-        document_topic: uploadedDocs.length > 0 ? uploadedDocs[0].topic : undefined,
-        question_type: quizType,
+        question_type: quizQuestionType,
         difficulty: quizDifficulty,
         num_questions: quizCount,
         semester: quizSemester
@@ -274,54 +310,102 @@ export default function FacultyDashboard() {
       alert("Quiz generated!");
 
       // Reset form fields
+        num_questions: Number(quizQuestionCount),
+        document_topic: quizTopic,
+        is_assessment: false,
+        duration_minutes: Number(quizDuration) || 60,
+        max_violations: Number(quizMaxViolations) || 3,
+        manual_questions: quizGenerationMethod === "Manual" ? JSON.stringify(manualQuestionsData) : null
+      };
+      
+      await facultyApi.generateQuiz(payload);
+      
       setQuizTopic("");
-      setQuizType("MCQ");
       setQuizDifficulty("medium");
-      setQuizCount(25);
-
-      // Clear uploaded documents history
+      setQuizQuestionType("MCQ");
+      setQuizQuestionCount("");
+      setQuizDuration("");
+      setQuizMaxViolations(3);
+      setUploadFile(null);
+      if(pdfInputRef.current) pdfInputRef.current.value = "";
       setUploadedDocs([]);
-
+      setQuizGenerationMethod("AI");
+      setManualQuestionsData([{
+        id: "1",
+        question: "",
+        type: "MCQ",
+        options: ["", "", "", ""],
+        answer: ""
+      }]);
+      alert("Quiz generated successfully!");
       fetchQuizzes();
     } catch (e) {
       console.error(e);
-      const errorMsg = e.response?.data?.detail || e.response?.data?.message || "Failed generation.";
-      alert(errorMsg);
+      let errMsg = "Failed to generate quiz.";
+      if (e.response && e.response.data && e.response.data.detail) {
+          errMsg = typeof e.response.data.detail === 'string' 
+              ? e.response.data.detail 
+              : JSON.stringify(e.response.data.detail);
+      }
+      alert(`Error: ${errMsg}`);
     } finally {
       setIsGenerating(false);
     }
   };
 
   const handleGenerateAssessment = async () => {
-    if (assessmentGenerationMethod === "AI" && !quizTopic) return alert("Enter topic name.");
-    if (assessmentGenerationMethod === "Manual" && !manualQuestionsText) return alert("Enter manual questions.");
-    
-    setIsGenerating(true);
     try {
-      await facultyApi.generateQuiz({
+      if (assessmentGenerationMethod === "AI") {
+        if (!quizTopic || !assessmentType || !assessmentDifficulty || !assessmentQuestionCount) {
+          alert("Please fill all required fields for the assessment.");
+          return;
+        }
+      } else {
+        if (!quizTopic || !manualQuestionsText.trim()) {
+          alert("Please provide a topic and manual questions text.");
+          return;
+        }
+      }
+
+      setIsGenerating(true);
+      const payload = {
         faculty_name: userName,
-        topic_name: quizTopic || "Manual Assessment",
-        document_topic: uploadedDocs.length > 0 ? uploadedDocs[0].topic : undefined,
+        topic_name: quizTopic,
         question_type: assessmentType,
         difficulty: assessmentDifficulty,
         num_questions: assessmentQuestionCount,
         semester: quizSemester,
+        num_questions: Number(assessmentQuestionCount) || 1, // Will be overridden by manual count in backend
+        document_topic: quizTopic,
         is_assessment: true,
-        manual_questions: assessmentGenerationMethod === "Manual" ? manualQuestionsText : undefined,
-        duration_mins: assessmentDuration * 1440 // converting days to minutes for backend if needed, or backend handles it? Wait!
-        // Actually the backend might still expect duration_mins, so multiplying by 1440. Or I can just pass the value.
-        // Let's pass duration_mins: assessmentDuration * 1440 
-      });
-      alert("Assessment generated and students notified!");
-      
+        duration_minutes: Number(assessmentDuration) * 24 * 60 || 60, // days to mins
+        max_violations: 0,
+        manual_questions: assessmentGenerationMethod === "Manual" ? manualQuestionsText : null
+      };
+
+      await facultyApi.generateQuiz(payload);
+
       setQuizTopic("");
+      setAssessmentType("Essay");
+      setAssessmentDifficulty("Beginner");
+      setAssessmentQuestionCount("");
+      setAssessmentDuration("");
+      setUploadFile(null);
       setManualQuestionsText("");
+      if(pdfInputRef.current) pdfInputRef.current.value = "";
       setUploadedDocs([]);
+      setAssessmentGenerationMethod("AI");
+      alert("Assessment generated successfully!");
       fetchQuizzes();
     } catch (e) {
       console.error(e);
-      const errorMsg = e.response?.data?.detail || e.response?.data?.message || "Failed generation.";
-      alert(errorMsg);
+      let errMsg = "Failed to generate assessment.";
+      if (e.response && e.response.data && e.response.data.detail) {
+          errMsg = typeof e.response.data.detail === 'string' 
+              ? e.response.data.detail 
+              : JSON.stringify(e.response.data.detail);
+      }
+      alert(`Error: ${errMsg}`);
     } finally {
       setIsGenerating(false);
     }
@@ -503,139 +587,130 @@ export default function FacultyDashboard() {
                     <div className="p-6 md:p-8 space-y-10">
                       {/* Step 1 */}
                       <div className="space-y-6">
-                        <div className="flex items-center gap-3">
-                          <div className="bg-orange-100 text-orange-600 font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0">1</div>
-                          <h3 className="text-lg font-bold text-slate-900">Upload Knowledge Base</h3>
-                        </div>
-                        
-                        <div className="space-y-6">
-                          <div>
-                            <label className="text-sm font-bold text-slate-900 mb-2 block">
-                              Topic Name <span className="text-red-500">*</span>
-                            </label>
-                            <input 
-                              value={uploadTopic} 
-                              onChange={e => setUploadTopic(e.target.value)} 
-                              className="w-full h-[46px] rounded-xl border border-slate-200 bg-white px-4 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all placeholder:text-slate-400" 
-                              placeholder="e.g., Computer Networks Ch 1" 
-                            />
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-indigo-100 text-indigo-600 font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0">1</div>
+                            <h3 className="text-lg font-bold text-slate-900">Knowledge Base</h3>
                           </div>
+                          <div className="flex bg-slate-100 p-1 rounded-xl">
+                            <button 
+                              onClick={() => setQuizGenerationMethod("AI")}
+                              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${quizGenerationMethod === "AI" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                            >
+                              AI Generate (PDF)
+                            </button>
+                            <button 
+                              onClick={() => setQuizGenerationMethod("Manual")}
+                              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${quizGenerationMethod === "Manual" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                            >
+                              Manual Entry
+                            </button>
+                          </div>
+                        </div>
 
-                          <div className="grid md:grid-cols-2 gap-6">
-                            <div>
-                              <label className="text-sm font-bold text-slate-900 mb-2 block">
-                                Lecture PDF <span className="text-red-500">*</span>
-                              </label>
-                              {isUploading ? (
-                                <div className="w-full h-[46px] rounded-xl border border-orange-200 bg-orange-50 px-4 text-sm text-orange-600 font-semibold flex items-center gap-2">
-                                  <span className="w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></span>
-                                  Uploading...
-                                </div>
-                              ) : (
-                                <div className="relative">
-                                  <input
-                                    ref={pdfInputRef}
-                                    type="file"
-                                    onChange={(e) => {
-                                      const file = e.target.files[0];
-                                      if (file) {
-                                        setUploadFile(file);
-                                        handleUploadDocument(file);
-                                      }
-                                    }}
-                                    accept=".pdf"
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                  />
-                                  <div className="w-full h-[46px] rounded-xl border border-slate-200 bg-white px-4 text-sm flex items-center gap-3 focus-within:ring-2 focus-within:ring-orange-500 transition-all">
-                                    <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1 rounded-lg text-slate-700 font-semibold text-xs whitespace-nowrap">
-                                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                                      Choose File
+                        {quizGenerationMethod === "AI" ? (
+                          <>
+                            <div className="grid md:grid-cols-2 gap-6">
+                              <div>
+                                <label className="text-sm font-bold text-slate-900 mb-2 block">
+                                  Topic Name <span className="text-red-500">*</span>
+                                </label>
+                                <input 
+                                  value={quizTopic}
+                                  onChange={e => setQuizTopic(e.target.value)}
+                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                                  placeholder="e.g., Computer Networks Ch 1"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-sm font-bold text-slate-900 mb-2 block">
+                                  Lecture PDF <span className="text-red-500">*</span>
+                                </label>
+                                <input 
+                                  type="file" 
+                                  accept=".pdf"
+                                  onChange={(e) => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                      setUploadFile(file);
+                                      handleUploadDocument(file);
+                                    }
+                                  }}
+                                  ref={pdfInputRef}
+                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"
+                                />
+                                <p className="text-xs text-slate-500 mt-2">Upload a PDF file containing the lecture content.</p>
+                              </div>
+                            </div>
+
+                            {uploadedDocs.length > 0 && (
+                              <div className="mt-6 p-4 rounded-xl border-2 border-indigo-500 bg-indigo-50/70 animate-in fade-in slide-in-from-top-2">
+                                <h5 className="text-xs font-black text-indigo-800 uppercase mb-3 tracking-wider">Successfully Uploaded</h5>
+                                <div className="space-y-2">
+                                  {uploadedDocs.map((doc, idx) => (
+                                    <div key={idx} className="flex justify-between items-center text-sm p-3 bg-white rounded-lg border border-indigo-200 shadow-sm">
+                                      <div className="flex items-center gap-2 text-indigo-800 font-bold">
+                                        <CheckCircle className="w-4 h-4 text-indigo-600" />
+                                        <span>{doc.topic}</span>
+                                      </div>
+                                      <div className="flex items-center gap-3">
+                                        <span className="text-indigo-600 text-xs font-semibold" title={doc.name}>{doc.name}</span>
+                                        <button onClick={() => setUploadedDocs(prev => prev.filter((_, i) => i !== idx))} className="text-indigo-400 hover:text-red-500 transition-colors p-1" title="Remove">
+                                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                                        </button>
+                                      </div>
                                     </div>
-                                    <span className="text-slate-500 truncate">{uploadFile ? uploadFile.name : "No file chosen"}</span>
-                                  </div>
+                                  ))}
                                 </div>
-                              )}
-                              <p className="text-xs text-slate-500 mt-2">Upload a PDF file containing the lecture content.</p>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div>
+                            <div className="mb-6">
+                                <label className="text-sm font-bold text-slate-900 mb-2 block">
+                                  Topic Name <span className="text-red-500">*</span>
+                                </label>
+                                <input 
+                                  value={quizTopic}
+                                  onChange={e => setQuizTopic(e.target.value)}
+                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                                  placeholder="e.g., Computer Networks Ch 1"
+                                />
                             </div>
-                            <div>
-                              <label className="text-sm font-bold text-slate-900 mb-2 block">
-                                Number of Questions <span className="text-red-500">*</span>
-                              </label>
-                              <input 
-                                type="number" 
-                                min="1" max="25" 
-                                value={quizCount} 
-                                onChange={e => {
-                                  const val = e.target.value;
-                                  if (val === "") setQuizCount("");
-                                  else {
-                                    const num = Number(val);
-                                    setQuizCount(num > 25 ? 25 : num);
-                                  }
-                                }} 
-                                className="w-full h-[46px] rounded-xl border border-slate-200 bg-white px-4 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all" 
-                              />
-                              <p className="text-xs text-slate-500 mt-2">Enter the number of questions to generate.</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {uploadedDocs.length > 0 && (
-                          <div className="p-4 rounded-xl border-2 border-emerald-500 bg-emerald-50/70 animate-in fade-in slide-in-from-top-2">
-                            <h5 className="text-xs font-black text-emerald-800 uppercase mb-3 tracking-wider">Successfully Uploaded</h5>
-                            <div className="space-y-2">
-                              {uploadedDocs.map((doc, idx) => (
-                                <div key={idx} className="flex justify-between items-center text-sm p-3 bg-white rounded-lg border border-emerald-200 shadow-sm">
-                                  <div className="flex items-center gap-2 text-emerald-800 font-bold">
-                                    <CheckCircle className="w-4 h-4 text-emerald-600" />
-                                    <span>{doc.topic}</span>
-                                  </div>
-                                  <div className="flex items-center gap-3">
-                                    <span className="text-emerald-600 text-xs font-semibold" title={doc.name}>{doc.name}</span>
-                                    <button onClick={() => setUploadedDocs(prev => prev.filter((_, i) => i !== idx))} className="text-emerald-400 hover:text-red-500 transition-colors p-1" title="Remove">
-                                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                            <label className="text-sm font-bold text-slate-900 mb-2 block">
+                              Enter Questions Manually <span className="text-red-500">*</span>
+                            </label>
+                            <ManualQuestionBuilder 
+                              questions={manualQuestionsData} 
+                              onChange={setManualQuestionsData} 
+                            />
                           </div>
                         )}
                       </div>
 
-                      {/* Divider */}
-                      <div className="h-px bg-slate-100 w-full"></div>
-
                       {/* Step 2 */}
                       <div className="space-y-6">
                         <div className="flex items-center gap-3">
-                          <div className="bg-orange-100 text-orange-600 font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0">2</div>
+                          <div className="bg-indigo-100 text-indigo-600 font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0">2</div>
                           <h3 className="text-lg font-bold text-slate-900">Quiz Details</h3>
                         </div>
 
                         <div className="grid md:grid-cols-4 gap-6">
+                        <div className={`grid ${quizGenerationMethod === "Manual" ? "md:grid-cols-4" : "md:grid-cols-5"} gap-6`}>
                           <div>
                             <label className="text-sm font-bold text-slate-900 mb-2 block">
-                              Quiz Topic <span className="text-red-500">*</span>
+                              Question Type <span className="text-red-500">*</span>
                             </label>
-                            <input 
-                              value={quizTopic} 
-                              onChange={e => setQuizTopic(e.target.value)} 
-                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all placeholder:text-slate-400" 
-                              placeholder="e.g., OSI Model" 
-                            />
-                          </div>
-                          <div>
-                            <label className="text-sm font-bold text-slate-900 mb-2 block">
-                              Type <span className="text-red-500">*</span>
-                            </label>
-                             <select 
-                              value={quizType} 
-                              onChange={e => setQuizType(e.target.value)} 
-                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
+                            <select 
+                              value={quizQuestionType}
+                              onChange={e => setQuizQuestionType(e.target.value)}
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                             >
-                              <option value="MCQs">MCQs</option>
-                              <option value="One word questions">One word questions</option>
+                              <option value="MCQ">Multiple Choice</option>
+                              <option value="Fill in the Blanks">Fill in the Blanks</option>
+                              <option value="Theory">Theory/Subjective</option>
+                              <option value="Mixed">Mixed</option>
                             </select>
                           </div>
                           <div>
@@ -643,13 +718,13 @@ export default function FacultyDashboard() {
                               Difficulty <span className="text-red-500">*</span>
                             </label>
                             <select 
-                              value={quizDifficulty} 
-                              onChange={e => setQuizDifficulty(e.target.value)} 
-                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
+                              value={quizDifficulty}
+                              onChange={e => setQuizDifficulty(e.target.value)}
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                             >
-                              <option value="easy">Easy</option>
-                              <option value="medium">Medium</option>
-                              <option value="hard">Hard</option>
+                              <option value="Easy">Easy</option>
+                              <option value="Medium">Medium</option>
+                              <option value="Hard">Hard</option>
                             </select>
                           </div>
                           <div>
@@ -671,6 +746,48 @@ export default function FacultyDashboard() {
                               <option value="8th Sem">8th Sem</option>
                             </select>
                           </div>
+                          </div>
+                          {quizGenerationMethod !== "Manual" && (
+                            <div>
+                              <label className="text-sm font-bold text-slate-900 mb-2 block">
+                                No. of Questions <span className="text-red-500">*</span>
+                              </label>
+                              <input 
+                                type="number"
+                                min="1" max="50"
+                                value={quizQuestionCount}
+                                onChange={e => setQuizQuestionCount(e.target.value)}
+                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                                placeholder="e.g., 25"
+                              />
+                            </div>
+                          )}
+                          <div>
+                              <label className="text-sm font-bold text-slate-900 mb-2 block">
+                                Duration (Mins)
+                              </label>
+                              <input 
+                                type="number"
+                                min="1"
+                                value={quizDuration} 
+                                onChange={e => setQuizDuration(e.target.value)} 
+                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all placeholder:text-slate-400"
+                                placeholder="e.g., 45"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-sm font-bold text-slate-900 mb-2 block">
+                                Max Violations
+                              </label>
+                              <input 
+                                type="number"
+                                min="1"
+                                value={quizMaxViolations} 
+                                onChange={e => setQuizMaxViolations(Number(e.target.value))} 
+                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
+                                placeholder="e.g., 3"
+                              />
+                            </div>
                         </div>
 
                         <button 
@@ -719,8 +836,8 @@ export default function FacultyDashboard() {
                   <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     {/* Header */}
                     <div className="p-6 md:p-8 border-b border-slate-100 flex gap-4 items-start">
-                      <div className="bg-indigo-50 p-3 rounded-2xl border border-indigo-100 shrink-0">
-                        <FileText className="w-8 h-8 text-indigo-500" />
+                      <div className="bg-orange-50 p-3 rounded-2xl border border-orange-100 shrink-0">
+                        <FileText className="w-8 h-8 text-orange-500" />
                       </div>
                       <div>
                         <h2 className="text-2xl font-bold text-slate-900">Generate Assessments</h2>
@@ -733,19 +850,19 @@ export default function FacultyDashboard() {
                       <div className="space-y-6">
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-3">
-                            <div className="bg-indigo-100 text-indigo-600 font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0">1</div>
+                            <div className="bg-orange-100 text-orange-600 font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0">1</div>
                             <h3 className="text-lg font-bold text-slate-900">Knowledge Base</h3>
                           </div>
                           <div className="flex bg-slate-100 p-1 rounded-xl">
                             <button 
                               onClick={() => setAssessmentGenerationMethod("AI")}
-                              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${assessmentGenerationMethod === "AI" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${assessmentGenerationMethod === "AI" ? "bg-white text-orange-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                             >
                               AI Generate (PDF)
                             </button>
                             <button 
                               onClick={() => setAssessmentGenerationMethod("Manual")}
-                              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${assessmentGenerationMethod === "Manual" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${assessmentGenerationMethod === "Manual" ? "bg-white text-orange-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                             >
                               Manual Entry
                             </button>
@@ -762,7 +879,7 @@ export default function FacultyDashboard() {
                                 <input 
                                   value={quizTopic}
                                   onChange={e => setQuizTopic(e.target.value)}
-                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
                                   placeholder="e.g., Software Engineering Principles"
                                 />
                               </div>
@@ -781,24 +898,24 @@ export default function FacultyDashboard() {
                                     }
                                   }}
                                   ref={pdfInputRef}
-                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"
+                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100"
                                 />
                                 <p className="text-xs text-slate-500 mt-2">Upload a PDF containing the reference material.</p>
                               </div>
                             </div>
                             {uploadedDocs.length > 0 && (
-                              <div className="mt-6 p-4 rounded-xl border-2 border-indigo-500 bg-indigo-50/70 animate-in fade-in slide-in-from-top-2">
-                                <h5 className="text-xs font-black text-indigo-800 uppercase mb-3 tracking-wider">Successfully Uploaded</h5>
+                              <div className="mt-6 p-4 rounded-xl border-2 border-orange-500 bg-orange-50/70 animate-in fade-in slide-in-from-top-2">
+                                <h5 className="text-xs font-black text-orange-800 uppercase mb-3 tracking-wider">Successfully Uploaded</h5>
                                 <div className="space-y-2">
                                   {uploadedDocs.map((doc, idx) => (
-                                    <div key={idx} className="flex justify-between items-center text-sm p-3 bg-white rounded-lg border border-indigo-200 shadow-sm">
-                                      <div className="flex items-center gap-2 text-indigo-800 font-bold">
-                                        <CheckCircle className="w-4 h-4 text-indigo-600" />
+                                    <div key={idx} className="flex justify-between items-center text-sm p-3 bg-white rounded-lg border border-orange-200 shadow-sm">
+                                      <div className="flex items-center gap-2 text-orange-800 font-bold">
+                                        <CheckCircle className="w-4 h-4 text-orange-600" />
                                         <span>{doc.topic}</span>
                                       </div>
                                       <div className="flex items-center gap-3">
-                                        <span className="text-indigo-600 text-xs font-semibold" title={doc.name}>{doc.name}</span>
-                                        <button onClick={() => setUploadedDocs(prev => prev.filter((_, i) => i !== idx))} className="text-indigo-400 hover:text-red-500 transition-colors p-1" title="Remove">
+                                        <span className="text-orange-600 text-xs font-semibold" title={doc.name}>{doc.name}</span>
+                                        <button onClick={() => setUploadedDocs(prev => prev.filter((_, i) => i !== idx))} className="text-orange-400 hover:text-red-500 transition-colors p-1" title="Remove">
                                           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
                                         </button>
                                       </div>
@@ -810,13 +927,24 @@ export default function FacultyDashboard() {
                           </>
                         ) : (
                           <div>
+                            <div className="mb-6">
+                                <label className="text-sm font-bold text-slate-900 mb-2 block">
+                                  Topic Name <span className="text-red-500">*</span>
+                                </label>
+                                <input 
+                                  value={quizTopic}
+                                  onChange={e => setQuizTopic(e.target.value)}
+                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
+                                  placeholder="e.g., Software Engineering Principles"
+                                />
+                            </div>
                             <label className="text-sm font-bold text-slate-900 mb-2 block">
                               Enter Questions Manually <span className="text-red-500">*</span>
                             </label>
                             <textarea 
                               value={manualQuestionsText}
                               onChange={e => setManualQuestionsText(e.target.value)}
-                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all min-h-[150px]"
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all min-h-[150px]"
                               placeholder="Type or paste your questions here...&#10;Example:&#10;1. Explain polymorphism.&#10;2. What is the difference between an interface and an abstract class?"
                             />
                           </div>
@@ -826,7 +954,7 @@ export default function FacultyDashboard() {
                       {/* Step 2 */}
                       <div className="space-y-6">
                         <div className="flex items-center gap-3">
-                          <div className="bg-indigo-100 text-indigo-600 font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0">2</div>
+                          <div className="bg-orange-100 text-orange-600 font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0">2</div>
                           <h3 className="text-lg font-bold text-slate-900">Assessment Details</h3>
                         </div>
 
@@ -838,7 +966,7 @@ export default function FacultyDashboard() {
                             <select 
                               value={assessmentType}
                               onChange={e => setAssessmentType(e.target.value)}
-                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
                             >
                               <option value="Essay">Essay & Short Answer</option>
                               <option value="Coding">Coding Assessment</option>
@@ -852,7 +980,7 @@ export default function FacultyDashboard() {
                             <select 
                               value={assessmentDifficulty}
                               onChange={e => setAssessmentDifficulty(e.target.value)}
-                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
                             >
                               <option value="Beginner">Beginner</option>
                               <option value="Intermediate">Intermediate</option>
@@ -876,7 +1004,7 @@ export default function FacultyDashboard() {
                                     setAssessmentQuestionCount(num > 25 ? 25 : num);
                                   }
                                 }}
-                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
                                 placeholder="e.g., 5"
                               />
                             </div>
@@ -890,7 +1018,7 @@ export default function FacultyDashboard() {
                               min="1"
                               value={assessmentDuration}
                               onChange={e => setAssessmentDuration(e.target.value)}
-                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
                               placeholder="e.g., 2"
                             />
                           </div>
@@ -919,7 +1047,7 @@ export default function FacultyDashboard() {
                           <Button 
                             onClick={handleGenerateAssessment}
                             disabled={isGenerating || isUploading}
-                            className="w-full py-6 text-lg font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 disabled:opacity-50"
+                            className="w-full py-6 text-lg font-bold rounded-xl bg-orange-600 hover:bg-orange-700 shadow-lg shadow-orange-600/20 disabled:opacity-50"
                           >
                             {isGenerating ? "Generating Assessment..." : <><Upload className="w-5 h-5 mr-2" /> Generate Assessment</>}
                           </Button>
@@ -1074,6 +1202,13 @@ export default function FacultyDashboard() {
                   >
                     View Quiz
                   </button>
+                  <button 
+                    className={`py-3 px-6 font-semibold border-b-2 transition-colors flex items-center gap-2 ${activeQuizTab === "monitoring" ? "border-orange-500 text-orange-600" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                    onClick={() => setActiveQuizTab("monitoring")}
+                  >
+                    <ShieldAlert className="w-4 h-4" />
+                    Quiz Monitoring
+                  </button>
                 </div>
 
                 {activeQuizTab === "performance" ? (
@@ -1125,6 +1260,13 @@ export default function FacultyDashboard() {
                       </Card>
                     )}
                   </>
+                ) : activeQuizTab === "monitoring" ? (
+                  <div className="mt-8">
+                    <QuizMonitoringTab 
+                      quizId={selectedQuiz} 
+                      onBack={() => setSelectedQuiz(null)} 
+                    />
+                  </div>
                 ) : (
                   <div className="space-y-6">
                     {quizDetails?.questions?.map((q, idx) => (
@@ -1142,7 +1284,7 @@ export default function FacultyDashboard() {
                           ) : (
                             <div className="p-4 rounded-lg bg-emerald-50 border border-emerald-200 mb-4">
                               <span className="font-semibold text-emerald-800">Answer: </span>
-                              <span className="text-emerald-700">{q.answer}</span>
+                              <span className="text-emerald-700">{q.answer || <i>Not provided (Old quiz format)</i>}</span>
                             </div>
                           )}
                         </CardContent>

@@ -1,16 +1,18 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
-import Home from "./pages/home";
-import Register from "./pages/register";
-import StudentDashboard from "./pages/student_dashboard";
-import FacultyDashboard from "./pages/faculty_dashboard";
-import StudentAttendance from "./pages/StudentAttendance";
-import ChangePassword from "./pages/change_password";
-import AdminDashboard from "./pages/admin_dashboard";
-import VerifyLoginOtp from "./pages/VerifyLoginOtp";
-import ForgotPassword from "./pages/ForgotPassword";
-import VerifyResetOtp from "./pages/VerifyResetOtp";
-import ResetPassword from "./pages/ResetPassword";
+
+const Home = lazy(() => import("./pages/home"));
+const Register = lazy(() => import("./pages/register"));
+const StudentDashboard = lazy(() => import("./pages/student_dashboard"));
+const FacultyDashboard = lazy(() => import("./pages/faculty_dashboard"));
+const StudentAttendance = lazy(() => import("./pages/StudentAttendance"));
+const ChangePassword = lazy(() => import("./pages/change_password"));
+const AdminDashboard = lazy(() => import("./pages/admin_dashboard"));
+const VerifyLoginOtp = lazy(() => import("./pages/VerifyLoginOtp"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const VerifyResetOtp = lazy(() => import("./pages/VerifyResetOtp"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
 function ProtectedRoute({ children, allowedRoles }) {
   const userStr = localStorage.getItem("knowledgex_user");
@@ -44,6 +46,7 @@ export default function App() {
   return (
     <>
       <Toaster position="top-center" />
+      <Suspense fallback={<div className="flex h-screen items-center justify-center"><div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>}>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/register" element={<Register />} />
@@ -74,6 +77,7 @@ export default function App() {
         } />
         <Route path="*" element={<Navigate replace to="/" />} />
       </Routes>
+      </Suspense>
     </>
   );
 }

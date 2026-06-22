@@ -90,12 +90,24 @@ class TeacherQuizService:
         manual_questions: str = None,
         duration_mins: int = 60,
         semester: str = None,
+        max_violations: int = 3,
     ) -> dict:
         if manual_questions:
-            # For manual questions, just format them into JSON via LLM
-            prompt = f"Format the following manual questions into a JSON list of objects with 'question', 'options' (empty list if none), and 'answer' (empty string if none) keys.\n\nQuestions:\n{manual_questions}\n\nReturn ONLY valid JSON."
-            response = await self.llm.ainvoke(prompt)
-            content = response.content if hasattr(response, "content") else str(response)
+            # Check if manual_questions is already a valid JSON string (from the new ManualQuestionBuilder UI)
+            is_valid_json = False
+            try:
+                parsed_manual = json.loads(manual_questions)
+                if isinstance(parsed_manual, list):
+                    is_valid_json = True
+                    content = manual_questions
+            except json.JSONDecodeError:
+                pass
+
+            if not is_valid_json:
+                # Fallback for old textarea inputs
+                prompt = f"Format the following manual questions into a JSON list of objects with 'question', 'options' (empty list if none), and 'answer' (empty string if none) keys.\n\nQuestions:\n{manual_questions}\n\nReturn ONLY valid JSON."
+                response = await self.llm.ainvoke(prompt)
+                content = response.content if hasattr(response, "content") else str(response)
         else:
             doc_topic = document_topic or topic_name
             context = retrieve_context(doc_topic, topic_name)
@@ -170,8 +182,7 @@ class TeacherQuizService:
         if questions is None or not isinstance(questions, list):
             logger.error(f"Failed to extract JSON from LLM response: {content[:200]}")
             return {"status": "error", "message": "Failed to generate valid quiz format"}
-
-        final_question_type = f"Assessment: {question_type} ({duration_mins} mins)" if is_assessment else question_type
+        final_question_type = f"Assessment: {question_type} ({duration_minutes} mins)" if is_assessment else question_type
 
         quiz = TeacherQuiz(
             teacher_name=faculty_name,
@@ -181,6 +192,8 @@ class TeacherQuizService:
             difficulty=difficulty,
             num_questions=num_questions if not manual_questions else len(questions),
             semester=semester,
+            duration_minutes=duration_minutes,
+            max_violations=max_violations,
         )
         self.db.add(quiz)
         await self.db.flush()

@@ -153,6 +153,7 @@ async def faculty_generate_quiz(
         manual_questions=request.manual_questions,
         duration_mins=request.duration_mins,
         semester=request.semester,
+        max_violations=request.max_violations,
     )
 
     if result.get("status") == "error":
