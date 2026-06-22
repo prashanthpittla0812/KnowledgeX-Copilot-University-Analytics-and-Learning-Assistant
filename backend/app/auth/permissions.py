@@ -23,7 +23,11 @@ async def get_current_student(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied",
         )
+    if user.role == "student":
+        from app.utils.streak import update_user_streak
+        await update_user_streak(user, db)
     return user
+
 
 
 async def get_current_faculty(

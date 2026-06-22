@@ -65,13 +65,13 @@ class AnalyticsService:
         return metrics
 
     async def get_learning_gaps(self, quiz_id: int | None = None) -> dict:
-        student_query_stmt = select(User.name, func.avg(QuizAttempt.percentage).label("avg_score")) \
+        student_query_stmt = select(User.id.label("user_id"), User.name, User.profile_photo_path, User.department, User.designation, func.avg(QuizAttempt.percentage).label("avg_score")) \
             .join(QuizAttempt, User.id == QuizAttempt.student_id)
         
         if quiz_id:
             student_query_stmt = student_query_stmt.where(QuizAttempt.quiz_id == quiz_id)
             
-        student_query_stmt = student_query_stmt.group_by(User.name)
+        student_query_stmt = student_query_stmt.group_by(User.id, User.name, User.profile_photo_path, User.department, User.designation)
         student_scores = (await self.db.execute(student_query_stmt)).all()
 
         topic_query_stmt = select(TopicPerformance.topic, func.avg(TopicPerformance.accuracy).label("avg_acc"))
@@ -83,7 +83,14 @@ class AnalyticsService:
         topic_scores = (await self.db.execute(topic_query_stmt)).all()
 
         student_performance = [
-            {"student_name": row.name, "average_score": round(float(row.avg_score), 2)}
+            {
+                "student_id": row.user_id,
+                "student_name": row.name,
+                "profile_photo_path": row.profile_photo_path,
+                "department": row.department,
+                "designation": row.designation,
+                "average_score": round(float(row.avg_score), 2)
+            }
             for row in student_scores
         ]
 

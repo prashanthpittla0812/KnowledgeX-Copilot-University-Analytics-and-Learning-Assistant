@@ -27,6 +27,8 @@ class User(Base):
     last_login_date = Column(DateTime, nullable=True)
     current_streak = Column(Integer, default=0, nullable=False)
     profile_photo_path = Column(String(500), nullable=True)
+    email_verified = Column(Boolean, default=False, nullable=False)
+    verified_at = Column(DateTime, nullable=True)
 
     documents = relationship("Document", back_populates="user", cascade="all, delete-orphan")
     quizzes = relationship("Quiz", back_populates="user", cascade="all, delete-orphan")
@@ -453,3 +455,13 @@ class LoginAudit(Base):
 
     user = relationship("User")
 
+
+class EmailVerificationOTP(Base):
+    __tablename__ = "email_verification_otps"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    email = Column(String(255), index=True, nullable=False)
+    otp_code = Column(String(255), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    is_verified = Column(Boolean, default=False, nullable=False)
+    attempts = Column(Integer, default=0, nullable=False)

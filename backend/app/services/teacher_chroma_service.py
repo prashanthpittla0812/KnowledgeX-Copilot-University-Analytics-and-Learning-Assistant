@@ -8,6 +8,9 @@ from app.utils.logger import get_logger
 logger = get_logger()
 
 
+from app.utils.embeddings import get_embeddings
+
+
 def get_teacher_embeddings():
     if settings.AI_PROVIDER == "openai":
         return OpenAIEmbeddings(

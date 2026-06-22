@@ -9,7 +9,7 @@ from app.auth.auth import AuthService, InactiveAccountError, UnapprovedAccountEr
 from app.auth.dependencies import get_current_user
 from app.auth.password import hash_password
 from app.database.db import get_db
-from app.database.models import User, OTPVerification, LoginAudit, AuditLog
+from app.database.models import User, OTPVerification, LoginAudit, AuditLog, EmailVerificationOTP
 from app.schemas.auth_schema import (
     LoginRequest,
     RegisterRequest,
@@ -19,9 +19,11 @@ from app.schemas.auth_schema import (
     LoginOtpResponse,
     VerifyOtpRequest,
     ForgotPasswordRequest,
-    ResetPasswordRequest
+    ResetPasswordRequest,
+    SendRegistrationOtpRequest,
+    VerifyRegistrationOtpRequest
 )
-from app.services.email_service import send_otp_email, send_login_notification
+from app.services.email_service import send_otp_email, send_login_notification, send_registration_otp_email
 from app.schemas.user_schema import UserUpdateRequest
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -56,8 +58,88 @@ async def change_password(
     return {"message": "Password updated successfully"}
 
 
+@router.post("/send-registration-otp", summary="Send OTP for registration verification")
+async def send_registration_otp(request: SendRegistrationOtpRequest, db: AsyncSession = Depends(get_db)):
+    # Check if email is already registered and verified
+    user_res = await db.execute(select(User).where(User.email == request.email))
+    existing_user = user_res.scalar_one_or_none()
+    if existing_user and existing_user.email_verified:
+        raise HTTPException(status_code=400, detail="Email Already Registered")
+
+    # Check for rate limiting / recent OTP
+    recent_otp_res = await db.execute(
+        select(EmailVerificationOTP).where(
+            EmailVerificationOTP.email == request.email,
+            EmailVerificationOTP.created_at > datetime.utcnow() - timedelta(seconds=60)
+        )
+    )
+    if recent_otp_res.scalar_one_or_none():
+        raise HTTPException(status_code=429, detail="Please wait 60 seconds before requesting another OTP.")
+
+    otp = generate_otp()
+    from app.auth.password import hash_password
+    hashed_otp = hash_password(otp)
+
+    verification = EmailVerificationOTP(
+        email=request.email,
+        otp_code=hashed_otp,
+        expires_at=datetime.utcnow() + timedelta(minutes=10)
+    )
+    db.add(verification)
+    await db.commit()
+
+    await send_registration_otp_email(request.email, otp)
+    return {"message": "OTP sent successfully"}
+
+
+@router.post("/verify-registration-otp", summary="Verify registration OTP")
+async def verify_registration_otp(request: VerifyRegistrationOtpRequest, db: AsyncSession = Depends(get_db)):
+    otp_res = await db.execute(
+        select(EmailVerificationOTP)
+        .where(EmailVerificationOTP.email == request.email)
+        .order_by(EmailVerificationOTP.created_at.desc())
+    )
+    otp_record = otp_res.scalars().first()
+
+    if not otp_record:
+        raise HTTPException(status_code=400, detail="No OTP found for this email.")
+
+    if otp_record.is_verified:
+        return {"verified": True}
+
+    if otp_record.attempts >= 5:
+        raise HTTPException(status_code=400, detail="Too Many Attempts. Please request a new OTP.")
+
+    if otp_record.expires_at < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="OTP Expired")
+
+    from app.auth.password import verify_password
+    if not verify_password(request.otp, otp_record.otp_code):
+        otp_record.attempts += 1
+        await db.commit()
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+
+    otp_record.is_verified = True
+    await db.commit()
+    return {"verified": True}
+
+
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register(request: RegisterRequest, db: AsyncSession = Depends(get_db)):
+    # Verify OTP first
+    otp_res = await db.execute(
+        select(EmailVerificationOTP)
+        .where(
+            EmailVerificationOTP.email == request.email,
+            EmailVerificationOTP.is_verified == True
+        )
+        .order_by(EmailVerificationOTP.created_at.desc())
+    )
+    verified_otp = otp_res.scalars().first()
+    
+    if not verified_otp:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email verification required")
+
     auth_service = AuthService(db)
     try:
         user = await auth_service.register_user(
@@ -66,6 +148,10 @@ async def register(request: RegisterRequest, db: AsyncSession = Depends(get_db))
             password=request.password,
             role=request.role,
         )
+        user.email_verified = True
+        user.verified_at = datetime.utcnow()
+        await db.commit()
+        
         token = auth_service.generate_token(user)
         return TokenResponse(access_token=token)
     except ValueError as e:
@@ -76,54 +162,22 @@ async def register(request: RegisterRequest, db: AsyncSession = Depends(get_db))
 async def login(request: LoginRequest, req: Request, db: AsyncSession = Depends(get_db)):
     auth_service = AuthService(db)
     try:
-        user = await auth_service.authenticate_user(email=request.email, password=request.password)
-        
-        # Update user streak
-        now = datetime.utcnow()
-        if user.last_login_date:
-            delta = now.date() - user.last_login_date.date()
-            if delta.days == 1:
-                user.current_streak += 1
-            elif delta.days > 1:
-                user.current_streak = 1
-        else:
-            user.current_streak = 1
+        user = await auth_service.authenticate_user(
+            email=request.email,
+            password=request.password,
+        )
 
-        user.last_login_date = now
-        
-        # Device detection and Audit Logging
-        user_agent_str = req.headers.get("user-agent", "")
-        ua = parse(user_agent_str)
-        browser = f"{ua.browser.family} {ua.browser.version_string}"
-        operating_system = f"{ua.os.family} {ua.os.version_string}"
-        device_type = "Mobile" if ua.is_mobile else "Tablet" if ua.is_tablet else "Desktop" if ua.is_pc else "Unknown"
-        
-        x_forwarded = req.headers.get("x-forwarded-for")
-        ip_address = x_forwarded.split(",")[0] if x_forwarded else req.client.host
-        
-        audit = LoginAudit(
-            user_id=user.id,
-            login_time=now,
-            browser=browser,
-            operating_system=operating_system,
-            device_type=device_type,
-            ip_address=ip_address
-        )
-        db.add(audit)
-        
-        await db.commit()
-        
-        # Send login notification email
-        await send_login_notification(
-            email=user.email,
-            name=user.name,
-            time_str=(now + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d %I:%M %p IST"),
-            device=device_type,
-            browser=browser,
-            os_str=operating_system,
-            ip=ip_address
-        )
-        
+        if not getattr(user, 'email_verified', False):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Please verify your email before logging in.")
+
+        from datetime import datetime
+        if user.role == "student":
+            from app.utils.streak import update_user_streak
+            await update_user_streak(user, db)
+        else:
+            user.last_login_date = datetime.utcnow()
+            await db.commit()
+
         token = auth_service.generate_token(user)
         return TokenResponse(access_token=token, must_change_password=user.must_change_password)
         

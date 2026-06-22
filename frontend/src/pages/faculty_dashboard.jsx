@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "../components/layout/DashboardLayout";
 import { facultyMenuItems } from "./faculty_menu";
-import { facultyApi } from "../api";
+import { facultyApi, API_BASE_URL } from "../api";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, Cell
@@ -19,6 +19,12 @@ import { MultimodalUploadTab } from "../components/faculty/MultimodalUploadTab";
 import { QuizMonitoringTab } from "../components/faculty/QuizMonitoringTab";
 
 const defaultFacultyChats = [];
+
+const getPhotoUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  return `${API_BASE_URL.replace("/api/v1", "")}/${path}`;
+};
 
 export default function FacultyDashboard() {
   const navigate = useNavigate();
@@ -67,8 +73,8 @@ export default function FacultyDashboard() {
   const [quizMode, setQuizMode] = useState("Quiz");
   const [overviewPage, setOverviewPage] = useState(0);
   const [selectedStudent, setSelectedStudent] = useState(null);
-
-
+  const [isRecommending, setIsRecommending] = useState(false);
+  const [recommendationMessage, setRecommendationMessage] = useState("");
 
   useEffect(() => {
     const stored = localStorage.getItem("currentUser");
@@ -181,15 +187,15 @@ export default function FacultyDashboard() {
     }
   };
 
-  const fetchLearningGaps = async (quizId = "") => {
+  const fetchLearningGaps = async (quizId = "", showLoading = true) => {
     try {
-      setIsLoading(true);
+      if (showLoading) setIsLoading(true);
       const res = await facultyApi.getLearningGaps(quizId || undefined);
       setLearningGaps(res.data);
     } catch (e) {
       console.error(e);
     } finally {
-      setIsLoading(false);
+      if (showLoading) setIsLoading(false);
     }
   };
 
@@ -211,16 +217,25 @@ export default function FacultyDashboard() {
 
 
   useEffect(() => {
+    let intervalId;
     if (activeItem === "Dashboard") {
       fetchDashboardStats();
     } else if (activeItem === "Quizzes/Assessments") {
       fetchQuizzes();
     } else if (activeItem === "Analytics") {
       fetchQuizzes();
-      fetchLearningGaps(analyticsQuiz);
+      fetchLearningGaps(analyticsQuiz, true);
       fetchDashboardStats();
+      
+      intervalId = setInterval(() => {
+        fetchLearningGaps(analyticsQuiz, false);
+      }, 5000);
     }
-  }, [activeItem]);
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [activeItem, analyticsQuiz]);
 
   const handleUploadDocument = async (file = null) => {
     const fileToUpload = file || uploadFile;
@@ -495,7 +510,7 @@ export default function FacultyDashboard() {
                           <h3 className="text-lg font-bold text-slate-900">Upload Knowledge Base</h3>
                         </div>
                         
-                        <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-6">
                           <div>
                             <label className="text-sm font-bold text-slate-900 mb-2 block">
                               Topic Name <span className="text-red-500">*</span>
@@ -503,59 +518,82 @@ export default function FacultyDashboard() {
                             <input 
                               value={uploadTopic} 
                               onChange={e => setUploadTopic(e.target.value)} 
-                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all placeholder:text-slate-400" 
+                              className="w-full h-[46px] rounded-xl border border-slate-200 bg-white px-4 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all placeholder:text-slate-400" 
                               placeholder="e.g., Computer Networks Ch 1" 
                             />
                           </div>
-                          <div>
-                            <label className="text-sm font-bold text-slate-900 mb-2 block">
-                              Lecture PDF <span className="text-red-500">*</span>
-                            </label>
-                            {isUploading ? (
-                              <div className="w-full rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-600 font-semibold flex items-center gap-2">
-                                <span className="w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></span>
-                                Uploading...
-                              </div>
-                            ) : (
-                              <div className="relative">
-                                <input
-                                  ref={pdfInputRef}
-                                  type="file"
-                                  onChange={(e) => {
-                                    const file = e.target.files[0];
-                                    if (file) {
-                                      setUploadFile(file);
-                                      handleUploadDocument(file);
-                                    }
-                                  }}
-                                  accept=".pdf"
-                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                />
-                                <div className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm flex items-center gap-3 focus-within:ring-2 focus-within:ring-orange-500 transition-all">
-                                  <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-slate-700 font-semibold whitespace-nowrap">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                                    Choose File
-                                  </div>
-                                  <span className="text-slate-500 truncate">{uploadFile ? uploadFile.name : "No file chosen"}</span>
+
+                          <div className="grid md:grid-cols-2 gap-6">
+                            <div>
+                              <label className="text-sm font-bold text-slate-900 mb-2 block">
+                                Lecture PDF <span className="text-red-500">*</span>
+                              </label>
+                              {isUploading ? (
+                                <div className="w-full h-[46px] rounded-xl border border-orange-200 bg-orange-50 px-4 text-sm text-orange-600 font-semibold flex items-center gap-2">
+                                  <span className="w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></span>
+                                  Uploading...
                                 </div>
-                              </div>
-                            )}
-                            <p className="text-xs text-slate-500 mt-2">Upload a PDF file containing the lecture content.</p>
+                              ) : (
+                                <div className="relative">
+                                  <input
+                                    ref={pdfInputRef}
+                                    type="file"
+                                    onChange={(e) => {
+                                      const file = e.target.files[0];
+                                      if (file) {
+                                        setUploadFile(file);
+                                        handleUploadDocument(file);
+                                      }
+                                    }}
+                                    accept=".pdf"
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                  />
+                                  <div className="w-full h-[46px] rounded-xl border border-slate-200 bg-white px-4 text-sm flex items-center gap-3 focus-within:ring-2 focus-within:ring-orange-500 transition-all">
+                                    <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1 rounded-lg text-slate-700 font-semibold text-xs whitespace-nowrap">
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                      Choose File
+                                    </div>
+                                    <span className="text-slate-500 truncate">{uploadFile ? uploadFile.name : "No file chosen"}</span>
+                                  </div>
+                                </div>
+                              )}
+                              <p className="text-xs text-slate-500 mt-2">Upload a PDF file containing the lecture content.</p>
+                            </div>
+                            <div>
+                              <label className="text-sm font-bold text-slate-900 mb-2 block">
+                                Number of Questions <span className="text-red-500">*</span>
+                              </label>
+                              <input 
+                                type="number" 
+                                min="1" max="25" 
+                                value={quizCount} 
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  if (val === "") setQuizCount("");
+                                  else {
+                                    const num = Number(val);
+                                    setQuizCount(num > 25 ? 25 : num);
+                                  }
+                                }} 
+                                className="w-full h-[46px] rounded-xl border border-slate-200 bg-white px-4 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all" 
+                              />
+                              <p className="text-xs text-slate-500 mt-2">Enter the number of questions to generate.</p>
+                            </div>
                           </div>
                         </div>
 
                         {uploadedDocs.length > 0 && (
-                          <div className="p-4 rounded-xl border border-emerald-100 bg-emerald-50/50 animate-in fade-in slide-in-from-top-2">
-                            <h5 className="text-xs font-bold text-emerald-800 uppercase mb-3">Successfully Uploaded</h5>
+                          <div className="p-4 rounded-xl border-2 border-emerald-500 bg-emerald-50/70 animate-in fade-in slide-in-from-top-2">
+                            <h5 className="text-xs font-black text-emerald-800 uppercase mb-3 tracking-wider">Successfully Uploaded</h5>
                             <div className="space-y-2">
                               {uploadedDocs.map((doc, idx) => (
-                                <div key={idx} className="flex justify-between items-center text-sm p-3 bg-white rounded-lg border border-emerald-100 shadow-sm">
-                                  <div className="flex items-center gap-2 text-emerald-700">
-                                    <CheckCircle className="w-4 h-4" />
-                                    <span className="font-semibold">{doc.topic}</span>
+                                <div key={idx} className="flex justify-between items-center text-sm p-3 bg-white rounded-lg border border-emerald-200 shadow-sm">
+                                  <div className="flex items-center gap-2 text-emerald-800 font-bold">
+                                    <CheckCircle className="w-4 h-4 text-emerald-600" />
+                                    <span>{doc.topic}</span>
                                   </div>
                                   <div className="flex items-center gap-3">
-                                    <span className="text-emerald-600 truncate max-w-[150px] text-xs" title={doc.name}>{doc.name}</span>
+                                    <span className="text-emerald-600 text-xs font-semibold" title={doc.name}>{doc.name}</span>
                                     <button onClick={() => setUploadedDocs(prev => prev.filter((_, i) => i !== idx))} className="text-emerald-400 hover:text-red-500 transition-colors p-1" title="Remove">
                                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
                                     </button>
@@ -565,29 +603,6 @@ export default function FacultyDashboard() {
                             </div>
                           </div>
                         )}
-
-                        <div className="flex justify-center mt-6">
-                          <div className="p-6 rounded-2xl border border-slate-200 bg-white w-full max-w-sm shadow-sm">
-                            <label className="text-sm font-bold text-slate-900 mb-2 block">
-                              Number of Questions <span className="text-red-500">*</span>
-                            </label>
-                            <input 
-                              type="number" 
-                              min="1" max="25" 
-                              value={quizCount} 
-                              onChange={e => {
-                                const val = e.target.value;
-                                if (val === "") setQuizCount("");
-                                else {
-                                  const num = Number(val);
-                                  setQuizCount(num > 25 ? 25 : num);
-                                }
-                              }} 
-                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all" 
-                            />
-                            <p className="text-xs text-slate-500 mt-2">Enter the number of questions to generate.</p>
-                          </div>
-                        </div>
                       </div>
 
                       {/* Divider */}
@@ -767,17 +782,17 @@ export default function FacultyDashboard() {
                               </div>
                             </div>
                             {uploadedDocs.length > 0 && (
-                              <div className="mt-6 p-4 rounded-xl border border-indigo-100 bg-indigo-50/50 animate-in fade-in slide-in-from-top-2">
-                                <h5 className="text-xs font-bold text-indigo-800 uppercase mb-3">Successfully Uploaded</h5>
+                              <div className="mt-6 p-4 rounded-xl border-2 border-indigo-500 bg-indigo-50/70 animate-in fade-in slide-in-from-top-2">
+                                <h5 className="text-xs font-black text-indigo-800 uppercase mb-3 tracking-wider">Successfully Uploaded</h5>
                                 <div className="space-y-2">
                                   {uploadedDocs.map((doc, idx) => (
-                                    <div key={idx} className="flex justify-between items-center text-sm p-3 bg-white rounded-lg border border-indigo-100 shadow-sm">
-                                      <div className="flex items-center gap-2 text-indigo-700">
-                                        <CheckCircle className="w-4 h-4" />
-                                        <span className="font-semibold">{doc.topic}</span>
+                                    <div key={idx} className="flex justify-between items-center text-sm p-3 bg-white rounded-lg border border-indigo-200 shadow-sm">
+                                      <div className="flex items-center gap-2 text-indigo-800 font-bold">
+                                        <CheckCircle className="w-4 h-4 text-indigo-600" />
+                                        <span>{doc.topic}</span>
                                       </div>
                                       <div className="flex items-center gap-3">
-                                        <span className="text-indigo-600 truncate max-w-[150px] text-xs" title={doc.name}>{doc.name}</span>
+                                        <span className="text-indigo-600 text-xs font-semibold" title={doc.name}>{doc.name}</span>
                                         <button onClick={() => setUploadedDocs(prev => prev.filter((_, i) => i !== idx))} className="text-indigo-400 hover:text-red-500 transition-colors p-1" title="Remove">
                                           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
                                         </button>
@@ -1171,60 +1186,60 @@ export default function FacultyDashboard() {
               </div>
             ) : learningGaps ? (
               <div className="space-y-8">
-              <div className="grid lg:grid-cols-2 gap-8">
-                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
-                  <AnalyticsCard title="Student Performance" className="min-h-[400px] border-slate-100 shadow-sm rounded-3xl bg-white/80 backdrop-blur-xl">
-                    <div className="flex flex-wrap gap-2 mt-4 mb-6">
-                      {learningGaps.student_performance.map((sp, idx) => (
-                        <motion.div whileHover={{ scale: 1.05 }} key={idx} className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 text-sm shadow-sm cursor-default">
-                          <span className="font-semibold text-slate-700">{sp.student_name}</span>
-                          <span className="text-indigo-600 font-black">{sp.average_score}%</span>
-                        </motion.div>
-                      ))}
-                    </div>
-                    <div className="h-[300px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={learningGaps.student_performance} margin={{ bottom: 30, right: 20 }}>
-                          <defs>
-                            <linearGradient id="facultyBar" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#6366F1" />
-                              <stop offset="100%" stopColor="#A855F7" />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.8} />
-                          <XAxis dataKey="student_name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', angle: -45, textAnchor: 'end' }} interval={0} height={60} />
-                          <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} domain={[0, 100]} />
-                          <Tooltip 
-                            cursor={{ fill: '#f1f5f9', opacity: 0.8 }} 
-                            content={({ active, payload, label }) => {
-                              if (active && payload && payload.length) {
-                                return (
-                                  <div className="bg-white/90 backdrop-blur-md border border-slate-200 p-4 rounded-2xl shadow-xl">
-                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{label}</p>
-                                    <p className="text-lg font-black text-indigo-600">
-                                      Score: <span className="text-slate-800">{payload[0].value}%</span>
-                                    </p>
-                                  </div>
-                                );
-                              }
-                              return null;
-                            }}
-                          />
-                          <Bar dataKey="average_score" fill="url(#facultyBar)" radius={[6, 6, 0, 0]} maxBarSize={40}>
-                            {learningGaps.student_performance.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill="url(#facultyBar)" />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </AnalyticsCard>
-                </motion.div>
+              <div className="space-y-8">
+                <div className="grid lg:grid-cols-2 gap-8">
+                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
+                    <AnalyticsCard title="Student Performance" className="min-h-[400px] border-slate-100 shadow-sm rounded-3xl bg-white/80 backdrop-blur-xl">
+                      <div className="flex flex-wrap gap-2 mt-4 mb-6">
+                        {learningGaps.student_performance.map((sp, idx) => (
+                          <motion.div whileHover={{ scale: 1.05 }} key={idx} className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 text-sm shadow-sm cursor-default">
+                            <span className="font-semibold text-slate-700">{sp.student_name}</span>
+                            <span className="text-indigo-600 font-black">{sp.average_score}%</span>
+                          </motion.div>
+                        ))}
+                      </div>
+                      <div className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={learningGaps.student_performance} margin={{ bottom: 30, right: 20 }}>
+                            <defs>
+                              <linearGradient id="facultyBar" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#6366F1" />
+                                <stop offset="100%" stopColor="#A855F7" />
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.8} />
+                            <XAxis dataKey="student_name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', angle: -45, textAnchor: 'end' }} interval={0} height={60} />
+                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} domain={[0, 100]} />
+                            <Tooltip 
+                              cursor={{ fill: '#f1f5f9', opacity: 0.8 }} 
+                              content={({ active, payload, label }) => {
+                                if (active && payload && payload.length) {
+                                  return (
+                                    <div className="bg-white/90 backdrop-blur-md border border-slate-200 p-4 rounded-2xl shadow-xl">
+                                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{label}</p>
+                                      <p className="text-lg font-black text-indigo-600">
+                                        Score: <span className="text-slate-800">{payload[0].value}%</span>
+                                      </p>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              }}
+                            />
+                            <Bar dataKey="average_score" fill="url(#facultyBar)" radius={[6, 6, 0, 0]} maxBarSize={40}>
+                              {learningGaps.student_performance.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill="url(#facultyBar)" />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </AnalyticsCard>
+                  </motion.div>
 
-                <div className="space-y-6">
-                  <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
-                    <AnalyticsCard title="Weak Topics" className="border-red-100 shadow-sm rounded-3xl bg-gradient-to-br from-red-50/50 to-white">
-                      <div className="space-y-3 mt-4">
+                  <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="h-full">
+                    <AnalyticsCard title="Weak Topics" className="h-full min-h-[400px] border-red-100 shadow-sm rounded-3xl bg-gradient-to-br from-red-50/50 to-white">
+                      <div className="space-y-3 mt-4 max-h-[320px] overflow-y-auto pr-2 custom-scrollbar">
                         {learningGaps.weak_topics?.length === 0 && <p className="text-sm font-semibold text-slate-400 text-center py-4">No weak topics identified! 🎉</p>}
                         {learningGaps.weak_topics?.map((wt, i) => (
                           <motion.div whileHover={{ scale: 1.02 }} key={i} className="flex justify-between items-center bg-white p-4 rounded-2xl border border-red-100 shadow-sm group transition-all hover:border-red-200">
@@ -1243,10 +1258,84 @@ export default function FacultyDashboard() {
                       </div>
                     </AnalyticsCard>
                   </motion.div>
+                </div>
+
+                <div className="grid lg:grid-cols-2 gap-8">
+                  {/* Students Overview Carousel */}
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+                    <div className="bg-gradient-to-br from-[#f6f8f4] to-[#f0f4ec] rounded-2xl p-8 shadow-sm border border-[#e6ebe0]">
+                      <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-2xl font-bold text-slate-800">Students Overview</h2>
+                        {learningGaps.student_performance?.length > 0 && (
+                          <div className="flex items-center gap-3 text-slate-500 font-medium">
+                            <button 
+                              onClick={() => setOverviewPage(p => Math.max(0, p - 1))} 
+                              disabled={overviewPage === 0}
+                              className="text-lg hover:text-slate-800 disabled:opacity-30 transition-colors"
+                            >
+                              ←
+                            </button>
+                            <span className="text-lg font-medium tracking-wide">{overviewPage + 1} / {Math.max(1, Math.ceil(learningGaps.student_performance.length / 2))}</span>
+                            <button 
+                              onClick={() => setOverviewPage(p => Math.min(Math.ceil(learningGaps.student_performance.length / 2) - 1, p + 1))} 
+                              disabled={overviewPage >= Math.max(0, Math.ceil(learningGaps.student_performance.length / 2) - 1)}
+                              className="text-lg hover:text-slate-800 disabled:opacity-30 transition-colors"
+                            >
+                              →
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="grid md:grid-cols-2 gap-6">
+                        {learningGaps.student_performance?.slice(overviewPage * 2, overviewPage * 2 + 2).map((sp, idx) => (
+                          <div key={idx} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100/80 flex flex-col h-full hover:shadow-md transition-shadow">
+                            <div className="flex justify-between items-start w-full">
+                              <div>
+                                <h3 className="text-lg font-bold text-slate-800">{sp.student_name}</h3>
+                                <p className="text-slate-400 font-medium text-xs mt-0.5">Student</p>
+                              </div>
+                              <button 
+                                onClick={() => setSelectedStudent(sp)}
+                                className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 text-xs font-bold px-3 py-1.5 rounded-full transition-colors shrink-0"
+                              >
+                                View Details
+                              </button>
+                            </div>
+                            
+                            <div className="flex justify-center my-6 flex-1">
+                              <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden shadow-sm border-4 border-slate-50 ring-1 ring-slate-100">
+                                <img 
+                                  src={getPhotoUrl(sp.profile_photo_path || sp.profile_image) || `https://api.dicebear.com/7.x/initials/svg?seed=${sp.student_name}&backgroundColor=f8fafc&textColor=475569`} 
+                                  alt={`${sp.student_name}'s avatar`} 
+                                  className="w-full h-full object-cover" 
+                                />
+                              </div>
+                            </div>
+                            
+                            <div className="w-full mt-auto">
+                              <div className="bg-slate-50 rounded-xl p-4 border border-slate-100/50">
+                                <p className="font-bold text-slate-700 text-sm mb-2 truncate" title={analyticsQuiz ? (quizzes.find(q => q.id.toString() === analyticsQuiz)?.topic_name || "Assessment") : "Overall Progress"}>
+                                  Topic: {analyticsQuiz ? (quizzes.find(q => q.id.toString() === analyticsQuiz)?.topic_name || "Assessment") : "Overall Progress"}
+                                </p>
+                                <div className="flex justify-between items-center text-xs font-semibold mb-1.5">
+                                  <span className="text-slate-500">Progress</span>
+                                  <span className="text-indigo-600">{sp.average_score}%</span>
+                                </div>
+                                <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                                  <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full transition-all duration-500" style={{ width: `${sp.average_score}%` }} />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
 
                   <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
                     <AnalyticsCard title="Strong Topics" className="border-emerald-100 shadow-sm rounded-3xl bg-gradient-to-br from-emerald-50/50 to-white">
-                      <div className="space-y-3 mt-4">
+                      <div className="space-y-3 mt-4 max-h-[320px] overflow-y-auto pr-2 custom-scrollbar">
                         {learningGaps.strong_topics?.length === 0 && <p className="text-sm font-semibold text-slate-400 text-center py-4">No strong topics identified yet.</p>}
                         {learningGaps.strong_topics?.map((st, i) => (
                           <motion.div whileHover={{ scale: 1.02 }} key={i} className="flex justify-between items-center bg-white p-4 rounded-2xl border border-emerald-100 shadow-sm group transition-all hover:border-emerald-200">
@@ -1266,75 +1355,6 @@ export default function FacultyDashboard() {
                     </AnalyticsCard>
                   </motion.div>
                 </div>
-              </div>
-
-              <div className="mt-12 max-w-4xl mx-auto">
-                {/* Students Overview Carousel */}
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-                  <div className="bg-gradient-to-br from-[#f6f8f4] to-[#f0f4ec] rounded-2xl p-8 shadow-sm border border-[#e6ebe0]">
-                    <div className="flex justify-between items-center mb-6">
-                      <h2 className="text-2xl font-bold text-slate-800">Students Overview</h2>
-                      {learningGaps.student_performance?.length > 0 && (
-                        <div className="flex items-center gap-3 text-slate-500 font-medium">
-                          <button 
-                            onClick={() => setOverviewPage(p => Math.max(0, p - 1))} 
-                            disabled={overviewPage === 0}
-                            className="text-lg hover:text-slate-800 disabled:opacity-30 transition-colors"
-                          >
-                            ←
-                          </button>
-                          <span className="text-lg font-medium tracking-wide">{overviewPage + 1} / {Math.max(1, Math.ceil(learningGaps.student_performance.length / 2))}</span>
-                          <button 
-                            onClick={() => setOverviewPage(p => Math.min(Math.ceil(learningGaps.student_performance.length / 2) - 1, p + 1))} 
-                            disabled={overviewPage >= Math.max(0, Math.ceil(learningGaps.student_performance.length / 2) - 1)}
-                            className="text-lg hover:text-slate-800 disabled:opacity-30 transition-colors"
-                          >
-                            →
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="grid md:grid-cols-2 gap-6">
-                      {learningGaps.student_performance?.slice(overviewPage * 2, overviewPage * 2 + 2).map((sp, idx) => (
-                        <div key={idx} className="bg-white rounded-xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100/60 relative overflow-hidden flex flex-col justify-between min-h-[350px]">
-                          <div className="flex justify-between items-start z-10">
-                            <div>
-                              <h3 className="text-xl font-bold text-slate-800">{sp.student_name}</h3>
-                              <p className="text-slate-400 font-medium text-sm mt-1">Student</p>
-                            </div>
-                            <button 
-                            onClick={() => setSelectedStudent(sp)}
-                            className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 text-xs font-bold px-4 py-2 rounded-full transition-colors"
-                          >
-                            View Details
-                          </button>
-                          </div>
-                          
-                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 opacity-95 z-0 pointer-events-none mt-4">
-                            <img 
-                              src={sp.profile_image || `https://api.dicebear.com/7.x/initials/svg?seed=${sp.student_name}&backgroundColor=f8fafc&textColor=475569`} 
-                              alt="avatar" 
-                              className="w-full h-full object-cover rounded-full shadow-sm border-4 border-white" 
-                            />
-                          </div>
-                          
-                          <div className="z-10 mt-auto pt-40">
-                            <div className="bg-white/90 backdrop-blur-md rounded-2xl p-4 border border-slate-100 shadow-sm">
-                              <p className="font-bold text-slate-700 text-sm mb-3">Topic: {analyticsQuiz ? (quizzes.find(q => q.id.toString() === analyticsQuiz)?.topic_name || "Assessment") : "Overall Progress"}</p>
-                              <div className="flex justify-between items-center text-sm font-semibold">
-                                <span className="text-slate-500">Progress: <span className="text-indigo-600">{sp.average_score}%</span></span>
-                              </div>
-                              <div className="w-full bg-slate-100 h-2 rounded-full mt-2 overflow-hidden">
-                                <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full" style={{ width: `${sp.average_score}%` }} />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </motion.div>
               </div>
               </div>
             ) : (
@@ -1369,8 +1389,8 @@ export default function FacultyDashboard() {
                   <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 p-[3px] shadow-lg shrink-0">
                     <div className="w-full h-full rounded-full overflow-hidden border-2 border-white bg-white">
                       <img 
-                        src={selectedStudent.profile_image || `https://api.dicebear.com/7.x/initials/svg?seed=${selectedStudent.student_name}&backgroundColor=f8fafc&textColor=475569`} 
-                        alt="avatar" 
+                        src={getPhotoUrl(selectedStudent.profile_photo_path || selectedStudent.profile_image) || `https://api.dicebear.com/7.x/initials/svg?seed=${selectedStudent.student_name}&backgroundColor=f8fafc&textColor=475569`} 
+                        alt={`${selectedStudent.student_name}'s avatar`} 
                         className="w-full h-full object-cover" 
                       />
                     </div>
@@ -1378,18 +1398,68 @@ export default function FacultyDashboard() {
                   <div>
                     <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-slate-800 to-slate-600 tracking-tight">{selectedStudent.student_name}</h2>
                     <div className="flex items-center gap-2 mt-1.5">
-                      <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-xs font-bold tracking-wide uppercase">Computer Science</span>
-                      <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-xs font-bold tracking-wide uppercase">Year 2</span>
+                      {selectedStudent.department && (
+                        <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-xs font-bold tracking-wide uppercase">{selectedStudent.department}</span>
+                      )}
+                      {selectedStudent.designation && (
+                        <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-xs font-bold tracking-wide uppercase">{selectedStudent.designation}</span>
+                      )}
                     </div>
                   </div>
                 </div>
-                <button 
-                  onClick={() => setSelectedStudent(null)}
-                  className="w-10 h-10 rounded-full bg-slate-100/80 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-all shadow-sm backdrop-blur-sm"
-                >
-                  ✕
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsRecommending(!isRecommending)}
+                    className="w-10 h-10 rounded-full bg-indigo-50 hover:bg-indigo-100 flex items-center justify-center text-indigo-500 hover:text-indigo-600 transition-all shadow-sm"
+                    title="Send Recommendation"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={() => { setSelectedStudent(null); setIsRecommending(false); setRecommendationMessage(""); }}
+                    className="w-10 h-10 rounded-full bg-slate-100/80 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-all shadow-sm backdrop-blur-sm"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
+
+              {isRecommending && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mb-8 bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100 shadow-inner overflow-hidden">
+                  <h4 className="text-sm font-black text-indigo-800 mb-2 flex items-center gap-2"><Send className="w-4 h-4"/> Send Personal Recommendation</h4>
+                  <textarea
+                    value={recommendationMessage}
+                    onChange={(e) => setRecommendationMessage(e.target.value)}
+                    placeholder="Type your advice or recommendation here..."
+                    className="w-full h-24 p-4 rounded-xl border border-indigo-200 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100/50 resize-none text-sm bg-white shadow-sm mb-3 transition-all"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => setIsRecommending(false)}
+                      className="px-4 py-2 bg-white text-slate-600 border border-slate-200 text-xs font-bold rounded-xl shadow-sm hover:bg-slate-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!recommendationMessage.trim() || !selectedStudent.student_id) return;
+                        try {
+                          await facultyApi.sendRecommendation(selectedStudent.student_id, recommendationMessage);
+                          setIsRecommending(false);
+                          setRecommendationMessage("");
+                          alert("Recommendation sent successfully!");
+                        } catch(e) {
+                          console.error(e);
+                          alert("Failed to send recommendation.");
+                        }
+                      }}
+                      className="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl shadow-md hover:bg-indigo-700 transition-colors flex items-center gap-1.5"
+                    >
+                      Send Notification
+                    </button>
+                  </div>
+                </motion.div>
+              )}
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
                 <motion.div whileHover={{ y: -5 }} className="bg-gradient-to-b from-indigo-50/50 to-white rounded-2xl p-5 border border-indigo-100 shadow-sm relative overflow-hidden group">

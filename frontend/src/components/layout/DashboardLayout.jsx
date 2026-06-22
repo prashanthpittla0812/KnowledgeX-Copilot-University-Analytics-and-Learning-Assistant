@@ -194,7 +194,8 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
     try {
       const response = await api.put("/auth/profile", {
         name: profileName,
-        department: profileDept
+        department: profileDept,
+        designation: profileDesg
       });
       const updatedUser = response.data;
       
@@ -259,6 +260,7 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
 
 
   const [notifications, setNotifications] = useState([]);
+  const [selectedNotification, setSelectedNotification] = useState(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef(null);
 
@@ -311,10 +313,8 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
     setNotifications(prev =>
       prev.map(n => (n.id === item.id ? { ...n, isUnread: false } : n))
     );
-    if (item.link) {
-      setActiveItem(item.link);
-      setNotificationsOpen(false);
-    }
+    setSelectedNotification(item);
+    setNotificationsOpen(false);
   };
 
   const markAllAsRead = async () => {
@@ -488,7 +488,7 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
 
 
             {/* 2. Notification Overlay Drawer Dropdown Node Context */}
-            {role !== "faculty" && (
+            {role !== "admin" && (
               <div className="relative" ref={notificationRef}>
                 <button
                   onClick={() => setNotificationsOpen(!notificationsOpen)}
@@ -613,7 +613,16 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
                     className="absolute right-0 mt-2.5 w-64 rounded-2xl border border-slate-100 bg-white shadow-2xl shadow-slate-900/10 overflow-hidden text-slate-800 z-50"
                   >
                     <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm">
+                      <div 
+                        className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => {
+                          if (userPhotoUrl || photoPreviewUrl) {
+                            setPhotoPreviewUrl(userPhotoUrl || photoPreviewUrl);
+                            setViewImageOpen(true);
+                            setProfileOpen(false);
+                          }
+                        }}
+                      >
                         {userPhotoUrl ? (
                           <img src={userPhotoUrl} alt={displayUserName} className="w-full h-full object-cover" />
                         ) : (
@@ -762,7 +771,7 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
               {/* Header */}
               <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">Account Settings</h2>
+                  <h2 className="text-xl font-bold text-slate-900">Profile Settings</h2>
                   <p className="text-xs text-slate-500">Manage your profile details and security settings</p>
                 </div>
                 <button
@@ -946,6 +955,17 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
                             placeholder="e.g. Computer Science"
                           />
                         </div>
+                        {(currentUser?.role === "student" || role === "student") && (
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-slate-700">Year</label>
+                            <Input
+                              type="text"
+                              value={profileDesg}
+                              onChange={(e) => setProfileDesg(e.target.value)}
+                              placeholder="e.g. Year 2"
+                            />
+                          </div>
+                        )}
                       </div>
 
                       <div className="pt-2">
@@ -1078,6 +1098,70 @@ export function DashboardLayout({ children, role = "student", activeItem, setAct
           </div>
         )}
       </AnimatePresence>
+      {/* Notification Popup Modal */}
+      <AnimatePresence>
+        {selectedNotification && (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-orange-400 to-amber-400" />
+              
+              <div className="flex items-start gap-4 mb-4 mt-2">
+                <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
+                  <Bell className="w-6 h-6 text-orange-500" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-800 leading-tight">{selectedNotification.title}</h3>
+                  <p className="text-xs text-slate-500 mt-1 font-medium">{selectedNotification.time}</p>
+                </div>
+              </div>
+              
+              <div className="bg-slate-50 p-4 rounded-2xl mb-6 border border-slate-100">
+                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                  {selectedNotification.description}
+                </p>
+              </div>
+              
+              <div className="flex items-center justify-end gap-3">
+                {selectedNotification.title?.includes("Personal Recommendation") ? (
+                  <button
+                    onClick={() => setSelectedNotification(null)}
+                    className="px-5 py-2.5 rounded-xl font-bold text-white bg-orange-500 hover:bg-orange-600 shadow-md shadow-orange-500/20 transition-colors"
+                  >
+                    Close
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setSelectedNotification(null)}
+                      className="px-5 py-2.5 rounded-xl font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                    >
+                      Close
+                    </button>
+                    {selectedNotification.link && (
+                      <button
+                        onClick={() => {
+                          const link = selectedNotification.link === "/dashboard" ? "Dashboard" : selectedNotification.link;
+                          setActiveItem(link);
+                          setSelectedNotification(null);
+                        }}
+                        className="px-5 py-2.5 rounded-xl font-bold text-white bg-orange-500 hover:bg-orange-600 shadow-md shadow-orange-500/20 transition-colors"
+                      >
+                        Go to Page
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }

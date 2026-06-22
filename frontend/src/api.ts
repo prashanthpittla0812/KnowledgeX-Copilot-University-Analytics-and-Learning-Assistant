@@ -56,6 +56,16 @@ export type QuizSubmitPayload = {
 };
 
 export const authApi = {
+  async sendRegistrationOtp(payload: { email: string }) {
+    const response = await api.post("/auth/send-registration-otp", payload);
+    return response.data;
+  },
+
+  async verifyRegistrationOtp(payload: { email: string; otp: string }) {
+    const response = await api.post("/auth/verify-registration-otp", payload);
+    return response.data;
+  },
+
   async register(payload: { name: string; email: string; password: string; role?: string }) {
     const response = await api.post("/auth/register", payload);
     return response.data;
@@ -203,6 +213,10 @@ export const facultyApi = {
 
   downloadSubmission(submissionId: number | string) {
     return api.get(`/faculty/assessment/submission/${submissionId}/download`, { responseType: 'blob' });
+  },
+
+  sendRecommendation(studentId: number | string, message: string) {
+    return api.post(`/dashboard/teacher/student/${studentId}/recommendation`, { message });
   }
 };
 
@@ -269,8 +283,8 @@ export const studentApi = {
 };
 
 export const chatbotApi = {
-  async askQuestion(question: string, content_ids: number[] = []) {
-    const response = await api.post("/chat/", { question, content_ids });
+  async askQuestion(question: string, content_ids: number[] = [], input_type: string = "TEXT") {
+    const response = await api.post("/chat/", { question, content_ids, input_type });
     return response.data;
   },
   async summarize(content_id: number, summary_type: string = "Short Summary") {

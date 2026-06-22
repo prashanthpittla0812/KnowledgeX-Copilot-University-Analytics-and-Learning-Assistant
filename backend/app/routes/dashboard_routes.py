@@ -3,7 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.permissions import get_current_faculty
 from app.database.db import get_db
-from app.database.models import User
+from app.database.models import User, Notification
+from pydantic import BaseModel
 from app.schemas.dashboard_schema import (
     DashboardStats,
     LearningGapsResponse,
@@ -14,6 +15,26 @@ from app.services.teacher_dashboard_service import TeacherDashboardService
 from app.utils.cache import simple_cache
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
+
+class RecommendationRequest(BaseModel):
+    message: str
+
+@router.post("/teacher/student/{student_id}/recommendation")
+async def send_student_recommendation(
+    student_id: int,
+    request: RecommendationRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_faculty),
+):
+    notif = Notification(
+        user_id=student_id,
+        title=f"Personal Recommendation from {current_user.name}",
+        message=request.message,
+        link="Recommendations",
+    )
+    db.add(notif)
+    await db.commit()
+    return {"message": "Recommendation sent successfully"}
 
 
 @router.get("/stats", response_model=DashboardStats)
