@@ -76,54 +76,19 @@ async def register(request: RegisterRequest, db: AsyncSession = Depends(get_db))
 async def login(request: LoginRequest, req: Request, db: AsyncSession = Depends(get_db)):
     auth_service = AuthService(db)
     try:
-        user = await auth_service.authenticate_user(email=request.email, password=request.password)
-        
-        # Update user streak
-        now = datetime.utcnow()
-        if user.last_login_date:
-            delta = now.date() - user.last_login_date.date()
-            if delta.days == 1:
-                user.current_streak += 1
-            elif delta.days > 1:
-                user.current_streak = 1
-        else:
-            user.current_streak = 1
+        user = await auth_service.authenticate_user(
+            email=request.email,
+            password=request.password,
+        )
 
-        user.last_login_date = now
-        
-        # Device detection and Audit Logging
-        user_agent_str = req.headers.get("user-agent", "")
-        ua = parse(user_agent_str)
-        browser = f"{ua.browser.family} {ua.browser.version_string}"
-        operating_system = f"{ua.os.family} {ua.os.version_string}"
-        device_type = "Mobile" if ua.is_mobile else "Tablet" if ua.is_tablet else "Desktop" if ua.is_pc else "Unknown"
-        
-        x_forwarded = req.headers.get("x-forwarded-for")
-        ip_address = x_forwarded.split(",")[0] if x_forwarded else req.client.host
-        
-        audit = LoginAudit(
-            user_id=user.id,
-            login_time=now,
-            browser=browser,
-            operating_system=operating_system,
-            device_type=device_type,
-            ip_address=ip_address
-        )
-        db.add(audit)
-        
-        await db.commit()
-        
-        # Send login notification email
-        await send_login_notification(
-            email=user.email,
-            name=user.name,
-            time_str=(now + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d %I:%M %p IST"),
-            device=device_type,
-            browser=browser,
-            os_str=operating_system,
-            ip=ip_address
-        )
-        
+        from datetime import datetime
+        if user.role == "student":
+            from app.utils.streak import update_user_streak
+            await update_user_streak(user, db)
+        else:
+            user.last_login_date = datetime.utcnow()
+            await db.commit()
+
         token = auth_service.generate_token(user)
         return TokenResponse(access_token=token, must_change_password=user.must_change_password)
         

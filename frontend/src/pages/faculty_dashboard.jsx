@@ -496,7 +496,7 @@ export default function FacultyDashboard() {
                           <h3 className="text-lg font-bold text-slate-900">Upload Knowledge Base</h3>
                         </div>
                         
-                        <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-6">
                           <div>
                             <label className="text-sm font-bold text-slate-900 mb-2 block">
                               Topic Name <span className="text-red-500">*</span>
@@ -504,59 +504,82 @@ export default function FacultyDashboard() {
                             <input 
                               value={uploadTopic} 
                               onChange={e => setUploadTopic(e.target.value)} 
-                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all placeholder:text-slate-400" 
+                              className="w-full h-[46px] rounded-xl border border-slate-200 bg-white px-4 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all placeholder:text-slate-400" 
                               placeholder="e.g., Computer Networks Ch 1" 
                             />
                           </div>
-                          <div>
-                            <label className="text-sm font-bold text-slate-900 mb-2 block">
-                              Lecture PDF <span className="text-red-500">*</span>
-                            </label>
-                            {isUploading ? (
-                              <div className="w-full rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-600 font-semibold flex items-center gap-2">
-                                <span className="w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></span>
-                                Uploading...
-                              </div>
-                            ) : (
-                              <div className="relative">
-                                <input
-                                  ref={pdfInputRef}
-                                  type="file"
-                                  onChange={(e) => {
-                                    const file = e.target.files[0];
-                                    if (file) {
-                                      setUploadFile(file);
-                                      handleUploadDocument(file);
-                                    }
-                                  }}
-                                  accept=".pdf"
-                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                />
-                                <div className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm flex items-center gap-3 focus-within:ring-2 focus-within:ring-orange-500 transition-all">
-                                  <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-slate-700 font-semibold whitespace-nowrap">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                                    Choose File
-                                  </div>
-                                  <span className="text-slate-500 truncate">{uploadFile ? uploadFile.name : "No file chosen"}</span>
+
+                          <div className="grid md:grid-cols-2 gap-6">
+                            <div>
+                              <label className="text-sm font-bold text-slate-900 mb-2 block">
+                                Lecture PDF <span className="text-red-500">*</span>
+                              </label>
+                              {isUploading ? (
+                                <div className="w-full h-[46px] rounded-xl border border-orange-200 bg-orange-50 px-4 text-sm text-orange-600 font-semibold flex items-center gap-2">
+                                  <span className="w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></span>
+                                  Uploading...
                                 </div>
-                              </div>
-                            )}
-                            <p className="text-xs text-slate-500 mt-2">Upload a PDF file containing the lecture content.</p>
+                              ) : (
+                                <div className="relative">
+                                  <input
+                                    ref={pdfInputRef}
+                                    type="file"
+                                    onChange={(e) => {
+                                      const file = e.target.files[0];
+                                      if (file) {
+                                        setUploadFile(file);
+                                        handleUploadDocument(file);
+                                      }
+                                    }}
+                                    accept=".pdf"
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                  />
+                                  <div className="w-full h-[46px] rounded-xl border border-slate-200 bg-white px-4 text-sm flex items-center gap-3 focus-within:ring-2 focus-within:ring-orange-500 transition-all">
+                                    <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1 rounded-lg text-slate-700 font-semibold text-xs whitespace-nowrap">
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                      Choose File
+                                    </div>
+                                    <span className="text-slate-500 truncate">{uploadFile ? uploadFile.name : "No file chosen"}</span>
+                                  </div>
+                                </div>
+                              )}
+                              <p className="text-xs text-slate-500 mt-2">Upload a PDF file containing the lecture content.</p>
+                            </div>
+                            <div>
+                              <label className="text-sm font-bold text-slate-900 mb-2 block">
+                                Number of Questions <span className="text-red-500">*</span>
+                              </label>
+                              <input 
+                                type="number" 
+                                min="1" max="25" 
+                                value={quizCount} 
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  if (val === "") setQuizCount("");
+                                  else {
+                                    const num = Number(val);
+                                    setQuizCount(num > 25 ? 25 : num);
+                                  }
+                                }} 
+                                className="w-full h-[46px] rounded-xl border border-slate-200 bg-white px-4 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all" 
+                              />
+                              <p className="text-xs text-slate-500 mt-2">Enter the number of questions to generate.</p>
+                            </div>
                           </div>
                         </div>
 
                         {uploadedDocs.length > 0 && (
-                          <div className="p-4 rounded-xl border border-emerald-100 bg-emerald-50/50 animate-in fade-in slide-in-from-top-2">
-                            <h5 className="text-xs font-bold text-emerald-800 uppercase mb-3">Successfully Uploaded</h5>
+                          <div className="p-4 rounded-xl border-2 border-emerald-500 bg-emerald-50/70 animate-in fade-in slide-in-from-top-2">
+                            <h5 className="text-xs font-black text-emerald-800 uppercase mb-3 tracking-wider">Successfully Uploaded</h5>
                             <div className="space-y-2">
                               {uploadedDocs.map((doc, idx) => (
-                                <div key={idx} className="flex justify-between items-center text-sm p-3 bg-white rounded-lg border border-emerald-100 shadow-sm">
-                                  <div className="flex items-center gap-2 text-emerald-700">
-                                    <CheckCircle className="w-4 h-4" />
-                                    <span className="font-semibold">{doc.topic}</span>
+                                <div key={idx} className="flex justify-between items-center text-sm p-3 bg-white rounded-lg border border-emerald-200 shadow-sm">
+                                  <div className="flex items-center gap-2 text-emerald-800 font-bold">
+                                    <CheckCircle className="w-4 h-4 text-emerald-600" />
+                                    <span>{doc.topic}</span>
                                   </div>
                                   <div className="flex items-center gap-3">
-                                    <span className="text-emerald-600 truncate max-w-[150px] text-xs" title={doc.name}>{doc.name}</span>
+                                    <span className="text-emerald-600 text-xs font-semibold" title={doc.name}>{doc.name}</span>
                                     <button onClick={() => setUploadedDocs(prev => prev.filter((_, i) => i !== idx))} className="text-emerald-400 hover:text-red-500 transition-colors p-1" title="Remove">
                                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
                                     </button>
@@ -566,29 +589,6 @@ export default function FacultyDashboard() {
                             </div>
                           </div>
                         )}
-
-                        <div className="flex justify-center mt-6">
-                          <div className="p-6 rounded-2xl border border-slate-200 bg-white w-full max-w-sm shadow-sm">
-                            <label className="text-sm font-bold text-slate-900 mb-2 block">
-                              Number of Questions <span className="text-red-500">*</span>
-                            </label>
-                            <input 
-                              type="number" 
-                              min="1" max="25" 
-                              value={quizCount} 
-                              onChange={e => {
-                                const val = e.target.value;
-                                if (val === "") setQuizCount("");
-                                else {
-                                  const num = Number(val);
-                                  setQuizCount(num > 25 ? 25 : num);
-                                }
-                              }} 
-                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all" 
-                            />
-                            <p className="text-xs text-slate-500 mt-2">Enter the number of questions to generate.</p>
-                          </div>
-                        </div>
                       </div>
 
                       {/* Divider */}
@@ -756,17 +756,17 @@ export default function FacultyDashboard() {
                               </div>
                             </div>
                             {uploadedDocs.length > 0 && (
-                              <div className="mt-6 p-4 rounded-xl border border-indigo-100 bg-indigo-50/50 animate-in fade-in slide-in-from-top-2">
-                                <h5 className="text-xs font-bold text-indigo-800 uppercase mb-3">Successfully Uploaded</h5>
+                              <div className="mt-6 p-4 rounded-xl border-2 border-indigo-500 bg-indigo-50/70 animate-in fade-in slide-in-from-top-2">
+                                <h5 className="text-xs font-black text-indigo-800 uppercase mb-3 tracking-wider">Successfully Uploaded</h5>
                                 <div className="space-y-2">
                                   {uploadedDocs.map((doc, idx) => (
-                                    <div key={idx} className="flex justify-between items-center text-sm p-3 bg-white rounded-lg border border-indigo-100 shadow-sm">
-                                      <div className="flex items-center gap-2 text-indigo-700">
-                                        <CheckCircle className="w-4 h-4" />
-                                        <span className="font-semibold">{doc.topic}</span>
+                                    <div key={idx} className="flex justify-between items-center text-sm p-3 bg-white rounded-lg border border-indigo-200 shadow-sm">
+                                      <div className="flex items-center gap-2 text-indigo-800 font-bold">
+                                        <CheckCircle className="w-4 h-4 text-indigo-600" />
+                                        <span>{doc.topic}</span>
                                       </div>
                                       <div className="flex items-center gap-3">
-                                        <span className="text-indigo-600 truncate max-w-[150px] text-xs" title={doc.name}>{doc.name}</span>
+                                        <span className="text-indigo-600 text-xs font-semibold" title={doc.name}>{doc.name}</span>
                                         <button onClick={() => setUploadedDocs(prev => prev.filter((_, i) => i !== idx))} className="text-indigo-400 hover:text-red-500 transition-colors p-1" title="Remove">
                                           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
                                         </button>
