@@ -40,4 +40,8 @@ Thumbs.db
 frontend/node_modules/
 frontend/.vite/
 frontend/dist/
+frontend/public/models/
 chroma_db_old_768d/
+
+# Backend
+backend/node_modules/
