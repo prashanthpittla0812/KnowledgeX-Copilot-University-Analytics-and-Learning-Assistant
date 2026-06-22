@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { authApi } from "../api";
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles, Bot, Mail, Lock, Eye, EyeOff, Brain, BookOpen, LineChart, Info, User } from "lucide-react";
+import { ArrowRight, Sparkles, Bot, Mail, Lock, Eye, EyeOff, Brain, BookOpen, LineChart, Info, User, CheckCircle2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import toast from "react-hot-toast";
@@ -18,13 +18,70 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // OTP Verification States
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [resendTimer, setResendTimer] = useState(0);
+  const [isLoadingOtp, setIsLoadingOtp] = useState(false);
+
+  useEffect(() => {
+    let interval;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
+
   const motivityLogoPath = "/motivity.webp";
   const illustrationPath = "/student_ai_illustration.png";
+
+  const handleSendOtp = async () => {
+    if (!email.trim()) {
+      toast.error("Please enter your email first.");
+      return;
+    }
+    setIsLoadingOtp(true);
+    try {
+      await authApi.sendRegistrationOtp({ email: email.trim() });
+      setOtpSent(true);
+      setResendTimer(60);
+      toast.success("OTP sent to your email!");
+    } catch (error) {
+      toast.error(error?.response?.data?.detail || "Failed to send OTP.");
+    } finally {
+      setIsLoadingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otp.trim()) {
+      toast.error("Please enter the verification code.");
+      return;
+    }
+    setIsLoadingOtp(true);
+    try {
+      await authApi.verifyRegistrationOtp({ email: email.trim(), otp: otp.trim() });
+      setEmailVerified(true);
+      toast.success("Email verified successfully!");
+    } catch (error) {
+      toast.error(error?.response?.data?.detail || "Invalid or expired OTP.");
+    } finally {
+      setIsLoadingOtp(false);
+    }
+  };
 
   const handleRegister = async (e) => {
     e.preventDefault();
     if (!name.trim() || !email.trim() || !password || !confirmPassword) {
       toast.error("Please fill in all fields.");
+      return;
+    }
+
+    if (!emailVerified) {
+      toast.error("Please verify your email before creating an account.");
       return;
     }
 
@@ -231,9 +288,60 @@ export default function Register() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="alex@university.edu"
+                  disabled={otpSent || emailVerified}
                   className="pl-11 h-11 bg-slate-50/50 border-slate-200 focus:bg-white rounded-xl text-slate-900 font-medium placeholder:text-slate-400"
                 />
               </div>
+
+              {/* OTP Verification Section */}
+              {emailVerified ? (
+                <div className="flex items-center gap-2 mt-2 text-green-600 bg-green-50 p-2.5 rounded-lg border border-green-100">
+                  <CheckCircle2 className="w-5 h-5 shrink-0" />
+                  <span className="text-sm font-semibold">Email Verified Successfully</span>
+                </div>
+              ) : otpSent ? (
+                <div className="mt-3 p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 ml-1">Verification Code</label>
+                    <Input
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value)}
+                      placeholder="Enter 6-digit OTP"
+                      className="h-10 text-center tracking-widest font-bold bg-white"
+                      maxLength={6}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={handleSendOtp} 
+                      disabled={resendTimer > 0 || isLoadingOtp}
+                      className="flex-1 h-9 text-xs font-semibold"
+                    >
+                      {resendTimer > 0 ? `Resend in ${resendTimer}s` : "Resend OTP"}
+                    </Button>
+                    <Button 
+                      type="button" 
+                      onClick={handleVerifyOtp} 
+                      disabled={isLoadingOtp || !otp}
+                      className="flex-1 h-9 text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800"
+                    >
+                      Verify OTP
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button 
+                  type="button" 
+                  variant="secondary"
+                  onClick={handleSendOtp}
+                  disabled={isLoadingOtp || !email}
+                  className="w-full mt-2 h-10 font-semibold bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-200"
+                >
+                  {isLoadingOtp ? "Sending..." : "Send Verification OTP"}
+                </Button>
+              )}
             </div>
 
             {/* Passwords Grid */}
@@ -291,7 +399,7 @@ export default function Register() {
             <Button
               type="submit"
               className="w-full h-12 text-base font-bold shadow-lg shadow-orange-500/25 mt-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white transition-all duration-200"
-              disabled={isLoading}
+              disabled={isLoading || !emailVerified}
             >
               {isLoading ? "Creating Account..." : "Create Account"}
               {!isLoading && <ArrowRight className="w-4 h-4 ml-2" />}

@@ -56,6 +56,13 @@ class VerifyOtpRequest(BaseModel):
     email: EmailStr
     otp_code: str
 
+class SendRegistrationOtpRequest(BaseModel):
+    email: EmailStr
+
+class VerifyRegistrationOtpRequest(BaseModel):
+    email: EmailStr
+    otp: str
+
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 

@@ -294,7 +294,11 @@ import {DashboardLayout} from "../components/layout/DashboardLayout";
     setAttachedFiles(prev => [...prev, ...files]);
   };
 
-  const handleSendChat = async () => {
+  const handleRemoveFile = (indexToRemove) => {
+    setAttachedFiles(prev => prev.filter((_, index) => index !== indexToRemove));
+  };
+
+  const handleSendChat = async (isVoiceInput = false) => {
     const message = chatInput.trim();
       if ((!message && attachedFiles.length === 0) || isLoading) return;
 
@@ -316,7 +320,7 @@ import {DashboardLayout} from "../components/layout/DashboardLayout";
       return {
         ...chat,
         title: messages.length === 0 ? (displayMessage.length > 30 ? displayMessage.slice(0, 30) + "..." : displayMessage) : chat.title,
-      messages: [...messages, {text: userText, isUser: true }]
+      messages: [...messages, {text: userText, isUser: true, inputType: isVoiceInput === true ? "VOICE" : "TEXT" }]
         };
       });
 
@@ -350,39 +354,66 @@ import {DashboardLayout} from "../components/layout/DashboardLayout";
         messages: [...(chat.messages || []), {
         text: `**Summary of uploaded documents:**\n\n${summaryRes.summary}`,
       sources: [],
-      isUser: false
+      isUser: false,
+      inputType: "TEXT"
               }]
             };
           });
       setPreviousChats(currentChats);
+          if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(new SpeechSynthesisUtterance(`Summary of uploaded documents: ${summaryRes.summary}`));
+          }
         } catch (e) {
-        console.error("Batch summary error", e);
+          console.error("Batch summary error", e);
+          throw e;
         }
       } else if (message) {
         try {
           // If we want the bot to specifically focus on the newly uploaded docs,
           // we pass uploadedIds to the askQuestion API.
-          const response = await chatbotApi.askQuestion(message, uploadedIds);
+          const response = await chatbotApi.askQuestion(message, uploadedIds, isVoiceInput === true ? "VOICE" : "TEXT");
+          const answerText = response.answer || response.data?.answer || "Sorry, I could not process that.";
           currentChats = currentChats.map((chat) => {
             if (chat.id !== selectedChatId) return chat;
       return {
         ...chat,
         messages: [...(chat.messages || []), {
-        text: response.answer || response.data?.answer || "Sorry, I could not process that.",
+        text: answerText,
       sources: response.sources || response.data?.sources || [],
-      isUser: false
+      isUser: false,
+      inputType: "TEXT"
               }]
             };
           });
       setPreviousChats(currentChats);
+          if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(new SpeechSynthesisUtterance(answerText));
+          }
         } catch (e) {
-        console.error(e);
+          console.error(e);
+          throw e;
         }
       }
 
       localStorage.setItem(`studentChats_${studentId || "default"}`, JSON.stringify(currentChats));
     } catch (error) {
         console.error("Error sending chat:", error);
+        const errorMsg = error?.response?.data?.detail || error?.response?.data?.message || "Failed to process the request or load the model. Please try again.";
+        const updatedChats = currentChats.map((chat) => {
+          if (chat.id !== selectedChatId) return chat;
+          return {
+            ...chat,
+            messages: [...(chat.messages || []), {
+              text: `⚠️ **Error:** ${errorMsg}`,
+              isUser: false,
+              inputType: "TEXT"
+            }]
+          };
+        });
+        setPreviousChats(updatedChats);
+        localStorage.setItem(`studentChats_${studentId || "default"}`, JSON.stringify(updatedChats));
     } finally {
         setIsLoading(false);
       setIsChatSending(false);
@@ -2316,9 +2347,12 @@ import {DashboardLayout} from "../components/layout/DashboardLayout";
                     {attachedFiles.length > 0 && (
                       <div className="flex flex-wrap gap-2 px-2">
                         {attachedFiles.map((f, i) => (
-                          <div key={i} className="px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full border border-primary/20 flex items-center gap-1">
+                          <div key={i} className="px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full border border-primary/20 flex items-center gap-1 group">
                             <Paperclip className="w-3 h-3" />
                             <span className="truncate max-w-[150px]">{f.name}</span>
+                            <button onClick={() => handleRemoveFile(i)} className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-primary/20 rounded-full transition-all ml-1">
+                              <X className="w-3 h-3" />
+                            </button>
                           </div>
                         ))}
                       </div>
@@ -2515,9 +2549,12 @@ import {DashboardLayout} from "../components/layout/DashboardLayout";
                     {attachedFiles.length > 0 && (
                       <div className="flex flex-wrap gap-2 mb-1 px-3 pt-2">
                         {attachedFiles.map((f, i) => (
-                          <div key={i} className="px-2 py-1 bg-primary/10 text-primary text-[10px] font-semibold rounded-full border border-primary/20 flex items-center gap-1">
+                          <div key={i} className="px-2 py-1 bg-primary/10 text-primary text-[10px] font-semibold rounded-full border border-primary/20 flex items-center gap-1 group">
                             <Paperclip className="w-3 h-3" />
                             <span className="truncate max-w-[100px]">{f.name}</span>
+                            <button onClick={() => handleRemoveFile(i)} className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-primary/20 rounded-full transition-all ml-0.5">
+                              <X className="w-2.5 h-2.5" />
+                            </button>
                           </div>
                         ))}
                       </div>
