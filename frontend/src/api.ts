@@ -56,6 +56,16 @@ export type QuizSubmitPayload = {
 };
 
 export const authApi = {
+  async sendRegistrationOtp(payload: { email: string }) {
+    const response = await api.post("/auth/send-registration-otp", payload);
+    return response.data;
+  },
+
+  async verifyRegistrationOtp(payload: { email: string; otp: string }) {
+    const response = await api.post("/auth/verify-registration-otp", payload);
+    return response.data;
+  },
+
   async register(payload: { name: string; email: string; password: string; role?: string }) {
     const response = await api.post("/auth/register", payload);
     return response.data;

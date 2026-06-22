@@ -39,6 +39,32 @@ async def send_otp_email(email: str, otp: str, purpose: str = "Login"):
     except Exception as e:
         print(f"Failed to send email (check .env configuration): {e}")
 
+async def send_registration_otp_email(email: str, otp: str):
+    fast_mail = FastMail(get_mail_config())
+    html = f"""
+    <p>Hello,</p>
+    <p>Your verification code is:</p>
+    <p><strong style="font-size: 24px;">{otp}</strong></p>
+    <p>This code will expire in 10 minutes.</p>
+    <p>If you did not request this verification, please ignore this email.</p>
+    <br>
+    <p>KnowledgeX Copilot Team</p>
+    """
+    
+    message = MessageSchema(
+        subject="KnowledgeX Copilot - Email Verification",
+        recipients=[email],
+        body=html,
+        subtype=MessageType.html
+    )
+    
+    print(f"\n{'='*50}\n[DEV] Registration OTP for {email}: {otp}\n{'='*50}\n")
+    
+    try:
+        await fast_mail.send_message(message)
+    except Exception as e:
+        print(f"Failed to send email (check .env configuration): {e}")
+
 async def send_login_notification(email: str, name: str, time_str: str, device: str, browser: str, os_str: str, ip: str):
     fast_mail = FastMail(get_mail_config())
     html = f"""
