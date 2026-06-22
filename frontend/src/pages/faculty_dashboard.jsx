@@ -1080,13 +1080,13 @@ export default function FacultyDashboard() {
                   <>
                     {quizPerformance && (
                       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <StatCard title="Avg Score" value={`${quizPerformance.summary?.average_score?.toFixed(1) || 0}%`} icon={BarChart} />
-                        <StatCard title="High Score" value={`${quizPerformance.summary?.highest_score || 0}%`} icon={CheckCircle} trendColor="text-emerald-500" />
-                        <StatCard title="Low Score" value={`${quizPerformance.summary?.lowest_score || 0}%`} icon={AlertCircle} trendColor="text-red-500" />
-                        <StatCard title="Total Attempts" value={quizPerformance.summary?.total_attempts || 0} icon={Users} />
+                        <StatCard title="Avg Score" value={`${quizPerformance?.average_score?.toFixed(1) || 0}%`} icon={BarChart} />
+                        <StatCard title="High Score" value={`${quizPerformance?.highest_score || 0}%`} icon={CheckCircle} trendColor="text-emerald-500" />
+                        <StatCard title="Low Score" value={`${quizPerformance?.lowest_score || 0}%`} icon={AlertCircle} trendColor="text-red-500" />
+                        <StatCard title="Total Attempts" value={quizPerformance?.total_attempts || 0} icon={Users} />
                       </div>
                     )}
-                    {quizPerformance?.student_results?.length > 0 && (
+                    {quizPerformance?.results?.length > 0 && (
                       <Card className="glass-card mt-8">
                         <table className="w-full text-left text-sm">
                           <thead className="bg-muted/50 border-b border-border">
@@ -1097,7 +1097,7 @@ export default function FacultyDashboard() {
                             </tr>
                           </thead>
                           <tbody>
-                            {quizPerformance.student_results.map((r, i) => (
+                            {quizPerformance.results.map((r, i) => (
                               <tr key={i} className="border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors">
                                 <td className="p-4 font-medium">{r.student_name}</td>
                                 <td className="p-4 font-bold text-primary">{r.percentage}%</td>

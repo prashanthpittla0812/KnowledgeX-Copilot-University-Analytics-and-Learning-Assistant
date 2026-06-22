@@ -494,6 +494,7 @@ import {DashboardLayout} from "../components/layout/DashboardLayout";
       }
       setActiveQuiz(null);
       fetchQuizHistory();
+      fetchDashboardStats();
     } catch (error) {
         console.error(error);
       const errorMsg = error.response?.data?.detail || error.response?.data?.message || "Failed to submit quiz";
@@ -1642,6 +1643,7 @@ import {DashboardLayout} from "../components/layout/DashboardLayout";
                 const weakTopics = topicMasteryData.filter(t => t.score < 60);
 
                 const subjectMap = {
+                  "Artificial Intelligence": ["artificial intelligence", "ai", "machine learning", "deep learning", "neural network", "natural language processing", "nlp"],
                   "Data Structures & Algorithms": ["data structures", "algorithms", "dsa", "tree", "graph", "sorting", "searching", "stack", "queue", "array", "arrays", "linked list"],
                   "Computer Networks": ["network", "networks", "physical layer", "osi", "tcp", "ip", "ethernet", "routing"],
                   "Operating Systems": ["operating system", "operating systems", "os", "process", "thread", "memory management", "scheduling"],
@@ -1683,7 +1685,7 @@ import {DashboardLayout} from "../components/layout/DashboardLayout";
                     return (
                       <div className="bg-white/90 backdrop-blur-md border border-slate-200 p-4 rounded-2xl shadow-xl">
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                          {isStreak ? (payload[0].payload.subject ? `${payload[0].payload.subject} (${label})` : label) : (isDate ? new Date(label).toLocaleDateString() : (payload[0].payload.subject ? `${payload[0].payload.subject}: ${label}` : label))}
+                          {isStreak ? (payload[0].payload.subject ? `${payload[0].payload.subject} (${label})` : label) : (isDate ? new Date(label).toLocaleDateString() : (payload[0].payload.subject ? `${payload[0].payload.subject}: ${payload[0].payload.topic || label}` : label))}
                         </p>
                         <p className="text-lg font-black text-indigo-600">
                           {isStreak ? "Study Time: " : "Score: "}
@@ -1785,7 +1787,16 @@ import {DashboardLayout} from "../components/layout/DashboardLayout";
                             const displayTopic = formatTopicForDisplay(q.topic);
                             let subjectName = getSubjectForTopic(q.topic);
                             if (subjectName === "default") subjectName = "Other";
-                            return { ...q, topic: displayTopic, subject: subjectName };
+                            const shortSubjectMap = {
+                              "Artificial Intelligence": "AI",
+                              "Data Structures & Algorithms": "DSA",
+                              "Computer Networks": "CN",
+                              "Operating Systems": "OS",
+                              "Database Management Systems": "DBMS",
+                              "Java Programming": "Java",
+                              "Other": "Other"
+                            };
+                            return { ...q, topic: displayTopic, subject: subjectName, subjectShort: shortSubjectMap[subjectName] || "Other" };
                           });
                       })();
 
@@ -2040,11 +2051,31 @@ import {DashboardLayout} from "../components/layout/DashboardLayout";
                                   <div className="h-full flex flex-col">
                                     <div className="flex-1 min-h-0">
                                       <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart
-                                          data={selectedQuizPeriod === "All Time" ? filteredQuizHistory.slice(0, 15).reverse() : [...filteredQuizHistory].reverse()}
-                                          margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
-                                        >
+                                        {(() => {
+                                          const chartData = selectedQuizPeriod === "All Time" 
+                                            ? filteredQuizHistory.slice(0, 15).reverse() 
+                                            : [...filteredQuizHistory].reverse();
+                                          
+                                          const shortSubjectColors = {
+                                            "AI": "url(#aiGradient)",
+                                            "DSA": "url(#mathGradient)",
+                                            "CN": "url(#dataGradient)",
+                                            "OS": "url(#csGradient)",
+                                            "DBMS": "url(#gkGradient)",
+                                            "Java": "url(#barGradient)",
+                                            "Other": "#cbd5e1"
+                                          };
+
+                                          return (
+                                          <BarChart
+                                            data={chartData}
+                                            margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+                                          >
                                           <defs>
+                                            <linearGradient id="aiGradient" x1="0" y1="0" x2="0" y2="1">
+                                              <stop offset="0%" stopColor="#A855F7" />
+                                              <stop offset="100%" stopColor="#E879F9" />
+                                            </linearGradient>
                                             <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
                                               <stop offset="0%" stopColor="#F87171" />
                                               <stop offset="100%" stopColor="#DC2626" />
@@ -2067,23 +2098,27 @@ import {DashboardLayout} from "../components/layout/DashboardLayout";
                                             </linearGradient>
                                           </defs>
                                           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                                          <XAxis dataKey="topic" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tick={false} />
+                                          <XAxis dataKey="subjectShort" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: "#64748b", fontSize: 10, dy: 5 }} />
                                           <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} />
                                           <Tooltip content={<CustomTooltip />} cursor={{ fill: '#e2e8f0' }} />
                                           <Bar dataKey="score" fill="url(#barGradient)" radius={[6, 6, 0, 0]} maxBarSize={40}>
-                                            {(selectedQuizPeriod === "All Time" ? filteredQuizHistory.slice(0, 15).reverse() : [...filteredQuizHistory].reverse()).map((entry, index) => (
-                                              <Cell key={`cell-${index}`} fill={subjectColors[entry.subject] || subjectColors["default"]} />
+                                            {chartData.map((entry, index) => (
+                                              <Cell key={`cell-${index}`} fill={shortSubjectColors[entry.subjectShort] || shortSubjectColors["Other"]} />
                                             ))}
                                           </Bar>
                                         </BarChart>
+                                          );
+                                        })()}
                                       </ResponsiveContainer>
                                     </div>
                                     <div className="flex flex-wrap justify-center gap-4 mt-2">
-                                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-pink-500 to-violet-500"></div><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Data Structures & Algorithms</span></div>
-                                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-emerald-500 to-blue-500"></div><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Computer Networks</span></div>
-                                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-amber-500 to-red-500"></div><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Operating Systems</span></div>
-                                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-violet-500 to-indigo-500"></div><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Database Management Systems</span></div>
-                                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-red-400 to-red-600"></div><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Java Programming</span></div>
+                                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-purple-500 to-fuchsia-500"></div><span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">AI</span></div>
+                                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-pink-500 to-violet-500"></div><span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">DSA</span></div>
+                                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-emerald-500 to-blue-500"></div><span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">CN</span></div>
+                                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-amber-500 to-red-500"></div><span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">OS</span></div>
+                                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-violet-500 to-indigo-500"></div><span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">DBMS</span></div>
+                                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gradient-to-b from-red-400 to-red-600"></div><span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Java</span></div>
+                                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-slate-300"></div><span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Other</span></div>
                                     </div>
                                   </div>
                                 ) : (
@@ -2166,6 +2201,7 @@ import {DashboardLayout} from "../components/layout/DashboardLayout";
                                   className="text-sm border border-slate-200 bg-white text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                                 >
                                   <option value="All Subjects">All Subjects</option>
+                                  <option value="Artificial Intelligence">Artificial Intelligence</option>
                                   <option value="Data Structures & Algorithms">Data Structures & Algorithms</option>
                                   <option value="Computer Networks">Computer Networks</option>
                                   <option value="Operating Systems">Operating Systems</option>
@@ -2184,7 +2220,7 @@ import {DashboardLayout} from "../components/layout/DashboardLayout";
                                             <th className="p-2 text-xs font-semibold text-slate-500 border-b border-slate-100 sticky top-0 bg-white/90 backdrop-blur-sm z-10">Topic</th>
                                             {(selectedSkillSubject === "All Subjects" ? Object.keys(subjectMap) : [selectedSkillSubject]).map(col => (
                                               <th key={col} className="p-2 text-xs font-semibold text-slate-500 text-center border-b border-slate-100 sticky top-0 bg-white/90 backdrop-blur-sm z-10">
-                                                {col === "Computer Networks" ? "CN" : col === "Data Structures & Algorithms" ? "DSA" : col === "Operating Systems" ? "OS" : col === "Database Management Systems" ? "DBMS" : col === "Java Programming" ? "Java" : col}
+                                                {col === "Artificial Intelligence" ? "AI" : col === "Computer Networks" ? "CN" : col === "Data Structures & Algorithms" ? "DSA" : col === "Operating Systems" ? "OS" : col === "Database Management Systems" ? "DBMS" : col === "Java Programming" ? "Java" : col}
                                               </th>
                                             ))}
                                           </tr>
@@ -2244,10 +2280,10 @@ import {DashboardLayout} from "../components/layout/DashboardLayout";
 
                           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6 }}>
                             <AnalyticsCard title="Weak Areas Radar" className="border-slate-100 shadow-sm rounded-3xl bg-white/80 backdrop-blur-xl">
-                              <div className="h-[300px] mt-4 overflow-y-auto custom-scrollbar">
+                              <div className="mt-4">
                                 {weakTopics.length > 0 ? (
                                   <div className="space-y-3 p-2">
-                                    {weakTopics.map((t, i) => (
+                                    {weakTopics.slice(0, 4).map((t, i) => (
                                       <div key={i} className="flex justify-between items-center p-4 rounded-2xl bg-red-50/50 border border-red-100">
                                         <div>
                                           <h4 className="font-bold text-red-900">{t.fullTopic}</h4>
