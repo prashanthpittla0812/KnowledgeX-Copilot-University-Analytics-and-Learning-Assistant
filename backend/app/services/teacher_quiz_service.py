@@ -181,8 +181,7 @@ class TeacherQuizService:
         if questions is None or not isinstance(questions, list):
             logger.error(f"Failed to extract JSON from LLM response: {content[:200]}")
             return {"status": "error", "message": "Failed to generate valid quiz format"}
-
-        final_question_type = f"Assessment: {question_type} ({duration_mins} mins)" if is_assessment else question_type
+        final_question_type = f"Assessment: {question_type} ({duration_minutes} mins)" if is_assessment else question_type
 
         quiz = TeacherQuiz(
             teacher_name=faculty_name,

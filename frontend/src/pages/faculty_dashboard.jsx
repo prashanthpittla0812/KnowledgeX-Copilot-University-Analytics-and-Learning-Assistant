@@ -353,18 +353,8 @@ export default function FacultyDashboard() {
           return;
         }
       } else {
-        if (!quizTopic || manualQuestionsData.length === 0) {
-          alert("Please provide a topic and at least one question.");
-          return;
-        }
-        // Basic validation for manual questions
-        const invalid = manualQuestionsData.some(q => {
-          if (!q.question.trim()) return true;
-          if (q.type === "MCQ" && !q.answer.trim()) return true;
-          return false;
-        });
-        if (invalid) {
-          alert("Please ensure all questions have text and MCQs have a correct answer selected.");
+        if (!quizTopic || !manualQuestionsText.trim()) {
+          alert("Please provide a topic and manual questions text.");
           return;
         }
       }
@@ -375,12 +365,12 @@ export default function FacultyDashboard() {
         topic_name: quizTopic,
         question_type: assessmentType,
         difficulty: assessmentDifficulty,
-        num_questions: Number(assessmentQuestionCount) || manualQuestionsData.length,
+        num_questions: Number(assessmentQuestionCount) || 1, // Will be overridden by manual count in backend
         document_topic: quizTopic,
         is_assessment: true,
         duration_minutes: Number(assessmentDuration) * 24 * 60 || 60, // days to mins
         max_violations: 0,
-        manual_questions: assessmentGenerationMethod === "Manual" ? JSON.stringify(manualQuestionsData) : null
+        manual_questions: assessmentGenerationMethod === "Manual" ? manualQuestionsText : null
       };
 
       await facultyApi.generateQuiz(payload);
@@ -392,13 +382,6 @@ export default function FacultyDashboard() {
       setAssessmentDuration("");
       setUploadFile(null);
       setManualQuestionsText("");
-      setManualQuestionsData([{
-        id: "1",
-        question: "",
-        type: "MCQ",
-        options: ["", "", "", ""],
-        answer: ""
-      }]);
       if(pdfInputRef.current) pdfInputRef.current.value = "";
       setUploadedDocs([]);
       setAssessmentGenerationMethod("AI");
@@ -822,8 +805,8 @@ export default function FacultyDashboard() {
                   <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     {/* Header */}
                     <div className="p-6 md:p-8 border-b border-slate-100 flex gap-4 items-start">
-                      <div className="bg-indigo-50 p-3 rounded-2xl border border-indigo-100 shrink-0">
-                        <FileText className="w-8 h-8 text-indigo-500" />
+                      <div className="bg-orange-50 p-3 rounded-2xl border border-orange-100 shrink-0">
+                        <FileText className="w-8 h-8 text-orange-500" />
                       </div>
                       <div>
                         <h2 className="text-2xl font-bold text-slate-900">Generate Assessments</h2>
@@ -836,19 +819,19 @@ export default function FacultyDashboard() {
                       <div className="space-y-6">
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-3">
-                            <div className="bg-indigo-100 text-indigo-600 font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0">1</div>
+                            <div className="bg-orange-100 text-orange-600 font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0">1</div>
                             <h3 className="text-lg font-bold text-slate-900">Knowledge Base</h3>
                           </div>
                           <div className="flex bg-slate-100 p-1 rounded-xl">
                             <button 
                               onClick={() => setAssessmentGenerationMethod("AI")}
-                              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${assessmentGenerationMethod === "AI" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${assessmentGenerationMethod === "AI" ? "bg-white text-orange-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                             >
                               AI Generate (PDF)
                             </button>
                             <button 
                               onClick={() => setAssessmentGenerationMethod("Manual")}
-                              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${assessmentGenerationMethod === "Manual" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${assessmentGenerationMethod === "Manual" ? "bg-white text-orange-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                             >
                               Manual Entry
                             </button>
@@ -865,7 +848,7 @@ export default function FacultyDashboard() {
                                 <input 
                                   value={quizTopic}
                                   onChange={e => setQuizTopic(e.target.value)}
-                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
                                   placeholder="e.g., Software Engineering Principles"
                                 />
                               </div>
@@ -884,24 +867,24 @@ export default function FacultyDashboard() {
                                     }
                                   }}
                                   ref={pdfInputRef}
-                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"
+                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100"
                                 />
                                 <p className="text-xs text-slate-500 mt-2">Upload a PDF containing the reference material.</p>
                               </div>
                             </div>
                             {uploadedDocs.length > 0 && (
-                              <div className="mt-6 p-4 rounded-xl border-2 border-indigo-500 bg-indigo-50/70 animate-in fade-in slide-in-from-top-2">
-                                <h5 className="text-xs font-black text-indigo-800 uppercase mb-3 tracking-wider">Successfully Uploaded</h5>
+                              <div className="mt-6 p-4 rounded-xl border-2 border-orange-500 bg-orange-50/70 animate-in fade-in slide-in-from-top-2">
+                                <h5 className="text-xs font-black text-orange-800 uppercase mb-3 tracking-wider">Successfully Uploaded</h5>
                                 <div className="space-y-2">
                                   {uploadedDocs.map((doc, idx) => (
-                                    <div key={idx} className="flex justify-between items-center text-sm p-3 bg-white rounded-lg border border-indigo-200 shadow-sm">
-                                      <div className="flex items-center gap-2 text-indigo-800 font-bold">
-                                        <CheckCircle className="w-4 h-4 text-indigo-600" />
+                                    <div key={idx} className="flex justify-between items-center text-sm p-3 bg-white rounded-lg border border-orange-200 shadow-sm">
+                                      <div className="flex items-center gap-2 text-orange-800 font-bold">
+                                        <CheckCircle className="w-4 h-4 text-orange-600" />
                                         <span>{doc.topic}</span>
                                       </div>
                                       <div className="flex items-center gap-3">
-                                        <span className="text-indigo-600 text-xs font-semibold" title={doc.name}>{doc.name}</span>
-                                        <button onClick={() => setUploadedDocs(prev => prev.filter((_, i) => i !== idx))} className="text-indigo-400 hover:text-red-500 transition-colors p-1" title="Remove">
+                                        <span className="text-orange-600 text-xs font-semibold" title={doc.name}>{doc.name}</span>
+                                        <button onClick={() => setUploadedDocs(prev => prev.filter((_, i) => i !== idx))} className="text-orange-400 hover:text-red-500 transition-colors p-1" title="Remove">
                                           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
                                         </button>
                                       </div>
@@ -920,16 +903,18 @@ export default function FacultyDashboard() {
                                 <input 
                                   value={quizTopic}
                                   onChange={e => setQuizTopic(e.target.value)}
-                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
                                   placeholder="e.g., Software Engineering Principles"
                                 />
                             </div>
                             <label className="text-sm font-bold text-slate-900 mb-2 block">
                               Enter Questions Manually <span className="text-red-500">*</span>
                             </label>
-                            <ManualQuestionBuilder 
-                              questions={manualQuestionsData} 
-                              onChange={setManualQuestionsData} 
+                            <textarea 
+                              value={manualQuestionsText}
+                              onChange={e => setManualQuestionsText(e.target.value)}
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all min-h-[150px]"
+                              placeholder="Type or paste your questions here...&#10;Example:&#10;1. Explain polymorphism.&#10;2. What is the difference between an interface and an abstract class?"
                             />
                           </div>
                         )}
@@ -938,7 +923,7 @@ export default function FacultyDashboard() {
                       {/* Step 2 */}
                       <div className="space-y-6">
                         <div className="flex items-center gap-3">
-                          <div className="bg-indigo-100 text-indigo-600 font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0">2</div>
+                          <div className="bg-orange-100 text-orange-600 font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0">2</div>
                           <h3 className="text-lg font-bold text-slate-900">Assessment Details</h3>
                         </div>
 
@@ -950,7 +935,7 @@ export default function FacultyDashboard() {
                             <select 
                               value={assessmentType}
                               onChange={e => setAssessmentType(e.target.value)}
-                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
                             >
                               <option value="Essay">Essay & Short Answer</option>
                               <option value="Coding">Coding Assessment</option>
@@ -964,7 +949,7 @@ export default function FacultyDashboard() {
                             <select 
                               value={assessmentDifficulty}
                               onChange={e => setAssessmentDifficulty(e.target.value)}
-                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
                             >
                               <option value="Beginner">Beginner</option>
                               <option value="Intermediate">Intermediate</option>
@@ -988,7 +973,7 @@ export default function FacultyDashboard() {
                                     setAssessmentQuestionCount(num > 25 ? 25 : num);
                                   }
                                 }}
-                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
                                 placeholder="e.g., 5"
                               />
                             </div>
@@ -1002,7 +987,7 @@ export default function FacultyDashboard() {
                               min="1"
                               value={assessmentDuration}
                               onChange={e => setAssessmentDuration(e.target.value)}
-                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
                               placeholder="e.g., 2"
                             />
                           </div>
@@ -1012,7 +997,7 @@ export default function FacultyDashboard() {
                           <Button 
                             onClick={handleGenerateAssessment}
                             disabled={isGenerating || isUploading}
-                            className="w-full py-6 text-lg font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 disabled:opacity-50"
+                            className="w-full py-6 text-lg font-bold rounded-xl bg-orange-600 hover:bg-orange-700 shadow-lg shadow-orange-600/20 disabled:opacity-50"
                           >
                             {isGenerating ? "Generating Assessment..." : <><Upload className="w-5 h-5 mr-2" /> Generate Assessment</>}
                           </Button>
