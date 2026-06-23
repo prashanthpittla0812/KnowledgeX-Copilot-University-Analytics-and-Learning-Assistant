@@ -40,6 +40,15 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"Database connection failed: {e}")
         logger.warning("App starting without database — only static routes available")
+        
+    try:
+        logger.info("Pre-loading HuggingFace embeddings into memory to prevent first-request cold start...")
+        from app.utils.embeddings import get_embeddings
+        get_embeddings()
+        logger.info("Embeddings pre-loaded successfully.")
+    except Exception as e:
+        logger.warning(f"Failed to pre-load embeddings: {e}")
+        
     yield
     try:
         await close_db()
