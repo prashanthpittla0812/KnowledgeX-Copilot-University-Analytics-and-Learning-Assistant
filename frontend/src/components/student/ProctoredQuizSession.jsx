@@ -7,7 +7,7 @@ import * as faceapi from 'face-api.js';
 import { AlertCircle, Camera, Monitor, Smartphone, Maximize, ShieldAlert, CheckCircle, AlertTriangle } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
-import api from '../../api';
+import api from "../../services/api";
 
 export function ProctoredQuizSession({ quiz, onActualSubmit, onCancel, renderQuizContent }) {
   const [phase, setPhase] = useState("setup"); // setup, ready, active, submitting, completed

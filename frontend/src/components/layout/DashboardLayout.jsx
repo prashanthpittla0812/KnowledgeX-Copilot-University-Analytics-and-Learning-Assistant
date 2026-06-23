@@ -34,7 +34,7 @@ import {
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { materialApi, API_BASE_URL, api, USER_STORAGE_KEY } from "../../api";
+import { materialApi, API_BASE_URL, api, USER_STORAGE_KEY } from "../../services/api";
 import toast from "react-hot-toast";
 
 export function DashboardLayout({ children, role = "student", activeItem, setActiveItem, userName = "User", handleLogout }) {

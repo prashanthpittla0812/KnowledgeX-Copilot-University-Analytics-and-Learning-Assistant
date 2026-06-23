@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { authApi } from "../api";
+import { authApi } from "../services/api";
 import { DashboardLayout } from "../components/layout/DashboardLayout";
 
 import DashboardTab from "../components/admin/DashboardTab";

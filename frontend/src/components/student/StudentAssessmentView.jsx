@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Download, FileText, Calendar, Clock, BookOpen, AlertCircle, Upload, CheckCircle2, X } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
-import { studentApi } from "../../api";
+import { studentApi } from "../../services/api";
 
 export function StudentAssessmentView({ quizId }) {
   const [assessment, setAssessment] = useState(null);

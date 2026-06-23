@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { api } from "../../api";
+import { api } from "../../services/api";
 import { Button } from "../ui/button";
 import { AnalyticsCard } from "../ui/analytics-card";
 import toast from "react-hot-toast";

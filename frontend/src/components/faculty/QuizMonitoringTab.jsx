@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../../api';
+import { api } from "../../services/api";
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { ShieldAlert, Video, Image as ImageIcon, AlertTriangle, CheckCircle, Clock } from 'lucide-react';

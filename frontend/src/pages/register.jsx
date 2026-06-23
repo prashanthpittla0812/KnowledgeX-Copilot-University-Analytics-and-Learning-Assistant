@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { authApi } from "../api";
+import { authApi } from "../services/api";
 import { motion } from "framer-motion";
 import { ArrowRight, Sparkles, Bot, Mail, Lock, Eye, EyeOff, Brain, BookOpen, LineChart, Info, User, CheckCircle2 } from "lucide-react";
 import { Button } from "../components/ui/button";

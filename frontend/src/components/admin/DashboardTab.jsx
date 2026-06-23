@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { api } from "../../api";
+import { api } from "../../services/api";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Users, GraduationCap, FileCheck, CheckCircle2 } from "lucide-react";
 import { StatCard } from "../ui/stat-card";

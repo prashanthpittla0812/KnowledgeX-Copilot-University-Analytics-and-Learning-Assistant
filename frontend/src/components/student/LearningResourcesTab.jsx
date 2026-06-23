@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { materialApi, API_BASE_URL } from "../../api";
+import { materialApi, API_BASE_URL } from "../../services/api";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { BookOpen, Search, Download, Eye, Bookmark, BookmarkCheck, FileText, File, Video, Link as LinkIcon, Filter, ExternalLink } from "lucide-react";

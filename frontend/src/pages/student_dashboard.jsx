@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { ChatBubble, ChatInput } from "../components/ui/chat";
-import { chatbotApi, documentApi, studentApi, materialApi } from "../api";
+import { chatbotApi, documentApi, studentApi, materialApi } from "../services/api";
 import { ProctoredQuizSession } from "../components/student/ProctoredQuizSession";
 import { DashboardLayout } from "../components/layout/DashboardLayout";
 import { LearningResourcesTab } from "../components/student/LearningResourcesTab";

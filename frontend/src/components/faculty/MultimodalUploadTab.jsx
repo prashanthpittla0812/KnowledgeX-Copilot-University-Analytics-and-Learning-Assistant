@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { documentApi } from "../../api";
+import { documentApi } from "../../services/api";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Upload, FileAudio, FileVideo, FileImage, FileText, Loader2 } from "lucide-react";

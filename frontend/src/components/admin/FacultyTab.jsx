@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { api } from "../../api";
+import { api } from "../../services/api";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { AnalyticsCard } from "../ui/analytics-card";
