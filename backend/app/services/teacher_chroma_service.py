@@ -1,5 +1,4 @@
 from langchain_chroma import Chroma
-from langchain_ollama import OllamaEmbeddings
 from langchain_openai import AzureOpenAIEmbeddings, OpenAIEmbeddings
 
 from app.config.settings import settings
@@ -25,13 +24,13 @@ def get_teacher_embeddings():
             api_version=settings.AZURE_OPENAI_API_VERSION,
         )
     elif settings.AI_PROVIDER == "groq":
-        from langchain_community.embeddings import HuggingFaceEmbeddings
-        return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+        from langchain_huggingface import HuggingFaceEmbeddings
+        logger.info("Using HuggingFace embeddings for teacher vectorstore")
+        return HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
     else:
-        return OllamaEmbeddings(
-            model="nomic-embed-text",
-            base_url=settings.OLLAMA_BASE_URL,
-        )
+        from langchain_huggingface import HuggingFaceEmbeddings
+        logger.info("Using HuggingFace embeddings for teacher vectorstore (fallback)")
+        return HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 
 def save_to_chroma(topic_name: str, chunks: list) -> Chroma:

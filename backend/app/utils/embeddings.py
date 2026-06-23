@@ -1,10 +1,11 @@
 from langchain_chroma import Chroma
-from langchain_ollama import OllamaEmbeddings
 from langchain_openai import AzureOpenAIEmbeddings, OpenAIEmbeddings
 from functools import lru_cache
 
 from app.config.settings import settings
+from app.utils.logger import get_logger
 
+logger = get_logger()
 
 @lru_cache(maxsize=1)
 def get_embeddings():
@@ -24,15 +25,17 @@ def get_embeddings():
     elif settings.AI_PROVIDER == "groq":
         # Since Groq handles LLMs but not embeddings, we use a high-quality free cloud alternative 
         # so you don't run into a crashing endpoint.
-        from langchain_community.embeddings import HuggingFaceEmbeddings
+        from langchain_huggingface import HuggingFaceEmbeddings
+        logger.info("Using HuggingFace embeddings")
         return HuggingFaceEmbeddings(
-            model_name="all-MiniLM-L6-v2"
+            model_name="sentence-transformers/all-MiniLM-L6-v2"
         )
     else:
-        # Defaulting to Ollama local embeddings
-        return OllamaEmbeddings(
-            model="nomic-embed-text",
-            base_url=settings.OLLAMA_BASE_URL,
+        # Defaulting to HuggingFace cloud embeddings
+        from langchain_huggingface import HuggingFaceEmbeddings
+        logger.info("Using HuggingFace embeddings (fallback)")
+        return HuggingFaceEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2"
         )
 
 

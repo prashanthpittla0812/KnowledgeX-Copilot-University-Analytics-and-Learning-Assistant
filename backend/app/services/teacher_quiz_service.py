@@ -43,6 +43,7 @@ class TeacherQuizService:
                 max_tokens=4096,
             )
         elif settings.AI_PROVIDER == "groq":
+            logger.info("Using Groq LLM")
             return init_chat_model(
                 settings.GROQ_MODEL,
                 model_provider="groq",
@@ -51,11 +52,13 @@ class TeacherQuizService:
                 max_tokens=4096,
             )
         else:
+            logger.info("Using Groq LLM as default fallback")
             return init_chat_model(
-                settings.OLLAMA_MODEL,
-                model_provider="ollama",
-                base_url=settings.OLLAMA_BASE_URL,
+                settings.GROQ_MODEL,
+                model_provider="groq",
+                api_key=settings.GROQ_API_KEY,
                 temperature=0.3,
+                max_tokens=4096,
             )
 
     def _get_prompt(self, question_type: str, context: str, difficulty: str, num_questions: int) -> str:

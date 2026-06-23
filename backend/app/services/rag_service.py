@@ -37,6 +37,7 @@ class RAGService:
                 max_tokens=1024,
             )
         elif settings.AI_PROVIDER == "groq":
+            logger.info("Using Groq LLM")
             return init_chat_model(
                 settings.GROQ_MODEL,
                 model_provider="groq",
@@ -45,13 +46,13 @@ class RAGService:
                 max_tokens=1024,
             )
         else:
+            logger.info("Using Groq LLM as default fallback")
             return init_chat_model(
-                settings.OLLAMA_MODEL,
-                model_provider="ollama",
-                base_url=settings.OLLAMA_BASE_URL,
+                settings.GROQ_MODEL,
+                model_provider="groq",
+                api_key=settings.GROQ_API_KEY,
                 temperature=0.3,
                 max_tokens=1024,
-                model_kwargs={"num_ctx": 2048},
             )
 
     def load_and_index_pdf(self, file_path: str) -> int:
