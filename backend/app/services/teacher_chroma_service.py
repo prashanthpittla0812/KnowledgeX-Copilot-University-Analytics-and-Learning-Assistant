@@ -18,6 +18,10 @@ def save_to_chroma(topic_name: str, chunks: list) -> Chroma:
     topic_name = topic_name.lower().strip()
     db_path = str(settings.CHROMA_PATH / topic_name)
     embedding_function = get_teacher_embeddings()
+    if embedding_function is None:
+        logger.warning(f"Could not save to ChromaDB for topic {topic_name}: Embeddings failed to load")
+        return None
+
     db = Chroma.from_documents(
         documents=chunks,
         embedding=embedding_function,
@@ -31,6 +35,9 @@ def get_vectorstore(topic_name: str) -> Chroma:
     topic_name = topic_name.lower().strip()
     db_path = str(settings.CHROMA_PATH / topic_name)
     embedding_function = get_teacher_embeddings()
+    if embedding_function is None:
+        raise ValueError("Embeddings could not be loaded")
+    
     db = Chroma(
         persist_directory=db_path,
         embedding_function=embedding_function,

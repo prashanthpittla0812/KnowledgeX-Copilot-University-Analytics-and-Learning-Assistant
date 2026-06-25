@@ -19,7 +19,9 @@ class MultimodalRAGService:
         self.ocr_service = OCRService()
         self.audio_processor = AudioProcessor()
         self.video_processor = VideoProcessor(self.audio_processor, self.ocr_service)
-        self.vector_store = get_vector_store()
+
+    def _get_vector_store(self):
+        return get_vector_store()
 
     async def process_upload(self, file_path: str, file_name: str, user: User, asr_provider: str = "Whisper") -> ProcessedContent:
         ext = Path(file_name).suffix.lower()
@@ -104,15 +106,19 @@ class MultimodalRAGService:
             valid_chunks = [c for c in chunks if c.strip()]
             
             if valid_chunks:
-                # Prepare metadata for citations
-                metadatas = [{
-                    "source": file_name,
-                    "source_type": source_type,
-                    "content_id": processed_content.id,
-                    "uploaded_by": user.id
-                } for _ in valid_chunks]
-                
-                self.vector_store.add_texts(valid_chunks, metadatas=metadatas)
-                logger.info(f"Indexed {len(valid_chunks)} chunks for {file_name}")
+                vs = self._get_vector_store()
+                if vs:
+                    # Prepare metadata for citations
+                    metadatas = [{
+                        "source": file_name,
+                        "source_type": source_type,
+                        "content_id": processed_content.id,
+                        "uploaded_by": user.id
+                    } for _ in valid_chunks]
+                    
+                    vs.add_texts(valid_chunks, metadatas=metadatas)
+                    logger.info(f"Indexed {len(valid_chunks)} chunks for {file_name}")
+                else:
+                    logger.warning("Vector store unavailable. Uploaded content not indexed for RAG.")
 
         return processed_content

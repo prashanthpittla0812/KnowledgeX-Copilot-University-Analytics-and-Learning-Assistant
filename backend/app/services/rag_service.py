@@ -13,9 +13,10 @@ logger = get_logger()
 
 class RAGService:
     def __init__(self):
-        self.embeddings = get_embeddings()
-        self.vector_store = get_vector_store()
         self.llm = self._init_llm()
+
+    def _get_vector_store(self):
+        return get_vector_store()
 
     def _init_llm(self):
         if settings.AI_PROVIDER == "openai":
@@ -63,12 +64,19 @@ class RAGService:
     def index_chunks(self, chunks: list[str]) -> int:
         texts = [chunk for chunk in chunks if chunk.strip()]
         if texts:
-            self.vector_store.add_texts(texts)
-            logger.info(f"Indexed {len(texts)} chunks into vector store")
+            vs = self._get_vector_store()
+            if vs:
+                vs.add_texts(texts)
+                logger.info(f"Indexed {len(texts)} chunks into vector store")
+            else:
+                logger.warning("Vector store unavailable. Chunks not indexed.")
         return len(texts)
 
     def retrieve_context(self, query: str, k: int = 3) -> list[str]:
-        docs = self.vector_store.similarity_search(query, k=k)
+        vs = self._get_vector_store()
+        if not vs:
+            return []
+        docs = vs.similarity_search(query, k=k)
         return [doc.page_content for doc in docs]
 
     def generate_answer(self, question: str, content_ids: list[int] = None) -> dict:
@@ -84,7 +92,23 @@ class RAGService:
             else:
                 filter_dict = {"content_id": {"$in": content_ids}}
 
-        docs = self.vector_store.similarity_search(question, k=3, filter=filter_dict)
+        vs = self._get_vector_store()
+        
+        if vs is None:
+            logger.info("Using direct Groq chat fallback")
+            # Fallback to direct LLM response
+            direct_prompt = PromptTemplate(
+                template="You are a helpful academic assistant. Please answer the following question: {question}",
+                input_variables=["question"]
+            )
+            chain = direct_prompt | self.llm
+            result = chain.invoke({"question": question})
+            return {
+                "answer": result.content,
+                "sources": [],
+            }
+
+        docs = vs.similarity_search(question, k=3, filter=filter_dict)
         context = "\n\n".join(doc.page_content for doc in docs)
 
         chain = prompt | self.llm
